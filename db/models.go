@@ -6,5 +6,6 @@ import (
 
 type User struct {
 	gorm.Model
+	ID        string
 	Available uint
 }

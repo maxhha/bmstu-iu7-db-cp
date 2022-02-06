@@ -4,6 +4,7 @@ import (
 	"auction-back/auth"
 	"auction-back/graph"
 	"auction-back/graph/generated"
+	"auction-back/jwt"
 
 	"github.com/gin-gonic/gin"
 
@@ -30,6 +31,7 @@ func playgroundHandler() gin.HandlerFunc {
 }
 
 func main() {
+	jwt.Init()
 	db.ConnectDatabase()
 
 	r := gin.Default()

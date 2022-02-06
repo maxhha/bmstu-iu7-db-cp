@@ -2,7 +2,9 @@ package auth
 
 import (
 	"auction-back/db"
+	"auction-back/jwt"
 	"context"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,17 +17,29 @@ type contextKey struct {
 
 func Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		defer c.Next()
+
 		tokens, ok := c.Request.Header["Authorization"]
 
-		if ok && len(tokens) == 0 {
-			viewer := db.User{}
-			db.DB.Take(&viewer, tokens[0])
-
-			ctx := context.WithValue(c.Request.Context(), viewerContextKey, &viewer)
-			c.Request = c.Request.WithContext(ctx)
+		if !ok || len(tokens) == 0 {
+			return
 		}
 
-		c.Next()
+		id, err := jwt.Parse(tokens[0])
+
+		fmt.Printf("err: %v\n", err)
+
+		if err != nil {
+			return
+		}
+
+		fmt.Printf("id: %+v\n", id)
+
+		viewer := db.User{}
+		db.DB.First(&viewer, "id = ?", id)
+
+		ctx := context.WithValue(c.Request.Context(), viewerContextKey, &viewer)
+		c.Request = c.Request.WithContext(ctx)
 	}
 }
 

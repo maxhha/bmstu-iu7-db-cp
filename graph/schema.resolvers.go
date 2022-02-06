@@ -8,12 +8,23 @@ import (
 	"auction-back/db"
 	"auction-back/graph/generated"
 	"auction-back/graph/model"
+	"auction-back/jwt"
 	"context"
 	"fmt"
+
+	"github.com/teris-io/shortid"
 )
 
 func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult, error) {
-	user := db.User{}
+	id, err := shortid.Generate()
+
+	if err != nil {
+		return nil, err
+	}
+
+	user := db.User{
+		ID: id,
+	}
 
 	result := db.DB.Create(&user)
 
@@ -21,8 +32,14 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult,
 		return nil, result.Error
 	}
 
+	token, err := jwt.New(user.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &model.RegisterResult{
-		Token: fmt.Sprintf("%v", user.ID),
+		Token: token,
 	}, nil
 }
 
@@ -42,7 +59,7 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model.User, error) {
 	}
 
 	return &model.User{
-		ID: fmt.Sprintf("%v", viewer.ID),
+		ID: viewer.ID,
 		Balance: &model.Balance{
 			Available: float64(viewer.Available),
 			Blocked:   0,
