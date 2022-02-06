@@ -10,6 +10,8 @@ type Balance {
 type User {
   id: ID!
   balance: Balance!
+  offers: [Offer!]!
+  products: [Product!]!
 }
 
 type Product {
@@ -17,6 +19,13 @@ type Product {
   name: String!
   description: String
   owner: User!
+  offers: [Offer!]!
+}
+
+type Offer {
+  id: ID!
+  consumer: User!
+  product: Product!
 }
 
 type RegisterResult {
@@ -41,6 +50,47 @@ type CreateProductResult {
   product: Product!
 }
 
+type OfferProductInput {
+  productId: ID!
+}
+
+type OfferProductResult {
+  product: Product!
+}
+
+type TakeOffProductInput {
+  productId: ID!
+}
+
+type TakeOffProductResult {
+  product: Product!
+}
+
+type SellProductInput {
+  productId: ID!
+}
+
+type SellProductResult {
+  product: Product!
+}
+
+type CreateOfferInput {
+  productId: ID!
+  amount: Float!
+}
+
+type CreateOfferResult {
+  offer: Offer!
+}
+
+type RemoveOfferInput {
+  offerId: ID!
+}
+
+type RemoveOfferResult {
+  status: String!
+}
+
 type Query {
   viewer: User
 }
@@ -48,5 +98,12 @@ type Query {
 type Mutation {
   register: RegisterResult!
   increaseBalance(input: IncreaseBalanceInput!): IncreaseBalanceResult!
+
   createProduct(input: CreateProductInput!): CreateProductResult!
+  offerProduct(input: OfferProductInput!): OfferProductResult!
+  takeOffProduct(input: TakeOffProductInput!): TakeOffProductResult!
+  sellProduct(input: SellProductInput!): SellProductResult!
+
+  createOffer(input: CreateOfferInput!): CreateOfferResult!
+  removeOffer(input: RemoveOfferInput!): RemoveOfferResult!
 }
