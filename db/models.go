@@ -1,0 +1,10 @@
+package db
+
+import (
+	"gorm.io/gorm"
+)
+
+type User struct {
+	gorm.Model
+	Available uint
+}

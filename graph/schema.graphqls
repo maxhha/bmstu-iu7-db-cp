@@ -1,0 +1,52 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Balance {
+  available: Float!
+  blocked: Float!
+}
+
+type User {
+  id: ID!
+  balance: Balance!
+}
+
+type Product {
+  id: ID!
+  name: String!
+  description: String
+  owner: User!
+}
+
+type RegisterResult {
+  token: String!
+}
+
+input IncreaseBalanceInput {
+  userId: ID!
+  amount: Float!
+}
+
+type IncreaseBalanceResult {
+  user: User!
+}
+
+input CreateProductInput {
+  name: String!
+  description: String
+}
+
+type CreateProductResult {
+  product: Product!
+}
+
+type Query {
+  viewer: User
+}
+
+type Mutation {
+  register: RegisterResult!
+  increaseBalance(input: IncreaseBalanceInput!): IncreaseBalanceResult!
+  createProduct(input: CreateProductInput!): CreateProductResult!
+}
