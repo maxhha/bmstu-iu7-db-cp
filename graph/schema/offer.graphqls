@@ -1,0 +1,37 @@
+type Offer {
+  id: ID!
+  consumer: User!
+  product: Product!
+}
+
+type OffersConnectionEdge {
+  cursor: String!
+  node: Offer!
+}
+
+type OffersConnection {
+  pageInfo: PageInfo!
+  edges: [OffersConnectionEdge!]!
+}
+
+input CreateOfferInput {
+  productId: ID!
+  amount: Float!
+}
+
+type CreateOfferResult {
+  offer: Offer!
+}
+
+input RemoveOfferInput {
+  offerId: ID!
+}
+
+type RemoveOfferResult {
+  status: String!
+}
+
+extend type Mutation {
+  createOffer(input: CreateOfferInput!): CreateOfferResult!
+  removeOffer(input: RemoveOfferInput!): RemoveOfferResult!
+}

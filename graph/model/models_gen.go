@@ -7,6 +7,15 @@ type Balance struct {
 	Blocked   float64 `json:"blocked"`
 }
 
+type CreateOfferInput struct {
+	ProductID string  `json:"productId"`
+	Amount    float64 `json:"amount"`
+}
+
+type CreateOfferResult struct {
+	Offer *Offer `json:"offer"`
+}
+
 type CreateProductInput struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
@@ -25,18 +34,76 @@ type IncreaseBalanceResult struct {
 	User *User `json:"user"`
 }
 
+type Offer struct {
+	ID       string   `json:"id"`
+	Consumer *User    `json:"consumer"`
+	Product  *Product `json:"product"`
+}
+
+type OfferProductInput struct {
+	ProductID string `json:"productId"`
+}
+
+type OfferProductResult struct {
+	Product *Product `json:"product"`
+}
+
+type OffersConnection struct {
+	PageInfo *PageInfo               `json:"pageInfo"`
+	Edges    []*OffersConnectionEdge `json:"edges"`
+}
+
+type OffersConnectionEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *Offer `json:"node"`
+}
+
+type PageInfo struct {
+	HasNextPage     bool   `json:"hasNextPage"`
+	HasPreviousPage bool   `json:"hasPreviousPage"`
+	StartCursor     string `json:"startCursor"`
+	EndCursor       string `json:"endCursor"`
+}
+
 type Product struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-	Owner       *User   `json:"owner"`
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Description *string           `json:"description"`
+	Owner       *User             `json:"owner"`
+	Offers      *OffersConnection `json:"offers"`
 }
 
 type RegisterResult struct {
 	Token string `json:"token"`
 }
 
+type RemoveOfferInput struct {
+	OfferID string `json:"offerId"`
+}
+
+type RemoveOfferResult struct {
+	Status string `json:"status"`
+}
+
+type SellProductInput struct {
+	ProductID string `json:"productId"`
+}
+
+type SellProductResult struct {
+	Product *Product `json:"product"`
+}
+
+type TakeOffProductInput struct {
+	ProductID string `json:"productId"`
+}
+
+type TakeOffProductResult struct {
+	Product *Product `json:"product"`
+}
+
 type User struct {
-	ID      string   `json:"id"`
-	Balance *Balance `json:"balance"`
+	ID       string     `json:"id"`
+	Balance  *Balance   `json:"balance"`
+	Offers   []*Offer   `json:"offers"`
+	Products []*Product `json:"products"`
 }

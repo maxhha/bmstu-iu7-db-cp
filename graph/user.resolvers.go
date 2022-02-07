@@ -44,11 +44,34 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult,
 }
 
 func (r *mutationResolver) IncreaseBalance(ctx context.Context, input model.IncreaseBalanceInput) (*model.IncreaseBalanceResult, error) {
-	panic(fmt.Errorf("not implemented"))
-}
+	user := db.User{}
 
-func (r *mutationResolver) CreateProduct(ctx context.Context, input model.CreateProductInput) (*model.CreateProductResult, error) {
-	panic(fmt.Errorf("not implemented"))
+	result := db.DB.First(&user, "id = ?", input.UserID)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	// TODO: fix precision
+	available := user.Available + input.Amount
+
+	if available < 0 {
+		return nil, fmt.Errorf("available balance cant be negative")
+	}
+
+	user.Available = available
+
+	db.DB.Save(&user)
+
+	u, err := (&model.User{}).From(&user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.IncreaseBalanceResult{
+		User: u,
+	}, nil
 }
 
 func (r *queryResolver) Viewer(ctx context.Context) (*model.User, error) {
@@ -58,20 +81,10 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model.User, error) {
 		return nil, nil
 	}
 
-	return &model.User{
-		ID: viewer.ID,
-		Balance: &model.Balance{
-			Available: float64(viewer.Available),
-			Blocked:   0,
-		},
-	}, nil
+	return (&model.User{}).From(viewer)
 }
-
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
-type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

@@ -7,5 +7,5 @@ import (
 type User struct {
 	gorm.Model
 	ID        string
-	Available uint
+	Available float64 `sql:"type:decimal(10,2);"`
 }

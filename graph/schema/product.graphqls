@@ -1,0 +1,47 @@
+type Product {
+  id: ID!
+  name: String!
+  description: String
+  owner: User!
+  offers(first: Int, after: String): OffersConnection!
+}
+
+input CreateProductInput {
+  name: String!
+  description: String
+}
+
+type CreateProductResult {
+  product: Product!
+}
+
+input OfferProductInput {
+  productId: ID!
+}
+
+type OfferProductResult {
+  product: Product!
+}
+
+input TakeOffProductInput {
+  productId: ID!
+}
+
+type TakeOffProductResult {
+  product: Product!
+}
+
+input SellProductInput {
+  productId: ID!
+}
+
+type SellProductResult {
+  product: Product!
+}
+
+extend type Mutation {
+  createProduct(input: CreateProductInput!): CreateProductResult!
+  offerProduct(input: OfferProductInput!): OfferProductResult!
+  takeOffProduct(input: TakeOffProductInput!): TakeOffProductResult!
+  sellProduct(input: SellProductInput!): SellProductResult!
+}
