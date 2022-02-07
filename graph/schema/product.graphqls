@@ -3,7 +3,18 @@ type Product {
   name: String!
   description: String
   owner: User!
+  isOnMarket: Boolean!
   offers(first: Int, after: String): OffersConnection!
+}
+
+type ProductConnectionEdge {
+  cursor: String!
+  node: Product!
+}
+
+type ProductConnection {
+  pageInfo: PageInfo!
+  edges: [ProductConnectionEdge!]!
 }
 
 input CreateProductInput {

@@ -7,7 +7,7 @@ type User {
   id: ID!
   balance: Balance!
   offers: [Offer!]!
-  products: [Product!]!
+  products(first: Int, after: String): ProductConnection!
 }
 
 extend type Query {

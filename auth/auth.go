@@ -36,7 +36,7 @@ func Middleware() gin.HandlerFunc {
 		fmt.Printf("id: %+v\n", id)
 
 		viewer := db.User{}
-		db.DB.First(&viewer, "id = ?", id)
+		db.DB.Take(&viewer, "id = ?", id)
 
 		ctx := context.WithValue(c.Request.Context(), viewerContextKey, &viewer)
 		c.Request = c.Request.WithContext(ctx)

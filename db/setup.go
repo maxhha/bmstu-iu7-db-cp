@@ -15,6 +15,7 @@ func ConnectDatabase() {
 	}
 
 	database.AutoMigrate(&User{})
+	database.AutoMigrate(&Product{})
 
 	DB = database
 }

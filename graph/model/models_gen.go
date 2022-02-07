@@ -59,18 +59,20 @@ type OffersConnectionEdge struct {
 }
 
 type PageInfo struct {
-	HasNextPage     bool   `json:"hasNextPage"`
-	HasPreviousPage bool   `json:"hasPreviousPage"`
-	StartCursor     string `json:"startCursor"`
-	EndCursor       string `json:"endCursor"`
+	HasNextPage     bool    `json:"hasNextPage"`
+	HasPreviousPage bool    `json:"hasPreviousPage"`
+	StartCursor     *string `json:"startCursor"`
+	EndCursor       *string `json:"endCursor"`
 }
 
-type Product struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Description *string           `json:"description"`
-	Owner       *User             `json:"owner"`
-	Offers      *OffersConnection `json:"offers"`
+type ProductConnection struct {
+	PageInfo *PageInfo                `json:"pageInfo"`
+	Edges    []*ProductConnectionEdge `json:"edges"`
+}
+
+type ProductConnectionEdge struct {
+	Cursor string   `json:"cursor"`
+	Node   *Product `json:"node"`
 }
 
 type RegisterResult struct {
@@ -99,11 +101,4 @@ type TakeOffProductInput struct {
 
 type TakeOffProductResult struct {
 	Product *Product `json:"product"`
-}
-
-type User struct {
-	ID       string     `json:"id"`
-	Balance  *Balance   `json:"balance"`
-	Offers   []*Offer   `json:"offers"`
-	Products []*Product `json:"products"`
 }
