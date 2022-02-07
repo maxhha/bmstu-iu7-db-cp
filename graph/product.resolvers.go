@@ -52,11 +52,75 @@ func (r *mutationResolver) CreateProduct(ctx context.Context, input model.Create
 }
 
 func (r *mutationResolver) OfferProduct(ctx context.Context, input model.OfferProductInput) (*model.OfferProductResult, error) {
-	panic(fmt.Errorf("not implemented"))
+	viewer := auth.ForViewer(ctx)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	product := db.Product{}
+
+	result := db.DB.Take(&product, "id = ?", input.ProductID)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("db take: %w", result.Error)
+	}
+
+	if product.OwnerID != viewer.ID {
+		return nil, fmt.Errorf("viewer is not owner")
+	}
+
+	product.IsOnMarket = true
+
+	result = db.DB.Save(&product)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("db save: %w", result.Error)
+	}
+
+	p, err := (&model.Product{}).From(&product)
+
+	if err != nil {
+		return nil, fmt.Errorf("convert: %w", err)
+	}
+
+	return &model.OfferProductResult{Product: p}, nil
 }
 
 func (r *mutationResolver) TakeOffProduct(ctx context.Context, input model.TakeOffProductInput) (*model.TakeOffProductResult, error) {
-	panic(fmt.Errorf("not implemented"))
+	viewer := auth.ForViewer(ctx)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	product := db.Product{}
+
+	result := db.DB.Take(&product, "id = ?", input.ProductID)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("db take: %w", result.Error)
+	}
+
+	if product.OwnerID != viewer.ID {
+		return nil, fmt.Errorf("viewer is not owner")
+	}
+
+	product.IsOnMarket = true
+
+	result = db.DB.Save(&product)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("db save: %w", result.Error)
+	}
+
+	p, err := (&model.Product{}).From(&product)
+
+	if err != nil {
+		return nil, fmt.Errorf("convert: %w", err)
+	}
+
+	return &model.TakeOffProductResult{Product: p}, nil
 }
 
 func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProductInput) (*model.SellProductResult, error) {
@@ -78,17 +142,17 @@ func (r *productResolver) Offers(ctx context.Context, obj *model.Product, first 
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *queryResolver) MarketProducts(ctx context.Context, first *int, after *string) (*model.ProductConnection, error) {
+	query := db.DB.Where("is_on_market = true").Order("id")
+
+	return ProductPagination(query, first, after)
+}
+
 // Product returns generated.ProductResolver implementation.
 func (r *Resolver) Product() generated.ProductResolver { return &productResolver{r} }
 
-type productResolver struct{ *Resolver }
+// Query returns generated.QueryResolver implementation.
+func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *productResolver) IsOnMarket(ctx context.Context, obj *model.Product) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
-}
+type productResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }

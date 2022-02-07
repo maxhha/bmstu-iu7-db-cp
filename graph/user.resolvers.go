@@ -84,84 +84,41 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model.User, error) {
 	return (&model.User{}).From(viewer)
 }
 
+func (r *userResolver) Balance(ctx context.Context, obj *model.User) (*model.Balance, error) {
+	viewer := auth.ForViewer(ctx)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	if viewer.ID != obj.ID {
+		return nil, fmt.Errorf("denied")
+	}
+
+	return (&model.Balance{}).From(obj.DB)
+}
+
 func (r *userResolver) Offers(ctx context.Context, obj *model.User) ([]*model.Offer, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *userResolver) Products(ctx context.Context, obj *model.User, first *int, after *string) (*model.ProductConnection, error) {
+	viewer := auth.ForViewer(ctx)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	if viewer.ID != obj.ID {
+		return nil, fmt.Errorf("denied")
+	}
+
 	query := db.DB.Where("owner_id = ?", obj.ID).Order("id")
 
-	fmt.Println("After query := ")
-
-	if first != nil {
-		if *first < 1 {
-			return nil, fmt.Errorf("first must be positive")
-		}
-		query = query.Limit(*first + 1)
-	}
-
-	if after != nil {
-		query.Where("id > ?", after)
-	}
-
-	var products []db.Product
-
-	result := query.Find(&products)
-
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	if len(products) == 0 {
-		return &model.ProductConnection{
-			PageInfo: &model.PageInfo{
-				HasNextPage:     false,
-				HasPreviousPage: false,
-				StartCursor:     nil,
-				EndCursor:       nil,
-			},
-			Edges: make([]*model.ProductConnectionEdge, 0),
-		}, nil
-	}
-
-	hasNextPage := false
-
-	if first != nil {
-		hasNextPage = len(products) > *first
-		products = products[:len(products)-1]
-	}
-
-	edges := make([]*model.ProductConnectionEdge, 0, len(products))
-
-	for _, product := range products {
-		node, err := (&model.Product{}).From(&product)
-
-		if err != nil {
-			return nil, err
-		}
-
-		edges = append(edges, &model.ProductConnectionEdge{
-			Cursor: product.ID,
-			Node:   node,
-		})
-	}
-
-	return &model.ProductConnection{
-		PageInfo: &model.PageInfo{
-			HasNextPage:     hasNextPage,
-			HasPreviousPage: false,
-			StartCursor:     &products[0].ID,
-			EndCursor:       &products[len(products)-1].ID,
-		},
-		Edges: edges,
-	}, nil
+	return ProductPagination(query, first, after)
 }
-
-// Query returns generated.QueryResolver implementation.
-func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 // User returns generated.UserResolver implementation.
 func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
-type queryResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

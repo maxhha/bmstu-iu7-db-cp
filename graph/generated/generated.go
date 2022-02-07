@@ -120,7 +120,8 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Viewer func(childComplexity int) int
+		MarketProducts func(childComplexity int, first *int, after *string) int
+		Viewer         func(childComplexity int) int
 	}
 
 	RegisterResult struct {
@@ -163,9 +164,11 @@ type ProductResolver interface {
 	Offers(ctx context.Context, obj *model.Product, first *int, after *string) (*model.OffersConnection, error)
 }
 type QueryResolver interface {
+	MarketProducts(ctx context.Context, first *int, after *string) (*model.ProductConnection, error)
 	Viewer(ctx context.Context) (*model.User, error)
 }
 type UserResolver interface {
+	Balance(ctx context.Context, obj *model.User) (*model.Balance, error)
 	Offers(ctx context.Context, obj *model.User) ([]*model.Offer, error)
 	Products(ctx context.Context, obj *model.User, first *int, after *string) (*model.ProductConnection, error)
 }
@@ -470,6 +473,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ProductConnectionEdge.Node(childComplexity), true
 
+	case "Query.marketProducts":
+		if e.complexity.Query.MarketProducts == nil {
+			break
+		}
+
+		args, err := ec.field_Query_marketProducts_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MarketProducts(childComplexity, args["first"].(*int), args["after"].(*string)), true
+
 	case "Query.viewer":
 		if e.complexity.Query.Viewer == nil {
 			break
@@ -664,6 +679,10 @@ type ProductConnectionEdge {
 type ProductConnection {
   pageInfo: PageInfo!
   edges: [ProductConnectionEdge!]!
+}
+
+extend type Query {
+  marketProducts(first: Int, after: String): ProductConnection!
 }
 
 input CreateProductInput {
@@ -888,6 +907,30 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_marketProducts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg1
 	return args, nil
 }
 
@@ -2225,6 +2268,48 @@ func (ec *executionContext) _ProductConnectionEdge_node(ctx context.Context, fie
 	return ec.marshalNProduct2ᚖauctionᚑbackᚋgraphᚋmodelᚐProduct(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_marketProducts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_marketProducts_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MarketProducts(rctx, args["first"].(*int), args["after"].(*string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ProductConnection)
+	fc.Result = res
+	return ec.marshalNProductConnection2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductConnection(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2514,14 +2599,14 @@ func (ec *executionContext) _User_balance(ctx context.Context, field graphql.Col
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Balance, nil
+		return ec.resolvers.User().Balance(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4592,6 +4677,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "marketProducts":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_marketProducts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "viewer":
 			field := field
 
@@ -4782,15 +4890,25 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				atomic.AddUint32(&invalids, 1)
 			}
 		case "balance":
+			field := field
+
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._User_balance(ctx, field, obj)
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_balance(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
 
-			out.Values[i] = innerFunc(ctx)
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
 
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			})
 		case "offers":
 			field := field
 
@@ -5250,6 +5368,10 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
+
+func (ec *executionContext) marshalNBalance2auctionᚑbackᚋgraphᚋmodelᚐBalance(ctx context.Context, sel ast.SelectionSet, v model.Balance) graphql.Marshaler {
+	return ec._Balance(ctx, sel, &v)
+}
 
 func (ec *executionContext) marshalNBalance2ᚖauctionᚑbackᚋgraphᚋmodelᚐBalance(ctx context.Context, sel ast.SelectionSet, v *model.Balance) graphql.Marshaler {
 	if v == nil {

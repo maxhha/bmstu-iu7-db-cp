@@ -17,6 +17,10 @@ type ProductConnection {
   edges: [ProductConnectionEdge!]!
 }
 
+extend type Query {
+  marketProducts(first: Int, after: String): ProductConnection!
+}
+
 input CreateProductInput {
   name: String!
   description: String
