@@ -7,6 +7,11 @@ type User struct {
 	DB *db.User
 }
 
+type Balance struct {
+	Available float64 `json:"available"`
+	DB        *db.User
+}
+
 func (u *User) From(user *db.User) (*User, error) {
 	u.ID = user.ID
 	u.DB = user
@@ -16,6 +21,7 @@ func (u *User) From(user *db.User) (*User, error) {
 
 func (b *Balance) From(user *db.User) (*Balance, error) {
 	b.Available = user.Available
+	b.DB = user
 
 	return b, nil
 }

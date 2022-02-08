@@ -32,6 +32,7 @@ func (r *mutationResolver) CreateProduct(ctx context.Context, input model.Create
 		Name:        input.Name,
 		Description: input.Description,
 		OwnerID:     viewer.ID,
+		Owner:       *viewer,
 	}
 
 	result := db.DB.Create(&product)
@@ -128,6 +129,10 @@ func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProd
 }
 
 func (r *productResolver) Owner(ctx context.Context, obj *model.Product) (*model.User, error) {
+	if obj.DB.Owner.ID == obj.DB.OwnerID {
+		return (&model.User{}).From(&obj.DB.Owner)
+	}
+
 	owner := db.User{}
 	result := db.DB.Take(&owner, "id = ?", obj.DB.OwnerID)
 
@@ -139,7 +144,9 @@ func (r *productResolver) Owner(ctx context.Context, obj *model.Product) (*model
 }
 
 func (r *productResolver) Offers(ctx context.Context, obj *model.Product, first *int, after *string) (*model.OffersConnection, error) {
-	panic(fmt.Errorf("not implemented"))
+	query := db.DB.Where("product_id = ?", obj.ID).Order("id")
+
+	return OfferPagination(query, first, after)
 }
 
 func (r *queryResolver) MarketProducts(ctx context.Context, first *int, after *string) (*model.ProductConnection, error) {

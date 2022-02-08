@@ -1,7 +1,9 @@
 type Offer {
   id: ID!
+  amount: Float!
   consumer: User!
   product: Product!
+  createdAt: String!
 }
 
 type OffersConnectionEdge {

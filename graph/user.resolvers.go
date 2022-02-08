@@ -15,6 +15,15 @@ import (
 	"github.com/teris-io/shortid"
 )
 
+func (r *balanceResolver) Blocked(ctx context.Context, obj *model.Balance) (float64, error) {
+	var blocked float64
+	if err := db.DB.Model(&db.Offer{}).Select("sum(amount)").Where("consumer_id = ?", obj.DB.ID).Scan(&blocked).Error; err != nil {
+		return 0, err
+	}
+
+	return blocked, nil
+}
+
 func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult, error) {
 	id, err := shortid.Generate()
 
@@ -98,8 +107,20 @@ func (r *userResolver) Balance(ctx context.Context, obj *model.User) (*model.Bal
 	return (&model.Balance{}).From(obj.DB)
 }
 
-func (r *userResolver) Offers(ctx context.Context, obj *model.User) ([]*model.Offer, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *userResolver) Offers(ctx context.Context, obj *model.User, first *int, after *string) (*model.OffersConnection, error) {
+	viewer := auth.ForViewer(ctx)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	if viewer.ID != obj.ID {
+		return nil, fmt.Errorf("denied")
+	}
+
+	query := db.DB.Where("consumer_id = ?", obj.ID).Order("id")
+
+	return OfferPagination(query, first, after)
 }
 
 func (r *userResolver) Products(ctx context.Context, obj *model.User, first *int, after *string) (*model.ProductConnection, error) {
@@ -118,7 +139,11 @@ func (r *userResolver) Products(ctx context.Context, obj *model.User, first *int
 	return ProductPagination(query, first, after)
 }
 
+// Balance returns generated.BalanceResolver implementation.
+func (r *Resolver) Balance() generated.BalanceResolver { return &balanceResolver{r} }
+
 // User returns generated.UserResolver implementation.
 func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
+type balanceResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

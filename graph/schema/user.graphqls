@@ -6,7 +6,7 @@ type Balance {
 type User {
   id: ID!
   balance: Balance!
-  offers: [Offer!]!
+  offers(first: Int, after: String): OffersConnection!
   products(first: Int, after: String): ProductConnection!
 }
 

@@ -2,11 +2,6 @@
 
 package model
 
-type Balance struct {
-	Available float64 `json:"available"`
-	Blocked   float64 `json:"blocked"`
-}
-
 type CreateOfferInput struct {
 	ProductID string  `json:"productId"`
 	Amount    float64 `json:"amount"`
@@ -32,12 +27,6 @@ type IncreaseBalanceInput struct {
 
 type IncreaseBalanceResult struct {
 	User *User `json:"user"`
-}
-
-type Offer struct {
-	ID       string   `json:"id"`
-	Consumer *User    `json:"consumer"`
-	Product  *Product `json:"product"`
 }
 
 type OfferProductInput struct {
