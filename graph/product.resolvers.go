@@ -12,6 +12,8 @@ import (
 	"fmt"
 
 	"github.com/teris-io/shortid"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func (r *mutationResolver) CreateProduct(ctx context.Context, input model.CreateProductInput) (*model.CreateProductResult, error) {
@@ -107,7 +109,7 @@ func (r *mutationResolver) TakeOffProduct(ctx context.Context, input model.TakeO
 		return nil, fmt.Errorf("viewer is not owner")
 	}
 
-	product.IsOnMarket = true
+	product.IsOnMarket = false
 
 	result = db.DB.Save(&product)
 
@@ -125,7 +127,68 @@ func (r *mutationResolver) TakeOffProduct(ctx context.Context, input model.TakeO
 }
 
 func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProductInput) (*model.SellProductResult, error) {
-	panic(fmt.Errorf("not implemented"))
+	viewer := auth.ForViewer(ctx)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	product := db.Product{}
+
+	if err := db.DB.Take(&product, "id = ?", input.ProductID).Error; err != nil {
+		return nil, fmt.Errorf("db take: %w", err)
+	}
+
+	if product.OwnerID != viewer.ID {
+		return nil, fmt.Errorf("viewer is not owner")
+	}
+
+	offer := db.Offer{}
+
+	if err := db.DB.Where("amount = (?)", db.DB.Model(&db.Offer{}).Select("max(amount)")).Take(&offer).Error; err != nil {
+		return nil, fmt.Errorf("cant find max offer: %w", err)
+	}
+
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(viewer, "id = ?", viewer.ID).Error; err != nil {
+			return fmt.Errorf("lock viewer: %w", err)
+		}
+
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(&product, "id = ?", product.ID).Error; err != nil {
+			return fmt.Errorf("lock product: %w", err)
+		}
+
+		viewer.Available = viewer.Available + offer.Amount
+		product.OwnerID = offer.ConsumerID
+
+		if err := tx.Delete(&offer).Error; err != nil {
+			return fmt.Errorf("delete offer: %w", err)
+		}
+
+		if err := tx.Save(viewer).Error; err != nil {
+			return fmt.Errorf("save viewer: %w", err)
+		}
+
+		if err := tx.Save(&product).Error; err != nil {
+			return fmt.Errorf("save product: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := (&model.Product{}).From(&product)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.SellProductResult{
+		Product: p,
+	}, nil
 }
 
 func (r *productResolver) Owner(ctx context.Context, obj *model.Product) (*model.User, error) {

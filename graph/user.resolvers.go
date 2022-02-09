@@ -16,12 +16,16 @@ import (
 )
 
 func (r *balanceResolver) Blocked(ctx context.Context, obj *model.Balance) (float64, error) {
-	var blocked float64
+	var blocked *float64
 	if err := db.DB.Model(&db.Offer{}).Select("sum(amount)").Where("consumer_id = ?", obj.DB.ID).Scan(&blocked).Error; err != nil {
 		return 0, err
 	}
 
-	return blocked, nil
+	if blocked == nil {
+		return 0, nil
+	}
+
+	return *blocked, nil
 }
 
 func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult, error) {
