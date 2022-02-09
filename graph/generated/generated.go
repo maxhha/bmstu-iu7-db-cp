@@ -111,6 +111,7 @@ type ComplexityRoot struct {
 		Name        func(childComplexity int) int
 		Offers      func(childComplexity int, first *int, after *string) int
 		Owner       func(childComplexity int) int
+		TopOffer    func(childComplexity int) int
 	}
 
 	ProductConnection struct {
@@ -172,6 +173,7 @@ type OfferResolver interface {
 type ProductResolver interface {
 	Owner(ctx context.Context, obj *model.Product) (*model.User, error)
 
+	TopOffer(ctx context.Context, obj *model.Product) (*model.Offer, error)
 	Offers(ctx context.Context, obj *model.Product, first *int, after *string) (*model.OffersConnection, error)
 }
 type QueryResolver interface {
@@ -470,6 +472,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Product.Owner(childComplexity), true
 
+	case "Product.topOffer":
+		if e.complexity.Product.TopOffer == nil {
+			break
+		}
+
+		return e.complexity.Product.TopOffer(childComplexity), true
+
 	case "ProductConnection.edges":
 		if e.complexity.ProductConnection.Edges == nil {
 			break
@@ -700,6 +709,7 @@ extend type Mutation {
   description: String
   owner: User!
   isOnMarket: Boolean!
+  topOffer: Offer
   offers(first: Int, after: String): OffersConnection!
 }
 
@@ -2210,6 +2220,38 @@ func (ec *executionContext) _Product_isOnMarket(ctx context.Context, field graph
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Product_topOffer(ctx context.Context, field graphql.CollectedField, obj *model.Product) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Product",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Product().TopOffer(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Offer)
+	fc.Result = res
+	return ec.marshalOOffer2ᚖauctionᚑbackᚋgraphᚋmodelᚐOffer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Product_offers(ctx context.Context, field graphql.CollectedField, obj *model.Product) (ret graphql.Marshaler) {
@@ -4728,6 +4770,23 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "topOffer":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Product_topOffer(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "offers":
 			field := field
 
@@ -6250,6 +6309,13 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	}
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOOffer2ᚖauctionᚑbackᚋgraphᚋmodelᚐOffer(ctx context.Context, sel ast.SelectionSet, v *model.Offer) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Offer(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

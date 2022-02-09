@@ -9,6 +9,7 @@ import (
 	"auction-back/graph/generated"
 	"auction-back/graph/model"
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -234,6 +235,22 @@ func (r *productResolver) Owner(ctx context.Context, obj *model.Product) (*model
 	}
 
 	return (&model.User{}).From(&owner)
+}
+
+func (r *productResolver) TopOffer(ctx context.Context, obj *model.Product) (*model.Offer, error) {
+	offer := db.Offer{}
+
+	maxAmount := db.DB.Model(&db.Offer{}).Select("max(amount)").Where("product_id = ?", obj.ID)
+
+	if err := db.DB.Where("amount = (?)", maxAmount).First(&offer, "product_id = ?", obj.ID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("cant find max offer: %w", err)
+	}
+
+	return (&model.Offer{}).From(&offer)
 }
 
 func (r *productResolver) Offers(ctx context.Context, obj *model.Product, first *int, after *string) (*model.OffersConnection, error) {

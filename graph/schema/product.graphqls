@@ -4,6 +4,7 @@ type Product {
   description: String
   owner: User!
   isOnMarket: Boolean!
+  topOffer: Offer
   offers(first: Int, after: String): OffersConnection!
 }
 
