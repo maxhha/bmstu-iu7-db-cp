@@ -1,6 +1,12 @@
 package model
 
-import "auction-back/db"
+import (
+	"auction-back/db"
+	"fmt"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+)
 
 type Offer struct {
 	ID        string  `json:"id"`
@@ -16,4 +22,33 @@ func (o *Offer) From(offer *db.Offer) (*Offer, error) {
 	o.DB = offer
 
 	return o, nil
+}
+
+func (offer *Offer) RemoveOffer() error {
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		consumer := db.User{}
+
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(&consumer, "id = ?", offer.DB.ConsumerID).Error; err != nil {
+			return fmt.Errorf("lock viewer: %w", err)
+		}
+
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(offer.DB, "id = ?", offer.ID).Error; err != nil {
+			return fmt.Errorf("lock offer: %w", err)
+		}
+
+		// TODO: fix precision
+		consumer.Available = consumer.Available + offer.DB.Amount
+
+		if err := tx.Delete(offer.DB).Error; err != nil {
+			return fmt.Errorf("db delete: %w", err)
+		}
+
+		if err := tx.Save(consumer).Error; err != nil {
+			return fmt.Errorf("db save: %w", err)
+		}
+
+		return nil
+	})
+
+	return err
 }

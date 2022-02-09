@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gin-gonic/gin"
 	"github.com/teris-io/shortid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -145,7 +146,9 @@ func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProd
 
 	offer := db.Offer{}
 
-	if err := db.DB.Where("amount = (?)", db.DB.Model(&db.Offer{}).Select("max(amount)")).Take(&offer).Error; err != nil {
+	maxAmount := db.DB.Model(&db.Offer{}).Select("max(amount)").Where("product_id = ?", product.ID)
+
+	if err := db.DB.Where("amount = (?)", maxAmount).First(&offer, "product_id = ?", product.ID).Error; err != nil {
 		return nil, fmt.Errorf("cant find max offer: %w", err)
 	}
 
@@ -158,8 +161,13 @@ func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProd
 			return fmt.Errorf("lock product: %w", err)
 		}
 
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(&offer, "id = ?", offer.ID).Error; err != nil {
+			return err
+		}
+
 		viewer.Available = viewer.Available + offer.Amount
 		product.OwnerID = offer.ConsumerID
+		product.IsOnMarket = false
 
 		if err := tx.Delete(&offer).Error; err != nil {
 			return fmt.Errorf("delete offer: %w", err)
@@ -179,6 +187,28 @@ func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProd
 	if err != nil {
 		return nil, err
 	}
+
+	go func(id string) {
+		var offers []db.Offer
+		if err := db.DB.Find(&offers, "product_id = ?", id).Error; err != nil {
+			fmt.Fprintf(gin.DefaultErrorWriter, "sell sideffect: db take: %v", err)
+			return
+		}
+
+		for _, offer := range offers {
+			o, err := (&model.Offer{}).From(&offer)
+
+			if err != nil {
+				fmt.Fprintf(gin.DefaultErrorWriter, "sell sideffect: convert: %v", err)
+				continue
+			}
+
+			if err := o.RemoveOffer(); err != nil {
+				fmt.Fprintf(gin.DefaultErrorWriter, "sell sideffect: remove offer: %v", err)
+				continue
+			}
+		}
+	}(product.ID)
 
 	p, err := (&model.Product{}).From(&product)
 

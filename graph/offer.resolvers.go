@@ -89,7 +89,35 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input model.CreateOf
 }
 
 func (r *mutationResolver) RemoveOffer(ctx context.Context, input model.RemoveOfferInput) (*model.RemoveOfferResult, error) {
-	panic(fmt.Errorf("not implemented"))
+	viewer := auth.ForViewer(ctx)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	offer := db.Offer{}
+
+	if err := db.DB.Take(&offer, "id = ?", input.OfferID).Error; err != nil {
+		return nil, fmt.Errorf("db take: %w", err)
+	}
+
+	if offer.ConsumerID != viewer.ID {
+		return nil, fmt.Errorf("denied")
+	}
+
+	o, err := (&model.Offer{}).From(&offer)
+
+	if err != nil {
+		return nil, fmt.Errorf("convert: %w", err)
+	}
+
+	if err := o.RemoveOffer(); err != nil {
+		return nil, fmt.Errorf("offer remove: %w", err)
+	}
+
+	return &model.RemoveOfferResult{
+		Status: "success",
+	}, nil
 }
 
 func (r *offerResolver) Consumer(ctx context.Context, obj *model.Offer) (*model.User, error) {
