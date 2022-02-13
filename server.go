@@ -6,6 +6,7 @@ import (
 	"auction-back/graph/generated"
 	"auction-back/jwt"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -35,6 +36,12 @@ func main() {
 	db.ConnectDatabase()
 
 	r := gin.Default()
+
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = []string{"http://127.0.0.1:8080, http://127.0.0.1:3000"}
+	corsConfig.AllowMethods = []string{"POST, GET, OPTIONS"}
+	r.Use(cors.New(corsConfig))
+
 	r.Use(auth.Middleware())
 	r.POST("/graphql", graphqlHandler())
 	r.GET("/graphql", playgroundHandler())

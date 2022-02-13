@@ -1,0 +1,9 @@
+query Market {
+    marketProducts {
+        edges {
+            node {
+                id
+            }
+        }
+    }
+}
