@@ -25,8 +25,8 @@
     <title>Market</title>
 </svelte:head>
 
-<div class="market-content">
-    <h1>Market</h1>
+<div class="container mx-auto">
+    <h1 class="text-3xl bold ">Market</h1>
     <pre>{JSON.stringify(data, null, 2)}</pre>
 </div>
 

@@ -38,7 +38,7 @@ func main() {
 	r := gin.Default()
 
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"http://127.0.0.1:8080, http://127.0.0.1:3000"}
+	corsConfig.AllowOrigins = []string{"http://127.0.0.1:8080", "http://127.0.0.1:3000", "http://[::1]:3000", "http://[::1]:8080", "http://localhost:8080", "http://localhost:3000"}
 	corsConfig.AllowMethods = []string{"POST, GET, OPTIONS"}
 	r.Use(cors.New(corsConfig))
 
