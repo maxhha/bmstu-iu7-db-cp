@@ -12,3 +12,4 @@ generates:
 hooks:
     afterOneFileWrite:
         - prettier --write
+        - node scripts/replace-graphql-imports.js
