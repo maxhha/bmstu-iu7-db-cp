@@ -13,3 +13,4 @@ hooks:
     afterOneFileWrite:
         - prettier --write
         - node scripts/replace-graphql-imports.js
+        - node scripts/export-document-strings.js

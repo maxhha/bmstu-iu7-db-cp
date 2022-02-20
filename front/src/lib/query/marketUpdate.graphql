@@ -1,0 +1,6 @@
+subscription MarketUpdate {
+    productOffered {
+        id
+        name
+    }
+}

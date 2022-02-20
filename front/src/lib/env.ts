@@ -1,1 +1,3 @@
-export const GRAPHQL_URL = import.meta.env.VITE_PUBLIC_GRAPHQL_URL;
+export const GRAPHQL_URL = import.meta.env.VITE_PUBLIC_GRAPHQL_URL
+export const GRAPHQL_SUBSCRIPTION_URL = import.meta.env
+    .VITE_PUBLIC_GRAPHQL_SUBSCRIPTION_URL

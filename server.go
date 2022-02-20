@@ -5,9 +5,16 @@ import (
 	"auction-back/graph"
 	"auction-back/graph/generated"
 	"auction-back/jwt"
+	"net/http"
+	"time"
 
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -16,7 +23,28 @@ import (
 )
 
 func graphqlHandler() gin.HandlerFunc {
-	h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: graph.New()}))
+
+	h := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: graph.New()}))
+
+	h.AddTransport(transport.Websocket{
+		KeepAlivePingInterval: 10 * time.Second,
+		Upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		},
+	})
+	h.AddTransport(transport.Options{})
+	h.AddTransport(transport.GET{})
+	h.AddTransport(transport.POST{})
+	h.AddTransport(transport.MultipartForm{})
+
+	h.SetQueryCache(lru.New(1000))
+
+	h.Use(extension.Introspection{})
+	h.Use(extension.AutomaticPersistedQuery{
+		Cache: lru.New(100),
+	})
 
 	return func(c *gin.Context) {
 		h.ServeHTTP(c.Writer, c.Request)
@@ -31,8 +59,17 @@ func playgroundHandler() gin.HandlerFunc {
 	}
 }
 
-func main() {
+func init() {
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		panic("error loading .env file")
+	}
+
 	jwt.Init()
+}
+
+func main() {
 	db.ConnectDatabase()
 
 	r := gin.Default()
