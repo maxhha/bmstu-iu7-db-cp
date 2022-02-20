@@ -61,3 +61,7 @@ extend type Mutation {
   takeOffProduct(input: TakeOffProductInput!): TakeOffProductResult!
   sellProduct(input: SellProductInput!): SellProductResult!
 }
+
+type Subscription {
+  productOffered: Product
+}

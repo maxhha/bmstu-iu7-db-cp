@@ -89,6 +89,16 @@ func (r *mutationResolver) OfferProduct(ctx context.Context, input model.OfferPr
 		return nil, fmt.Errorf("convert: %w", err)
 	}
 
+	go func() {
+		r.MarketLock.Lock()
+
+		for _, ch := range r.Market {
+			ch <- p
+		}
+
+		r.MarketLock.Unlock()
+	}()
+
 	return &model.OfferProductResult{Product: p}, nil
 }
 
@@ -265,11 +275,33 @@ func (r *queryResolver) MarketProducts(ctx context.Context, first *int, after *s
 	return ProductPagination(query, first, after)
 }
 
+func (r *subscriptionResolver) ProductOffered(ctx context.Context) (<-chan *model.Product, error) {
+	ch := make(chan *model.Product, 1)
+
+	r.MarketLock.Lock()
+	chan_id := randString(6)
+	r.Market[chan_id] = ch
+	r.MarketLock.Unlock()
+
+	go func() {
+		<-ctx.Done()
+		r.MarketLock.Lock()
+		delete(r.Market, chan_id)
+		r.MarketLock.Unlock()
+	}()
+
+	return ch, nil
+}
+
 // Product returns generated.ProductResolver implementation.
 func (r *Resolver) Product() generated.ProductResolver { return &productResolver{r} }
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Subscription returns generated.SubscriptionResolver implementation.
+func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subscriptionResolver{r} }
+
 type productResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }

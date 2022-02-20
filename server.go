@@ -16,7 +16,7 @@ import (
 )
 
 func graphqlHandler() gin.HandlerFunc {
-	h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: graph.New()}))
 
 	return func(c *gin.Context) {
 		h.ServeHTTP(c.Writer, c.Request)
@@ -43,7 +43,7 @@ func main() {
 	r.Use(cors.New(corsConfig))
 
 	r.Use(auth.Middleware())
-	r.POST("/graphql", graphqlHandler())
-	r.GET("/graphql", playgroundHandler())
+	r.Any("/graphql", graphqlHandler())
+	r.GET("/graphiql", playgroundHandler())
 	r.Run()
 }

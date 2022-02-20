@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -40,6 +41,7 @@ type ResolverRoot interface {
 	Offer() OfferResolver
 	Product() ProductResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 	User() UserResolver
 }
 
@@ -141,6 +143,10 @@ type ComplexityRoot struct {
 		Product func(childComplexity int) int
 	}
 
+	Subscription struct {
+		ProductOffered func(childComplexity int) int
+	}
+
 	TakeOffProductResult struct {
 		Product func(childComplexity int) int
 	}
@@ -179,6 +185,9 @@ type ProductResolver interface {
 type QueryResolver interface {
 	MarketProducts(ctx context.Context, first *int, after *string) (*model.ProductConnection, error)
 	Viewer(ctx context.Context) (*model.User, error)
+}
+type SubscriptionResolver interface {
+	ProductOffered(ctx context.Context) (<-chan *model.Product, error)
 }
 type UserResolver interface {
 	Balance(ctx context.Context, obj *model.User) (*model.Balance, error)
@@ -547,6 +556,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SellProductResult.Product(childComplexity), true
 
+	case "Subscription.productOffered":
+		if e.complexity.Subscription.ProductOffered == nil {
+			break
+		}
+
+		return e.complexity.Subscription.ProductOffered(childComplexity), true
+
 	case "TakeOffProductResult.product":
 		if e.complexity.TakeOffProductResult.Product == nil {
 			break
@@ -624,6 +640,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			first = false
 			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
 			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, rc.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next()
+
+			if data == nil {
+				return nil
+			}
 			data.MarshalGQL(&buf)
 
 			return &graphql.Response{
@@ -765,6 +798,10 @@ extend type Mutation {
   offerProduct(input: OfferProductInput!): OfferProductResult!
   takeOffProduct(input: TakeOffProductInput!): TakeOffProductResult!
   sellProduct(input: SellProductInput!): SellProductResult!
+}
+
+type Subscription {
+  productOffered: Product
 }
 `, BuiltIn: false},
 	{Name: "graph/schema/user.graphqls", Input: `type Balance {
@@ -2684,6 +2721,48 @@ func (ec *executionContext) _SellProductResult_product(ctx context.Context, fiel
 	res := resTmp.(*model.Product)
 	fc.Result = res
 	return ec.marshalNProduct2ᚖauctionᚑbackᚋgraphᚋmodelᚐProduct(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Subscription_productOffered(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().ProductOffered(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-resTmp.(<-chan *model.Product)
+		if !ok {
+			return nil
+		}
+		return graphql.WriterFunc(func(w io.Writer) {
+			w.Write([]byte{'{'})
+			graphql.MarshalString(field.Alias).MarshalGQL(w)
+			w.Write([]byte{':'})
+			ec.marshalOProduct2ᚖauctionᚑbackᚋgraphᚋmodelᚐProduct(ctx, field.Selections, res).MarshalGQL(w)
+			w.Write([]byte{'}'})
+		})
+	}
 }
 
 func (ec *executionContext) _TakeOffProductResult_product(ctx context.Context, field graphql.CollectedField, obj *model.TakeOffProductResult) (ret graphql.Marshaler) {
@@ -5080,6 +5159,26 @@ func (ec *executionContext) _SellProductResult(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func() graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		ec.Errorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "productOffered":
+		return ec._Subscription_productOffered(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
+}
+
 var takeOffProductResultImplementors = []string{"TakeOffProductResult"}
 
 func (ec *executionContext) _TakeOffProductResult(ctx context.Context, sel ast.SelectionSet, obj *model.TakeOffProductResult) graphql.Marshaler {
@@ -6316,6 +6415,13 @@ func (ec *executionContext) marshalOOffer2ᚖauctionᚑbackᚋgraphᚋmodelᚐOf
 		return graphql.Null
 	}
 	return ec._Offer(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOProduct2ᚖauctionᚑbackᚋgraphᚋmodelᚐProduct(ctx context.Context, sel ast.SelectionSet, v *model.Product) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Product(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
