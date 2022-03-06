@@ -24,4 +24,4 @@ go.work
 *.db
 
 # Environment variables
-.env
+*.env

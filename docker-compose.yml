@@ -1,0 +1,30 @@
+version: "3.9"
+
+
+services:
+  db:
+    image: postgres:14.2-alpine
+    restart: always
+    env_file: .db.env
+    ports:
+      - 5432:5432
+    networks:
+      - backend
+    volumes:
+      # Apply migrations on initdb stage if no data
+      - ./migrations:/docker-entrypoint-initdb.d
+
+  migration:
+    depends_on:
+      - db
+    build:
+      context: ./migrations
+    env_file: .db.env
+    entrypoint: bash /app/migrate
+    networks:
+      - backend
+    volumes:
+      - ./migrations:/app
+
+networks:
+  backend:
