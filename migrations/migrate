@@ -13,10 +13,12 @@ docker_process_init_files() {
 	echo
 	local f
 	for f; do
+		local m="$(basename $f)"
 		case "$f" in
 			*.sh)
 				# https://github.com/docker-library/postgres/issues/450#issuecomment-393167936
 				# https://github.com/docker-library/postgres/pull/452
+				export MIGRATION_ID="$m"
 				if [ -x "$f" ]; then
 					echo "$0: running $f"
 					"$f"
@@ -25,9 +27,9 @@ docker_process_init_files() {
 					. "$f"
 				fi
 				;;
-			*.sql)    echo "$0: running $f"; docker_process_sql -f "$f"; echo ;;
-			*.sql.gz) echo "$0: running $f"; gunzip -c "$f" | docker_process_sql; echo ;;
-			*.sql.xz) echo "$0: running $f"; xzcat "$f" | docker_process_sql; echo ;;
+			*.sql)    echo "$0: running $f"; docker_process_sql -v MIGRATION_ID=$m -f "$f"; echo ;;
+			*.sql.gz) echo "$0: running $f"; gunzip -c "$f" | docker_process_sql -v MIGRATION_ID=$m; echo ;;
+			*.sql.xz) echo "$0: running $f"; xzcat "$f" | docker_process_sql -v MIGRATION_ID=$m; echo ;;
 			*)        echo "$0: ignoring $f" ;;
 		esac
 		echo
@@ -36,14 +38,11 @@ docker_process_init_files() {
 
 # Execute sql script, passed via stdin (or -f flag of pqsl)
 # usage: docker_process_sql [psql-cli-args]
-#    ie: docker_process_sql --dbname=mydb <<<'INSERT ...'
+#    ie: docker_process_sql --dbname=mydb <<<'I.NSERT ...'
 #    ie: docker_process_sql -f my-file.sql
 #    ie: docker_process_sql <my-file.sql
 docker_process_sql() {
-	local query_runner=( psql -v ON_ERROR_STOP=1 --no-psqlrc "host=db user=$POSTGRES_USER password=$POSTGRES_PASSWORD" )
-	if [ -n "$POSTGRES_DB" ]; then
-		query_runner+=( --dbname "$POSTGRES_DB" )
-	fi
+	local query_runner=( psql -v ON_ERROR_STOP=1 -v AUTOCOMMIT=off --no-psqlrc "host=db dbname=$POSTGRES_DB user=$POSTGRES_USER password=$POSTGRES_PASSWORD" )
 
 	PGHOST= PGHOSTADDR= "${query_runner[@]}" "$@"
 }

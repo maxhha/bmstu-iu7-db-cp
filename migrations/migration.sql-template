@@ -1,0 +1,24 @@
+--
+-- WHAT MIGRATION DO
+--
+CREATE TABLE IF NOT EXISTS migrations (
+    id VARCHAR PRIMARY KEY
+);
+
+SELECT EXISTS (
+    SELECT id FROM migrations WHERE id = :'MIGRATION_ID'
+) as migrated \gset
+
+\if :migrated
+    \echo 'migration' :MIGRATION_ID 'already exists, skipping'
+\else
+    \echo 'migration' :MIGRATION_ID 'does not exist'
+
+    --
+    -- MIGRATION CODE
+    --
+
+    INSERT INTO migrations(id) VALUES (:'MIGRATION_ID');
+\endif
+
+COMMIT;
