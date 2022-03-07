@@ -1,10 +1,6 @@
 --
 -- WHAT MIGRATION DO
 --
-CREATE TABLE IF NOT EXISTS migrations (
-    id VARCHAR PRIMARY KEY
-);
-
 SELECT EXISTS (
     SELECT id FROM migrations WHERE id = :'MIGRATION_ID'
 ) as migrated \gset
