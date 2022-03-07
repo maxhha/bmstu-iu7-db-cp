@@ -24,7 +24,7 @@ services:
     build:
       context: ./migrations
     env_file: .db.env
-    entrypoint: bash /app/migrate
+    entrypoint: /app/migrate
     networks:
       - backend
     volumes:
