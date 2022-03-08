@@ -6,7 +6,7 @@ type User {
   blockedUntil: DateTime
   isAdmin: Boolean!
   offers(first: Int, after: String): OffersConnection!
-  products(first: Int, after: String): ProductConnection!
+  products(first: Int, after: String): ProductsConnection!
 }
 
 extend type Query {

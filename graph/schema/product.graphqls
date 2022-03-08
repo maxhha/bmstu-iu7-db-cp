@@ -8,18 +8,18 @@ type Product {
   offers(first: Int, after: String): OffersConnection!
 }
 
-type ProductConnectionEdge {
+type ProductsConnectionEdge {
   cursor: String!
   node: Product!
 }
 
-type ProductConnection {
+type ProductsConnection {
   pageInfo: PageInfo!
-  edges: [ProductConnectionEdge!]!
+  edges: [ProductsConnectionEdge!]!
 }
 
 extend type Query {
-  marketProducts(first: Int, after: String): ProductConnection!
+  marketProducts(first: Int, after: String): ProductsConnection!
 }
 
 input CreateProductInput {

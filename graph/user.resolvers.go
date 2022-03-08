@@ -121,7 +121,7 @@ func (r *userResolver) Offers(ctx context.Context, obj *model.User, first *int, 
 	return OfferPagination(query, first, after)
 }
 
-func (r *userResolver) Products(ctx context.Context, obj *model.User, first *int, after *string) (*model.ProductConnection, error) {
+func (r *userResolver) Products(ctx context.Context, obj *model.User, first *int, after *string) (*model.ProductsConnection, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {

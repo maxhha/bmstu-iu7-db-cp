@@ -269,7 +269,7 @@ func (r *productResolver) Offers(ctx context.Context, obj *model.Product, first 
 	return OfferPagination(query, first, after)
 }
 
-func (r *queryResolver) MarketProducts(ctx context.Context, first *int, after *string) (*model.ProductConnection, error) {
+func (r *queryResolver) MarketProducts(ctx context.Context, first *int, after *string) (*model.ProductsConnection, error) {
 	query := db.DB.Where("is_on_market = true").Order("id")
 
 	return ProductPagination(query, first, after)

@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func ProductPagination(query *gorm.DB, first *int, after *string) (*model.ProductConnection, error) {
+func ProductPagination(query *gorm.DB, first *int, after *string) (*model.ProductsConnection, error) {
 	if first != nil {
 		if *first < 1 {
 			return nil, fmt.Errorf("first must be positive")
@@ -29,14 +29,14 @@ func ProductPagination(query *gorm.DB, first *int, after *string) (*model.Produc
 	}
 
 	if len(products) == 0 {
-		return &model.ProductConnection{
+		return &model.ProductsConnection{
 			PageInfo: &model.PageInfo{
 				HasNextPage:     false,
 				HasPreviousPage: false,
 				StartCursor:     nil,
 				EndCursor:       nil,
 			},
-			Edges: make([]*model.ProductConnectionEdge, 0),
+			Edges: make([]*model.ProductsConnectionEdge, 0),
 		}, nil
 	}
 
@@ -47,7 +47,7 @@ func ProductPagination(query *gorm.DB, first *int, after *string) (*model.Produc
 		products = products[:len(products)-1]
 	}
 
-	edges := make([]*model.ProductConnectionEdge, 0, len(products))
+	edges := make([]*model.ProductsConnectionEdge, 0, len(products))
 
 	for _, product := range products {
 		node, err := (&model.Product{}).From(&product)
@@ -56,13 +56,13 @@ func ProductPagination(query *gorm.DB, first *int, after *string) (*model.Produc
 			return nil, err
 		}
 
-		edges = append(edges, &model.ProductConnectionEdge{
+		edges = append(edges, &model.ProductsConnectionEdge{
 			Cursor: product.ID,
 			Node:   node,
 		})
 	}
 
-	return &model.ProductConnection{
+	return &model.ProductsConnection{
 		PageInfo: &model.PageInfo{
 			HasNextPage:     hasNextPage,
 			HasPreviousPage: false,

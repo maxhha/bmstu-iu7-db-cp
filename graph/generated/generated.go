@@ -111,12 +111,12 @@ type ComplexityRoot struct {
 		TopOffer    func(childComplexity int) int
 	}
 
-	ProductConnection struct {
+	ProductsConnection struct {
 		Edges    func(childComplexity int) int
 		PageInfo func(childComplexity int) int
 	}
 
-	ProductConnectionEdge struct {
+	ProductsConnectionEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
 	}
@@ -179,7 +179,7 @@ type ProductResolver interface {
 	Offers(ctx context.Context, obj *model.Product, first *int, after *string) (*model.OffersConnection, error)
 }
 type QueryResolver interface {
-	MarketProducts(ctx context.Context, first *int, after *string) (*model.ProductConnection, error)
+	MarketProducts(ctx context.Context, first *int, after *string) (*model.ProductsConnection, error)
 	Viewer(ctx context.Context) (*model.User, error)
 }
 type SubscriptionResolver interface {
@@ -192,7 +192,7 @@ type UserResolver interface {
 	BlockedUntil(ctx context.Context, obj *model.User) (*time.Time, error)
 	IsAdmin(ctx context.Context, obj *model.User) (bool, error)
 	Offers(ctx context.Context, obj *model.User, first *int, after *string) (*model.OffersConnection, error)
-	Products(ctx context.Context, obj *model.User, first *int, after *string) (*model.ProductConnection, error)
+	Products(ctx context.Context, obj *model.User, first *int, after *string) (*model.ProductsConnection, error)
 }
 
 type executableSchema struct {
@@ -474,33 +474,33 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Product.TopOffer(childComplexity), true
 
-	case "ProductConnection.edges":
-		if e.complexity.ProductConnection.Edges == nil {
+	case "ProductsConnection.edges":
+		if e.complexity.ProductsConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.ProductConnection.Edges(childComplexity), true
+		return e.complexity.ProductsConnection.Edges(childComplexity), true
 
-	case "ProductConnection.pageInfo":
-		if e.complexity.ProductConnection.PageInfo == nil {
+	case "ProductsConnection.pageInfo":
+		if e.complexity.ProductsConnection.PageInfo == nil {
 			break
 		}
 
-		return e.complexity.ProductConnection.PageInfo(childComplexity), true
+		return e.complexity.ProductsConnection.PageInfo(childComplexity), true
 
-	case "ProductConnectionEdge.cursor":
-		if e.complexity.ProductConnectionEdge.Cursor == nil {
+	case "ProductsConnectionEdge.cursor":
+		if e.complexity.ProductsConnectionEdge.Cursor == nil {
 			break
 		}
 
-		return e.complexity.ProductConnectionEdge.Cursor(childComplexity), true
+		return e.complexity.ProductsConnectionEdge.Cursor(childComplexity), true
 
-	case "ProductConnectionEdge.node":
-		if e.complexity.ProductConnectionEdge.Node == nil {
+	case "ProductsConnectionEdge.node":
+		if e.complexity.ProductsConnectionEdge.Node == nil {
 			break
 		}
 
-		return e.complexity.ProductConnectionEdge.Node(childComplexity), true
+		return e.complexity.ProductsConnectionEdge.Node(childComplexity), true
 
 	case "Query.marketProducts":
 		if e.complexity.Query.MarketProducts == nil {
@@ -762,18 +762,18 @@ extend type Mutation {
   offers(first: Int, after: String): OffersConnection!
 }
 
-type ProductConnectionEdge {
+type ProductsConnectionEdge {
   cursor: String!
   node: Product!
 }
 
-type ProductConnection {
+type ProductsConnection {
   pageInfo: PageInfo!
-  edges: [ProductConnectionEdge!]!
+  edges: [ProductsConnectionEdge!]!
 }
 
 extend type Query {
-  marketProducts(first: Int, after: String): ProductConnection!
+  marketProducts(first: Int, after: String): ProductsConnection!
 }
 
 input CreateProductInput {
@@ -828,7 +828,7 @@ type Subscription {
   blockedUntil: DateTime
   isAdmin: Boolean!
   offers(first: Int, after: String): OffersConnection!
-  products(first: Int, after: String): ProductConnection!
+  products(first: Int, after: String): ProductsConnection!
 }
 
 extend type Query {
@@ -2278,7 +2278,7 @@ func (ec *executionContext) _Product_offers(ctx context.Context, field graphql.C
 	return ec.marshalNOffersConnection2ᚖauctionᚑbackᚋgraphᚋmodelᚐOffersConnection(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ProductConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.ProductConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _ProductsConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.ProductsConnection) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2286,7 +2286,7 @@ func (ec *executionContext) _ProductConnection_pageInfo(ctx context.Context, fie
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "ProductConnection",
+		Object:     "ProductsConnection",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -2313,7 +2313,7 @@ func (ec *executionContext) _ProductConnection_pageInfo(ctx context.Context, fie
 	return ec.marshalNPageInfo2ᚖauctionᚑbackᚋgraphᚋmodelᚐPageInfo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ProductConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.ProductConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _ProductsConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.ProductsConnection) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2321,7 +2321,7 @@ func (ec *executionContext) _ProductConnection_edges(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "ProductConnection",
+		Object:     "ProductsConnection",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -2343,12 +2343,12 @@ func (ec *executionContext) _ProductConnection_edges(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.ProductConnectionEdge)
+	res := resTmp.([]*model.ProductsConnectionEdge)
 	fc.Result = res
-	return ec.marshalNProductConnectionEdge2ᚕᚖauctionᚑbackᚋgraphᚋmodelᚐProductConnectionEdgeᚄ(ctx, field.Selections, res)
+	return ec.marshalNProductsConnectionEdge2ᚕᚖauctionᚑbackᚋgraphᚋmodelᚐProductsConnectionEdgeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ProductConnectionEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.ProductConnectionEdge) (ret graphql.Marshaler) {
+func (ec *executionContext) _ProductsConnectionEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.ProductsConnectionEdge) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2356,7 +2356,7 @@ func (ec *executionContext) _ProductConnectionEdge_cursor(ctx context.Context, f
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "ProductConnectionEdge",
+		Object:     "ProductsConnectionEdge",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -2383,7 +2383,7 @@ func (ec *executionContext) _ProductConnectionEdge_cursor(ctx context.Context, f
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ProductConnectionEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.ProductConnectionEdge) (ret graphql.Marshaler) {
+func (ec *executionContext) _ProductsConnectionEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.ProductsConnectionEdge) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2391,7 +2391,7 @@ func (ec *executionContext) _ProductConnectionEdge_node(ctx context.Context, fie
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "ProductConnectionEdge",
+		Object:     "ProductsConnectionEdge",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -2455,9 +2455,9 @@ func (ec *executionContext) _Query_marketProducts(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.ProductConnection)
+	res := resTmp.(*model.ProductsConnection)
 	fc.Result = res
-	return ec.marshalNProductConnection2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductConnection(ctx, field.Selections, res)
+	return ec.marshalNProductsConnection2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductsConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3031,9 +3031,9 @@ func (ec *executionContext) _User_products(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.ProductConnection)
+	res := resTmp.(*model.ProductsConnection)
 	fc.Result = res
-	return ec.marshalNProductConnection2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductConnection(ctx, field.Selections, res)
+	return ec.marshalNProductsConnection2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductsConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -4928,19 +4928,19 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
-var productConnectionImplementors = []string{"ProductConnection"}
+var productsConnectionImplementors = []string{"ProductsConnection"}
 
-func (ec *executionContext) _ProductConnection(ctx context.Context, sel ast.SelectionSet, obj *model.ProductConnection) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, productConnectionImplementors)
+func (ec *executionContext) _ProductsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.ProductsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, productsConnectionImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("ProductConnection")
+			out.Values[i] = graphql.MarshalString("ProductsConnection")
 		case "pageInfo":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._ProductConnection_pageInfo(ctx, field, obj)
+				return ec._ProductsConnection_pageInfo(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -4950,7 +4950,7 @@ func (ec *executionContext) _ProductConnection(ctx context.Context, sel ast.Sele
 			}
 		case "edges":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._ProductConnection_edges(ctx, field, obj)
+				return ec._ProductsConnection_edges(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -4969,19 +4969,19 @@ func (ec *executionContext) _ProductConnection(ctx context.Context, sel ast.Sele
 	return out
 }
 
-var productConnectionEdgeImplementors = []string{"ProductConnectionEdge"}
+var productsConnectionEdgeImplementors = []string{"ProductsConnectionEdge"}
 
-func (ec *executionContext) _ProductConnectionEdge(ctx context.Context, sel ast.SelectionSet, obj *model.ProductConnectionEdge) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, productConnectionEdgeImplementors)
+func (ec *executionContext) _ProductsConnectionEdge(ctx context.Context, sel ast.SelectionSet, obj *model.ProductsConnectionEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, productsConnectionEdgeImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("ProductConnectionEdge")
+			out.Values[i] = graphql.MarshalString("ProductsConnectionEdge")
 		case "cursor":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._ProductConnectionEdge_cursor(ctx, field, obj)
+				return ec._ProductsConnectionEdge_cursor(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -4991,7 +4991,7 @@ func (ec *executionContext) _ProductConnectionEdge(ctx context.Context, sel ast.
 			}
 		case "node":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._ProductConnectionEdge_node(ctx, field, obj)
+				return ec._ProductsConnectionEdge_node(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -6041,21 +6041,21 @@ func (ec *executionContext) marshalNProduct2ᚖauctionᚑbackᚋgraphᚋmodelᚐ
 	return ec._Product(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNProductConnection2auctionᚑbackᚋgraphᚋmodelᚐProductConnection(ctx context.Context, sel ast.SelectionSet, v model.ProductConnection) graphql.Marshaler {
-	return ec._ProductConnection(ctx, sel, &v)
+func (ec *executionContext) marshalNProductsConnection2auctionᚑbackᚋgraphᚋmodelᚐProductsConnection(ctx context.Context, sel ast.SelectionSet, v model.ProductsConnection) graphql.Marshaler {
+	return ec._ProductsConnection(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNProductConnection2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductConnection(ctx context.Context, sel ast.SelectionSet, v *model.ProductConnection) graphql.Marshaler {
+func (ec *executionContext) marshalNProductsConnection2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductsConnection(ctx context.Context, sel ast.SelectionSet, v *model.ProductsConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
-	return ec._ProductConnection(ctx, sel, v)
+	return ec._ProductsConnection(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNProductConnectionEdge2ᚕᚖauctionᚑbackᚋgraphᚋmodelᚐProductConnectionEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ProductConnectionEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNProductsConnectionEdge2ᚕᚖauctionᚑbackᚋgraphᚋmodelᚐProductsConnectionEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ProductsConnectionEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -6079,7 +6079,7 @@ func (ec *executionContext) marshalNProductConnectionEdge2ᚕᚖauctionᚑback�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNProductConnectionEdge2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductConnectionEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalNProductsConnectionEdge2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductsConnectionEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6099,14 +6099,14 @@ func (ec *executionContext) marshalNProductConnectionEdge2ᚕᚖauctionᚑback�
 	return ret
 }
 
-func (ec *executionContext) marshalNProductConnectionEdge2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductConnectionEdge(ctx context.Context, sel ast.SelectionSet, v *model.ProductConnectionEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNProductsConnectionEdge2ᚖauctionᚑbackᚋgraphᚋmodelᚐProductsConnectionEdge(ctx context.Context, sel ast.SelectionSet, v *model.ProductsConnectionEdge) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
-	return ec._ProductConnectionEdge(ctx, sel, v)
+	return ec._ProductsConnectionEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNRegisterResult2auctionᚑbackᚋgraphᚋmodelᚐRegisterResult(ctx context.Context, sel ast.SelectionSet, v model.RegisterResult) graphql.Marshaler {

@@ -54,12 +54,12 @@ type PageInfo struct {
 	EndCursor       *string `json:"endCursor"`
 }
 
-type ProductConnection struct {
-	PageInfo *PageInfo                `json:"pageInfo"`
-	Edges    []*ProductConnectionEdge `json:"edges"`
+type ProductsConnection struct {
+	PageInfo *PageInfo                 `json:"pageInfo"`
+	Edges    []*ProductsConnectionEdge `json:"edges"`
 }
 
-type ProductConnectionEdge struct {
+type ProductsConnectionEdge struct {
 	Cursor string   `json:"cursor"`
 	Node   *Product `json:"node"`
 }
