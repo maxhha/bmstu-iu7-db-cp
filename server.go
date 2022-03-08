@@ -60,10 +60,10 @@ func playgroundHandler() gin.HandlerFunc {
 }
 
 func init() {
-	err := godotenv.Load(".env")
+	err := godotenv.Load(".server.env")
 
 	if err != nil {
-		panic("error loading .env file")
+		panic("error loading .server.env file")
 	}
 
 	jwt.Init()

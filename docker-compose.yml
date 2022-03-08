@@ -1,6 +1,5 @@
 version: "3.9"
 
-
 services:
   db:
     image: postgres:14.2-alpine
@@ -11,11 +10,14 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
-
 
   migration:
     depends_on:
@@ -23,12 +25,29 @@ services:
         condition: service_healthy
     build:
       context: ./migrations
+    working_dir: /usr/app
     env_file: .db.env
-    entrypoint: /app/migrate
+    entrypoint: ./migrate
     networks:
       - backend
     volumes:
-      - ./migrations:/app
+      - ./migrations:/usr/app
+
+  server-dev:
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+    image: cosmtrek/air:v1.29.0
+    working_dir: /usr/app
+    env_file: .server.env
+    ports:
+      - 8080:8080
+    networks:
+      - backend
+    volumes:
+      - ./:/usr/app
+    profiles:
+      - dev
 
 networks:
   backend:
