@@ -57,3 +57,6 @@ models:
   DateTime:
     model:
       - auction-back/graph/model.DateTime
+  Cursor:
+    model:
+      - github.com/99designs/gqlgen/graphql.String

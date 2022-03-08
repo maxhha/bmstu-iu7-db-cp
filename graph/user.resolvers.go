@@ -105,6 +105,10 @@ func (r *userResolver) IsAdmin(ctx context.Context, obj *model.User) (bool, erro
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *userResolver) Accounts(ctx context.Context, obj *model.User, first *int, after *string) (*model.UserAccountsConnection, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *userResolver) Offers(ctx context.Context, obj *model.User, first *int, after *string) (*model.OffersConnection, error) {
 	viewer := auth.ForViewer(ctx)
 

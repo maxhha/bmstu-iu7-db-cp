@@ -232,6 +232,10 @@ func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProd
 	}, nil
 }
 
+func (r *productResolver) Title(ctx context.Context, obj *model.Product) (string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *productResolver) Owner(ctx context.Context, obj *model.Product) (*model.User, error) {
 	if obj.DB.Owner.ID == obj.DB.OwnerID {
 		return (&model.User{}).From(&obj.DB.Owner)
@@ -261,6 +265,10 @@ func (r *productResolver) TopOffer(ctx context.Context, obj *model.Product) (*mo
 	}
 
 	return (&model.Offer{}).From(&offer)
+}
+
+func (r *productResolver) Images(ctx context.Context, obj *model.Product) ([]*model.ProductImage, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *productResolver) Offers(ctx context.Context, obj *model.Product, first *int, after *string) (*model.OffersConnection, error) {

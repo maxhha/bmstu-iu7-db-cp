@@ -1,0 +1,42 @@
+enum TransactionStatusEnum {
+  OFFERING,
+  PROCESSING,
+  ERROR,
+  OK
+}
+
+enum TransactionTypeEnum {
+  DEPOSIT,
+  BUY,
+  FEE,
+  WITHDRAWAL
+}
+
+enum CurrencyEnum {
+  RUB,
+  EUR,
+  USD
+}
+
+type Transaction {
+  id: ID!
+  date: DateTime!
+  status: TransactionStatusEnum!
+  type: TransactionTypeEnum!
+  currency: CurrencyEnum!
+  amount: Float!
+  error: String
+  accountFrom: Account!
+  accountTo: Account!
+}
+
+type TransactionsConnectionEdge {
+  cursor: Cursor!
+  node: Transaction!
+}
+
+type TransactionsConnection {
+  pageInfo: PageInfo!
+  edges: [TransactionsConnectionEdge!]!
+}
+

@@ -1,0 +1,39 @@
+interface Account {
+  id: ID!
+  bank: Bank!
+  transactions(first: Int, after: Cursor): TransactionsConnection!
+}
+
+type UserAccount implements Account {
+    id: ID!
+    bank: Bank!
+    transactions(first: Int, after: Cursor): TransactionsConnection!
+    user: User!
+} 
+
+type BankAccount implements Account {
+    id: ID!
+    bank: Bank!
+    transactions(first: Int, after: Cursor): TransactionsConnection!
+}
+
+type AccountsConnectionEdge {
+  cursor: Cursor!
+  node: Account!
+}
+
+type AccountsConnection {
+  pageInfo: PageInfo!
+  edges: [AccountsConnectionEdge!]!
+}
+
+type UserAccountsConnectionEdge {
+  cursor: Cursor!
+  node: UserAccount!
+}
+
+type UserAccountsConnection {
+  pageInfo: PageInfo!
+  edges: [UserAccountsConnectionEdge!]!
+}
+

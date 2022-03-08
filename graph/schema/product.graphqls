@@ -1,15 +1,22 @@
 type Product {
   id: ID!
-  name: String!
-  description: String
+  title: String!
+  description: String!
   owner: User!
   isOnMarket: Boolean!
   topOffer: Offer
+  images: [ProductImage!]!
   offers(first: Int, after: String): OffersConnection!
 }
 
+type ProductImage {
+  id: ID!
+  filename: String!
+  path: String!
+}
+
 type ProductsConnectionEdge {
-  cursor: String!
+  cursor: Cursor!
   node: Product!
 }
 

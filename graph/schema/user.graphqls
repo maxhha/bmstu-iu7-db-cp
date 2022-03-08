@@ -5,8 +5,19 @@ type User {
   name: String!
   blockedUntil: DateTime
   isAdmin: Boolean!
-  offers(first: Int, after: String): OffersConnection!
-  products(first: Int, after: String): ProductsConnection!
+  accounts(first: Int, after: Cursor): UserAccountsConnection!
+  offers(first: Int, after: Cursor): OffersConnection!
+  products(first: Int, after: Cursor): ProductsConnection!
+}
+
+type UsersConnectionEdge {
+  cursor: Cursor!
+  node: User!
+}
+
+type UsersConnection {
+  pageInfo: PageInfo!
+  edges: [UsersConnectionEdge!]!
 }
 
 extend type Query {

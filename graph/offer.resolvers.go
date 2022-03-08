@@ -10,6 +10,7 @@ import (
 	"auction-back/graph/model"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/teris-io/shortid"
 	"gorm.io/gorm"
@@ -148,6 +149,18 @@ func (r *offerResolver) Product(ctx context.Context, obj *model.Offer) (*model.P
 	}
 
 	return (&model.Product{}).From(&product)
+}
+
+func (r *offerResolver) CreatedAt(ctx context.Context, obj *model.Offer) (*time.Time, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *offerResolver) DeleteOnSell(ctx context.Context, obj *model.Offer) (bool, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *offerResolver) Transactions(ctx context.Context, obj *model.Offer) ([]*model.Transaction, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 // Mutation returns generated.MutationResolver implementation.
