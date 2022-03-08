@@ -11,22 +11,10 @@ import (
 	"auction-back/jwt"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/teris-io/shortid"
 )
-
-func (r *balanceResolver) Blocked(ctx context.Context, obj *model.Balance) (float64, error) {
-	var blocked *float64
-	if err := db.DB.Model(&db.Offer{}).Select("sum(amount)").Where("consumer_id = ?", obj.DB.ID).Scan(&blocked).Error; err != nil {
-		return 0, err
-	}
-
-	if blocked == nil {
-		return 0, nil
-	}
-
-	return *blocked, nil
-}
 
 func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult, error) {
 	id, err := shortid.Generate()
@@ -97,18 +85,24 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model.User, error) {
 	return (&model.User{}).From(viewer)
 }
 
-func (r *userResolver) Balance(ctx context.Context, obj *model.User) (*model.Balance, error) {
-	viewer := auth.ForViewer(ctx)
+func (r *userResolver) Email(ctx context.Context, obj *model.User) (string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 
-	if viewer == nil {
-		return nil, fmt.Errorf("unauthorized")
-	}
+func (r *userResolver) Phone(ctx context.Context, obj *model.User) (string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 
-	if viewer.ID != obj.ID {
-		return nil, fmt.Errorf("denied")
-	}
+func (r *userResolver) Name(ctx context.Context, obj *model.User) (string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 
-	return (&model.Balance{}).From(obj.DB)
+func (r *userResolver) BlockedUntil(ctx context.Context, obj *model.User) (*time.Time, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *userResolver) IsAdmin(ctx context.Context, obj *model.User) (bool, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *userResolver) Offers(ctx context.Context, obj *model.User, first *int, after *string) (*model.OffersConnection, error) {
@@ -143,11 +137,7 @@ func (r *userResolver) Products(ctx context.Context, obj *model.User, first *int
 	return ProductPagination(query, first, after)
 }
 
-// Balance returns generated.BalanceResolver implementation.
-func (r *Resolver) Balance() generated.BalanceResolver { return &balanceResolver{r} }
-
 // User returns generated.UserResolver implementation.
 func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
-type balanceResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

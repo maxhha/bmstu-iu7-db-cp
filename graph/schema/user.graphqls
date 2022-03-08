@@ -1,11 +1,10 @@
-type Balance {
-  available: Float!
-  blocked: Float!
-}
-
 type User {
   id: ID!
-  balance: Balance!
+  email: String!
+  phone: String!
+  name: String!
+  blockedUntil: DateTime
+  isAdmin: Boolean!
   offers(first: Int, after: String): OffersConnection!
   products(first: Int, after: String): ProductConnection!
 }
