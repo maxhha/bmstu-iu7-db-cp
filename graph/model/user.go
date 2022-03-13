@@ -20,7 +20,7 @@ func (u *User) From(user *db.User) (*User, error) {
 }
 
 func (b *Balance) From(user *db.User) (*Balance, error) {
-	b.Available = user.Available
+	// b.Available = user.Available
 	b.DB = user
 
 	return b, nil

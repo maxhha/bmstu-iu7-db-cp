@@ -42,7 +42,7 @@ SELECT EXISTS (
         id VARCHAR(16) PRIMARY KEY,
         is_bank BOOLEAN NOT NULL,
         user_id VARCHAR(16),
-        bank_id VARCHAR NOT NULL,
+        bank_id VARCHAR(16) NOT NULL,
         created_at TIMESTAMP NOT NULL,
         updated_at TIMESTAMP NOT NULL,
         deleted_at TIMESTAMP,
@@ -57,11 +57,11 @@ SELECT EXISTS (
         title VARCHAR NOT NULL,
         description VARCHAR NOT NULL,
         is_on_market BOOLEAN NOT NULL DEFAULT FALSE,
-        owner_id VARCHAR(16) NOT NULL,
+        creator_id VARCHAR(16) NOT NULL,
         created_at TIMESTAMP NOT NULL,
         updated_at TIMESTAMP NOT NULL,
         deleted_at TIMESTAMP,
-        CONSTRAINT fk_owner FOREIGN KEY (owner_id) REFERENCES users(id)
+        CONSTRAINT fk_creator FOREIGN KEY (creator_id) REFERENCES users(id)
     );
 
     CREATE INDEX idx_product_indices_deleted_at ON products(deleted_at);
@@ -79,8 +79,23 @@ SELECT EXISTS (
 
     CREATE INDEX idx_product_image_indices_deleted_at ON product_images(deleted_at);
 
+    CREATE TYPE offer_state AS ENUM (
+        'CREATED',
+        'CANCELLED',
+        'TRANSFERRING_MONEY',
+        'TRANSFER_MONEY_FAILED',
+        'TRANSFERRING_PRODUCT',
+        'TRANSFER_PRODUCT_FAILED',
+        'SUCCEEDED',
+        'RETURNING_MONEY',
+        'RETURN_MONEY_FAILED',
+        'MONEY_RETURNED'
+    );
+
     CREATE TABLE offers (
         id VARCHAR(16) PRIMARY KEY,
+        state offer_state NOT NULL DEFAULT 'CREATED',
+        fail_reason VARCHAR,
         delete_on_sell BOOLEAN NOT NULL DEFAULT TRUE, 
         product_id VARCHAR(16) NOT NULL,
         user_id VARCHAR(16) NOT NULL,
@@ -93,30 +108,32 @@ SELECT EXISTS (
 
     CREATE INDEX idx_offer_indices_deleted_at ON offers(deleted_at);
 
-    CREATE TYPE transaction_status AS ENUM (
-        'offering',
-        'processing',
-        'error',
-        'ok'
+    CREATE TYPE transaction_state AS ENUM (
+        'CREATED',
+        'CANCELLED',
+        'PROCESSING',
+        'ERROR',
+        'SUCCEEDED',
+        'FAILED'
     );
 
     CREATE TYPE transaction_type AS ENUM (
-        'deposit',
-        'buy',
-        'fee',
-        'withdrawal'
+        'DEPOSIT',
+        'BUY',
+        'FEE',
+        'WITHDRAWAL'
     );
 
     CREATE TYPE transaction_currency AS ENUM (
-        'rub',
-        'eur',
-        'usd'
+        'RUB',
+        'EUR',
+        'USD'
     );
 
     CREATE TABLE transactions (
         id SERIAL PRIMARY KEY,
         date TIMESTAMP,
-        status transaction_status NOT NULL,
+        state transaction_state NOT NULL DEFAULT 'CREATED',
         type transaction_type NOT NULL,
         currency transaction_currency NOT NULL,
         amount DECIMAL(12, 2) NOT NULL,

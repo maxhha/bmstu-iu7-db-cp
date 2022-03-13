@@ -1,31 +1,187 @@
 package db
 
 import (
+	"database/sql"
+	"database/sql/driver"
+	"fmt"
+	"time"
+
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
 type User struct {
 	gorm.Model
-	ID        string
-	Available float64 `sql:"type:decimal(10,2);"`
+	ID           string `gorm:"type:varchar(16);"`
+	Email        string
+	Phone        string
+	Password     string
+	Name         string
+	IsAdmin      bool `gorm:"default:false;"`
+	BlockedUntil sql.NullTime
+}
+
+type Bank struct {
+	gorm.Model
+	ID   string `gorm:"type:varchar(16);"`
+	Name string `gorm:"unique"`
+}
+
+type Account struct {
+	gorm.Model
+	ID     string `gorm:"type:varchar(16);"`
+	IsBank bool
+	UserID *string `gorm:"type:varchar(16);"`
+	BankID string  `gorm:"type:varchar(16);"`
+	User   *User
+	Bank   Bank
 }
 
 type Product struct {
 	gorm.Model
-	ID          string
-	Name        string
-	Description *string
-	IsOnMarket  bool
-	OwnerID     string
-	Owner       User
+	ID          string `gorm:"type:varchar(16);"`
+	Title       string
+	Description string
+	IsOnMarket  bool   `gorm:"default:false;"`
+	CreatorID   string `gorm:"type:varchar(16);"`
+	Creator     User
+}
+
+type ProductImage struct {
+	gorm.Model
+	ID        string `gorm:"type:varchar(16);"`
+	Filename  string
+	Path      string
+	ProductID string `gorm:"type:varchar(16);"`
+	Product   Product
+}
+
+type OfferState string
+
+const (
+	OfferStateCreated               OfferState = "CREATED"
+	OfferStateCancelled             OfferState = "CANCELLED"
+	OfferStateTransferringMoney     OfferState = "TRANSFERRING_MONEY"
+	OfferStateTransferMoneyFailed   OfferState = "TRANSFER_MONEY_FAILED"
+	OfferStateTransferringProduct   OfferState = "TRANSFERRING_PRODUCT"
+	OfferStateTransferProductFailed OfferState = "TRANSFER_PRODUCT_FAILED"
+	OfferStateSucceeded             OfferState = "SUCCEEDED"
+	OfferStateReturningMoney        OfferState = "RETURNING_MONEY"
+	OfferStateReturnMoneyFailed     OfferState = "RETURN_MONEY_FAILED"
+	OfferStateMoneyReturned         OfferState = "MONEY_RETURNED"
+)
+
+func (s *OfferState) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+
+	if !ok {
+		return fmt.Errorf("convert to bytes")
+	}
+
+	*s = OfferState(bytes)
+	return nil
+}
+
+func (s OfferState) Value() (driver.Value, error) {
+	return string(s), nil
 }
 
 type Offer struct {
 	gorm.Model
-	ID         string
-	Amount     float64 `sql:"type:decimal(10,2);"`
-	ConsumerID string
-	Consumer   User
-	ProductID  string
-	Product    Product
+	ID           string     `gorm:"type:varchar(16);"`
+	State        OfferState `gorm:"type:offer_state;"`
+	DeleteOnSell bool       `gorm:"default:true"`
+	ProductID    string     `gorm:"type:varchar(16);"`
+	UserID       string     `gorm:"type:varchar(16);"`
+	User         User
+	Product      Product
+}
+
+type TransactionState string
+
+const (
+	TransactionStateCreated    TransactionState = "CREATED"
+	TransactionStateCancelled  TransactionState = "CANCELLED"
+	TransactionStateProcessing TransactionState = "PROCESSING"
+	TransactionStateError      TransactionState = "ERROR"
+	TransactionStateSucceeded  TransactionState = "SUCCEEDED"
+	TransactionStateFailed     TransactionState = "FAILED"
+)
+
+func (s *TransactionState) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+
+	if !ok {
+		return fmt.Errorf("convert to bytes")
+	}
+
+	*s = TransactionState(bytes)
+	return nil
+}
+
+func (s TransactionState) Value() (driver.Value, error) {
+	return string(s), nil
+}
+
+type TransactionType string
+
+const (
+	TransactionTypeDeposit    TransactionType = "DEPOSIT"
+	TransactionTypeBuy        TransactionType = "BUY"
+	TransactionTypeFee        TransactionType = "FEE"
+	TransactionTypeWithdrawal TransactionType = "WITHDRAWAL"
+)
+
+func (t *TransactionType) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+
+	if !ok {
+		return fmt.Errorf("convert to bytes")
+	}
+
+	*t = TransactionType(bytes)
+	return nil
+}
+
+func (t TransactionType) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+type TransactionCurrency string
+
+const (
+	TransactionCurrencyRub TransactionCurrency = "RUB"
+	TransactionCurrencyUsd TransactionCurrency = "USD"
+	TransactionCurrencyEur TransactionCurrency = "EUR"
+)
+
+func (c *TransactionCurrency) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+
+	if !ok {
+		return fmt.Errorf("convert to bytes")
+	}
+
+	*c = TransactionCurrency(bytes)
+	return nil
+}
+
+func (c TransactionCurrency) Value() (driver.Value, error) {
+	return string(c), nil
+}
+
+type Transaction struct {
+	gorm.Model
+	Date          time.Time
+	State         TransactionState    `gorm:"type:transaction_state;"`
+	Type          TransactionType     `gorm:"type:transaction_type;"`
+	Currency      TransactionCurrency `gorm:"type:transaction_currency;"`
+	Amount        decimal.Decimal     `gorm:"type:decimal(10,2);"`
+	Error         *string
+	AccountFromID string `gorm:"type:varchar(16);"`
+	AccountToID   string `gorm:"type:varchar(16);"`
+	AccountFrom   Account
+	AccountTo     Account
+	OfferID       string `gorm:"type:varchar(16);"`
+	Offer         Offer
 }

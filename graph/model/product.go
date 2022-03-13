@@ -12,8 +12,8 @@ type Product struct {
 
 func (p *Product) From(product *db.Product) (*Product, error) {
 	p.ID = product.ID
-	p.Name = product.Name
-	p.Description = product.Description
+	// p.Name = product.Name
+	// p.Description = product.Description
 	p.IsOnMarket = product.IsOnMarket
 	p.DB = product
 

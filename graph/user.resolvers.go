@@ -54,13 +54,13 @@ func (r *mutationResolver) IncreaseBalance(ctx context.Context, input model.Incr
 	}
 
 	// TODO: fix precision
-	available := user.Available + input.Amount
+	// available := user.Available.input.Amount
 
-	if available < 0 {
-		return nil, fmt.Errorf("available balance cant be negative")
-	}
+	// if available < 0 {
+	// 	return nil, fmt.Errorf("available balance cant be negative")
+	// }
 
-	user.Available = available
+	// user.Available = available
 
 	db.DB.Save(&user)
 
