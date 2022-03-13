@@ -1,9 +1,33 @@
+enum OfferStateEnum {
+  CREATED,
+  CANCELLED,
+  TRANSFERRING_MONEY,
+  TRANSFER_MONEY_FAILED,
+  TRANSFERRING_PRODUCT,
+  TRANSFER_PRODUCT_FAILED,
+  SUCCEEDED,
+  RETURNING_MONEY,
+  RETURN_MONEY_FAILED,
+  MONEY_RETURNED
+}
+
 type Offer {
   id: ID!
-  consumer: User!
+  # Current offer state
+  state: OfferStateEnum!
+  # Reason of fail for *_FAILED states 
+  failReason: String
+  # User created this offer 
+  user: User!
+  # Product for which this offer was created
   product: Product!
+  # Total moneys offered
+  moneys: [Money!]!
+  # Offer creation time
   createdAt: DateTime!
+  # If set to true, the offer will be removed after the product is sold
   deleteOnSell: Boolean!
+  # Transactions of this offer
   transactions: [Transaction!]!
 }
 

@@ -1,14 +1,24 @@
 type Product {
   id: ID!
+  # Title of product
   title: String!
+  # Product description
   description: String!
+  # Current owner of product
   owner: User!
+  # Creator of product
+  creator: User!
+  # Product visibility on market
   isOnMarket: Boolean!
+  # The greatest offer
   topOffer: Offer
+  # Product images
   images: [ProductImage!]!
+  # Offers for this product
   offers(first: Int, after: String): OffersConnection!
 }
 
+# Product image
 type ProductImage {
   id: ID!
   filename: String!
