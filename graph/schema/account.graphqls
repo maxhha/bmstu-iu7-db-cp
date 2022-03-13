@@ -1,19 +1,29 @@
+# Nominal account
 interface Account {
   id: ID!
+  # Bank in which the account was created
   bank: Bank!
+  # All transactions in which the account is involved
   transactions(first: Int, after: Cursor): TransactionsConnection!
 }
 
+# Nominal account that was created for client
 type UserAccount implements Account {
     id: ID!
+    # Bank in which the account was created
     bank: Bank!
+    # All transactions in which the account is involved
     transactions(first: Int, after: Cursor): TransactionsConnection!
+    # Owner of account
     user: User!
 } 
 
+# Special account for banks. Amount on this account is always nonpositve
 type BankAccount implements Account {
     id: ID!
+    # Owner of account. Each bank have one special account
     bank: Bank!
+    # All transactions in which the account is involved
     transactions(first: Int, after: Cursor): TransactionsConnection!
 }
 
@@ -27,6 +37,7 @@ type AccountsConnection {
   edges: [AccountsConnectionEdge!]!
 }
 
+# Connection with UserAccount only
 type UserAccountsConnectionEdge {
   cursor: Cursor!
   node: UserAccount!

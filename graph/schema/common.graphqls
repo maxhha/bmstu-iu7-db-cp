@@ -1,6 +1,12 @@
 scalar DateTime
 scalar Cursor
 
+# Мoney in a specific currency
+type Money {
+  amount: Float!
+  currency: CurrencyEnum!
+}
+
 type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!

@@ -1,5 +1,8 @@
+# Bank that is cooperated with platform
 type Bank {
   id: ID!
+  # Name of bank
   name: String!
+  # Special account of that bank
   account: BankAccount!
 }

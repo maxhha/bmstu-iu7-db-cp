@@ -1,8 +1,10 @@
-enum TransactionStatusEnum {
-  OFFERING,
+enum TransactionStateEnum {
+  CREATED,
+  CANCELLED,
   PROCESSING,
   ERROR,
-  OK
+  SUCCEEDED,
+  FAILED
 }
 
 enum TransactionTypeEnum {
@@ -20,13 +22,23 @@ enum CurrencyEnum {
 
 type Transaction {
   id: ID!
-  date: DateTime!
-  status: TransactionStatusEnum!
+  # Time of apply this transaction
+  date: DateTime
+  # Current state
+  state: TransactionStateEnum!
+  # Transaction type
   type: TransactionTypeEnum!
+  # Transaction currency
   currency: CurrencyEnum!
+  # Transaction amount
   amount: Float!
+  # Error message for state = ERROR or FAILED
   error: String
+  # Offer for type = BUY
+  offer: Offer
+  # From account
   accountFrom: Account!
+  # To account
   accountTo: Account!
 }
 
