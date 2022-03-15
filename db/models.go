@@ -1,7 +1,6 @@
 package db
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"time"
@@ -9,17 +8,6 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
-
-type User struct {
-	gorm.Model
-	ID           string `gorm:"type:varchar(16);"`
-	Email        string
-	Phone        string
-	Password     string
-	Name         string
-	IsAdmin      bool `gorm:"default:false;"`
-	BlockedUntil sql.NullTime
-}
 
 type Bank struct {
 	gorm.Model

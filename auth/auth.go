@@ -10,9 +10,50 @@ import (
 )
 
 var viewerContextKey = &contextKey{"viewer"}
+var guestContextKey = &contextKey{"guest"}
 
 type contextKey struct {
 	name string
+}
+
+func authUser(token string, c *gin.Context) error {
+	id, err := jwt.ParseUser(token)
+	if err != nil {
+		if err.Error() == "subject is not user" {
+			return nil
+		}
+		return err
+	}
+
+	viewer := db.User{}
+	if err := db.DB.Take(&viewer, "id = ?", id).Error; err != nil {
+		return err
+	}
+
+	ctx := context.WithValue(c.Request.Context(), viewerContextKey, &viewer)
+	c.Request = c.Request.WithContext(ctx)
+
+	return nil
+}
+
+func authGuest(token string, c *gin.Context) error {
+	id, err := jwt.ParseGuest(token)
+	if err != nil {
+		if err.Error() == "subject is not guest" {
+			return nil
+		}
+		return err
+	}
+
+	guest := db.Guest{}
+	if err := db.DB.Take(&guest, "id = ?", id).Error; err != nil {
+		return err
+	}
+
+	ctx := context.WithValue(c.Request.Context(), guestContextKey, &guest)
+	c.Request = c.Request.WithContext(ctx)
+
+	return nil
 }
 
 func Middleware() gin.HandlerFunc {
@@ -25,25 +66,26 @@ func Middleware() gin.HandlerFunc {
 			return
 		}
 
-		id, err := jwt.Parse(tokens[0])
+		token := tokens[0]
 
-		fmt.Printf("err: %v\n", err)
-
-		if err != nil {
+		if err := authGuest(token, c); err != nil {
+			fmt.Printf("err: %v\n", err)
 			return
 		}
 
-		fmt.Printf("id: %+v\n", id)
-
-		viewer := db.User{}
-		db.DB.Take(&viewer, "id = ?", id)
-
-		ctx := context.WithValue(c.Request.Context(), viewerContextKey, &viewer)
-		c.Request = c.Request.WithContext(ctx)
+		if err := authUser(token, c); err != nil {
+			fmt.Printf("err: %v\n", err)
+			return
+		}
 	}
 }
 
 func ForViewer(ctx context.Context) *db.User {
 	viewer, _ := ctx.Value(viewerContextKey).(*db.User)
 	return viewer
+}
+
+func ForGuest(ctx context.Context) *db.Guest {
+	guest, _ := ctx.Value(guestContextKey).(*db.Guest)
+	return guest
 }

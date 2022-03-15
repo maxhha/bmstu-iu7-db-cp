@@ -1,0 +1,19 @@
+
+enum TokenActionEnum {
+  APPROVE_USER_EMAIL,
+  APPROVE_USER_PHONE
+}
+
+input CreateTokenInput {
+  action: TokenActionEnum!
+  data: Map
+}
+
+input ActivateTokenInput {
+  token: String!
+}
+
+extend type Mutation {
+  createToken(input: CreateTokenInput): Boolean
+  activateToken(input: ActivateTokenInput): Boolean
+}

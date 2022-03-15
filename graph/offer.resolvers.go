@@ -118,20 +118,16 @@ func (r *mutationResolver) RemoveOffer(ctx context.Context, input model.RemoveOf
 	// }, nil
 }
 
-func (r *offerResolver) Consumer(ctx context.Context, obj *model.Offer) (*model.User, error) {
+func (r *offerResolver) State(ctx context.Context, obj *model.Offer) (model.OfferStateEnum, error) {
 	panic(fmt.Errorf("not implemented"))
-	// if obj.DB.Consumer.ID == obj.DB.ConsumerID {
-	// 	return (&model.User{}).From(&obj.DB.Consumer)
-	// }
+}
 
-	// user := db.User{}
-	// // result := db.DB.Take(&user, "id = ?", obj.DB.ConsumerID)
+func (r *offerResolver) FailReason(ctx context.Context, obj *model.Offer) (*string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 
-	// if result.Error != nil {
-	// 	return nil, fmt.Errorf("db take: %w", result.Error)
-	// }
-
-	// return (&model.User{}).From(&user)
+func (r *offerResolver) User(ctx context.Context, obj *model.Offer) (*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *offerResolver) Product(ctx context.Context, obj *model.Offer) (*model.Product, error) {
@@ -149,6 +145,10 @@ func (r *offerResolver) Product(ctx context.Context, obj *model.Offer) (*model.P
 	return (&model.Product{}).From(&product)
 }
 
+func (r *offerResolver) Moneys(ctx context.Context, obj *model.Offer) ([]*model.Money, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *offerResolver) CreatedAt(ctx context.Context, obj *model.Offer) (*time.Time, error) {
 	panic(fmt.Errorf("not implemented"))
 }
@@ -161,11 +161,29 @@ func (r *offerResolver) Transactions(ctx context.Context, obj *model.Offer) ([]*
 	panic(fmt.Errorf("not implemented"))
 }
 
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
 // Offer returns generated.OfferResolver implementation.
 func (r *Resolver) Offer() generated.OfferResolver { return &offerResolver{r} }
 
-type mutationResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *offerResolver) Consumer(ctx context.Context, obj *model.Offer) (*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
+	// if obj.DB.Consumer.ID == obj.DB.ConsumerID {
+	// 	return (&model.User{}).From(&obj.DB.Consumer)
+	// }
+
+	// user := db.User{}
+	// // result := db.DB.Take(&user, "id = ?", obj.DB.ConsumerID)
+
+	// if result.Error != nil {
+	// 	return nil, fmt.Errorf("db take: %w", result.Error)
+	// }
+
+	// return (&model.User{}).From(&user)
+}

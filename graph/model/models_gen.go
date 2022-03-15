@@ -23,6 +23,10 @@ type AccountsConnectionEdge struct {
 	Node   Account `json:"node"`
 }
 
+type ActivateTokenInput struct {
+	Token string `json:"token"`
+}
+
 type Bank struct {
 	ID      string       `json:"id"`
 	Name    string       `json:"name"`
@@ -55,6 +59,11 @@ type CreateProductResult struct {
 	Product *Product `json:"product"`
 }
 
+type CreateTokenInput struct {
+	Action TokenActionEnum        `json:"action"`
+	Data   map[string]interface{} `json:"data"`
+}
+
 type IncreaseBalanceInput struct {
 	UserID string  `json:"userId"`
 	Amount float64 `json:"amount"`
@@ -62,6 +71,11 @@ type IncreaseBalanceInput struct {
 
 type IncreaseBalanceResult struct {
 	User *User `json:"user"`
+}
+
+type Money struct {
+	Amount   float64      `json:"amount"`
+	Currency CurrencyEnum `json:"currency"`
 }
 
 type OfferProductInput struct {
@@ -105,6 +119,10 @@ type ProductsConnectionEdge struct {
 	Node   *Product `json:"node"`
 }
 
+type RegisterGuestResult struct {
+	Token string `json:"token"`
+}
+
 type RegisterResult struct {
 	Token string `json:"token"`
 }
@@ -134,15 +152,16 @@ type TakeOffProductResult struct {
 }
 
 type Transaction struct {
-	ID          string                `json:"id"`
-	Date        time.Time             `json:"date"`
-	Status      TransactionStatusEnum `json:"status"`
-	Type        TransactionTypeEnum   `json:"type"`
-	Currency    CurrencyEnum          `json:"currency"`
-	Amount      float64               `json:"amount"`
-	Error       *string               `json:"error"`
-	AccountFrom Account               `json:"accountFrom"`
-	AccountTo   Account               `json:"accountTo"`
+	ID          string               `json:"id"`
+	Date        *time.Time           `json:"date"`
+	State       TransactionStateEnum `json:"state"`
+	Type        TransactionTypeEnum  `json:"type"`
+	Currency    CurrencyEnum         `json:"currency"`
+	Amount      float64              `json:"amount"`
+	Error       *string              `json:"error"`
+	Offer       *Offer               `json:"offer"`
+	AccountFrom Account              `json:"accountFrom"`
+	AccountTo   Account              `json:"accountTo"`
 }
 
 type TransactionsConnection struct {
@@ -227,48 +246,150 @@ func (e CurrencyEnum) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
-type TransactionStatusEnum string
+type OfferStateEnum string
 
 const (
-	TransactionStatusEnumOffering   TransactionStatusEnum = "OFFERING"
-	TransactionStatusEnumProcessing TransactionStatusEnum = "PROCESSING"
-	TransactionStatusEnumError      TransactionStatusEnum = "ERROR"
-	TransactionStatusEnumOk         TransactionStatusEnum = "OK"
+	OfferStateEnumCreated               OfferStateEnum = "CREATED"
+	OfferStateEnumCancelled             OfferStateEnum = "CANCELLED"
+	OfferStateEnumTransferringMoney     OfferStateEnum = "TRANSFERRING_MONEY"
+	OfferStateEnumTransferMoneyFailed   OfferStateEnum = "TRANSFER_MONEY_FAILED"
+	OfferStateEnumTransferringProduct   OfferStateEnum = "TRANSFERRING_PRODUCT"
+	OfferStateEnumTransferProductFailed OfferStateEnum = "TRANSFER_PRODUCT_FAILED"
+	OfferStateEnumSucceeded             OfferStateEnum = "SUCCEEDED"
+	OfferStateEnumReturningMoney        OfferStateEnum = "RETURNING_MONEY"
+	OfferStateEnumReturnMoneyFailed     OfferStateEnum = "RETURN_MONEY_FAILED"
+	OfferStateEnumMoneyReturned         OfferStateEnum = "MONEY_RETURNED"
 )
 
-var AllTransactionStatusEnum = []TransactionStatusEnum{
-	TransactionStatusEnumOffering,
-	TransactionStatusEnumProcessing,
-	TransactionStatusEnumError,
-	TransactionStatusEnumOk,
+var AllOfferStateEnum = []OfferStateEnum{
+	OfferStateEnumCreated,
+	OfferStateEnumCancelled,
+	OfferStateEnumTransferringMoney,
+	OfferStateEnumTransferMoneyFailed,
+	OfferStateEnumTransferringProduct,
+	OfferStateEnumTransferProductFailed,
+	OfferStateEnumSucceeded,
+	OfferStateEnumReturningMoney,
+	OfferStateEnumReturnMoneyFailed,
+	OfferStateEnumMoneyReturned,
 }
 
-func (e TransactionStatusEnum) IsValid() bool {
+func (e OfferStateEnum) IsValid() bool {
 	switch e {
-	case TransactionStatusEnumOffering, TransactionStatusEnumProcessing, TransactionStatusEnumError, TransactionStatusEnumOk:
+	case OfferStateEnumCreated, OfferStateEnumCancelled, OfferStateEnumTransferringMoney, OfferStateEnumTransferMoneyFailed, OfferStateEnumTransferringProduct, OfferStateEnumTransferProductFailed, OfferStateEnumSucceeded, OfferStateEnumReturningMoney, OfferStateEnumReturnMoneyFailed, OfferStateEnumMoneyReturned:
 		return true
 	}
 	return false
 }
 
-func (e TransactionStatusEnum) String() string {
+func (e OfferStateEnum) String() string {
 	return string(e)
 }
 
-func (e *TransactionStatusEnum) UnmarshalGQL(v interface{}) error {
+func (e *OfferStateEnum) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
 	}
 
-	*e = TransactionStatusEnum(str)
+	*e = OfferStateEnum(str)
 	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid TransactionStatusEnum", str)
+		return fmt.Errorf("%s is not a valid OfferStateEnum", str)
 	}
 	return nil
 }
 
-func (e TransactionStatusEnum) MarshalGQL(w io.Writer) {
+func (e OfferStateEnum) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type TokenActionEnum string
+
+const (
+	TokenActionEnumApproveUserEmail TokenActionEnum = "APPROVE_USER_EMAIL"
+	TokenActionEnumApproveUserPhone TokenActionEnum = "APPROVE_USER_PHONE"
+)
+
+var AllTokenActionEnum = []TokenActionEnum{
+	TokenActionEnumApproveUserEmail,
+	TokenActionEnumApproveUserPhone,
+}
+
+func (e TokenActionEnum) IsValid() bool {
+	switch e {
+	case TokenActionEnumApproveUserEmail, TokenActionEnumApproveUserPhone:
+		return true
+	}
+	return false
+}
+
+func (e TokenActionEnum) String() string {
+	return string(e)
+}
+
+func (e *TokenActionEnum) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TokenActionEnum(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TokenActionEnum", str)
+	}
+	return nil
+}
+
+func (e TokenActionEnum) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type TransactionStateEnum string
+
+const (
+	TransactionStateEnumCreated    TransactionStateEnum = "CREATED"
+	TransactionStateEnumCancelled  TransactionStateEnum = "CANCELLED"
+	TransactionStateEnumProcessing TransactionStateEnum = "PROCESSING"
+	TransactionStateEnumError      TransactionStateEnum = "ERROR"
+	TransactionStateEnumSucceeded  TransactionStateEnum = "SUCCEEDED"
+	TransactionStateEnumFailed     TransactionStateEnum = "FAILED"
+)
+
+var AllTransactionStateEnum = []TransactionStateEnum{
+	TransactionStateEnumCreated,
+	TransactionStateEnumCancelled,
+	TransactionStateEnumProcessing,
+	TransactionStateEnumError,
+	TransactionStateEnumSucceeded,
+	TransactionStateEnumFailed,
+}
+
+func (e TransactionStateEnum) IsValid() bool {
+	switch e {
+	case TransactionStateEnumCreated, TransactionStateEnumCancelled, TransactionStateEnumProcessing, TransactionStateEnumError, TransactionStateEnumSucceeded, TransactionStateEnumFailed:
+		return true
+	}
+	return false
+}
+
+func (e TransactionStateEnum) String() string {
+	return string(e)
+}
+
+func (e *TransactionStateEnum) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TransactionStateEnum(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TransactionStateEnum", str)
+	}
+	return nil
+}
+
+func (e TransactionStateEnum) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

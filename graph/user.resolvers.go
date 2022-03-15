@@ -33,7 +33,7 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult,
 		return nil, result.Error
 	}
 
-	token, err := jwt.New(user.ID)
+	token, err := jwt.NewUser(user.ID)
 
 	if err != nil {
 		return nil, err
@@ -102,6 +102,14 @@ func (r *userResolver) BlockedUntil(ctx context.Context, obj *model.User) (*time
 }
 
 func (r *userResolver) IsAdmin(ctx context.Context, obj *model.User) (bool, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *userResolver) Available(ctx context.Context, obj *model.User) ([]*model.Money, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *userResolver) Blocked(ctx context.Context, obj *model.User) ([]*model.Money, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

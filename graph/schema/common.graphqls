@@ -1,5 +1,6 @@
 scalar DateTime
 scalar Cursor
+scalar Map
 
 # Мoney in a specific currency
 type Money {
