@@ -20,8 +20,11 @@
 # Go workspace file
 go.work
 
-# db file
-*.db
-
 # Environment variables
 *.env
+
+# Temporary directory
+tmp
+
+# PostgreSQL config
+postgresql.conf
