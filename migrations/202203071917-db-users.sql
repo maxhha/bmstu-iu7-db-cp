@@ -75,12 +75,12 @@ SELECT EXISTS (
         ON ALL TABLES IN SCHEMA public
         TO :VIEWER_USER;
 
-    CREATE ROLE :BANKGATE_USER
-        WITH LOGIN PASSWORD :'BANKGATE_PASSWORD'
-        IN ROLE :VIEWER_USER;
-    GRANT INSERT, UPDATE
-        ON TABLE transactions, banks
-        TO :BANKGATE_USER;
+    -- CREATE ROLE :BANKGATE_USER
+    --     WITH LOGIN PASSWORD :'BANKGATE_PASSWORD'
+    --     IN ROLE :VIEWER_USER;
+    -- GRANT INSERT, UPDATE
+    --     ON TABLE transactions, banks
+    --     TO :BANKGATE_USER;
 
     INSERT INTO migrations(id) VALUES (:'MIGRATION_ID');
 \endif
