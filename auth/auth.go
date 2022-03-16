@@ -7,16 +7,25 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-var viewerContextKey = &contextKey{"viewer"}
-var guestContextKey = &contextKey{"guest"}
+type Auth struct {
+	db *gorm.DB
+}
 
 type contextKey struct {
 	name string
 }
 
-func authUser(token string, c *gin.Context) error {
+var viewerContextKey = &contextKey{"viewer"}
+var guestContextKey = &contextKey{"guest"}
+
+func New(db *gorm.DB) Auth {
+	return Auth{db}
+}
+
+func (a *Auth) authUser(token string, c *gin.Context) error {
 	id, err := jwt.ParseUser(token)
 	if err != nil {
 		if err.Error() == "subject is not user" {
@@ -26,7 +35,7 @@ func authUser(token string, c *gin.Context) error {
 	}
 
 	viewer := db.User{}
-	if err := db.DB.Take(&viewer, "id = ?", id).Error; err != nil {
+	if err := a.db.Take(&viewer, "id = ?", id).Error; err != nil {
 		return err
 	}
 
@@ -36,7 +45,7 @@ func authUser(token string, c *gin.Context) error {
 	return nil
 }
 
-func authGuest(token string, c *gin.Context) error {
+func (a *Auth) authGuest(token string, c *gin.Context) error {
 	id, err := jwt.ParseGuest(token)
 	if err != nil {
 		if err.Error() == "subject is not guest" {
@@ -46,7 +55,7 @@ func authGuest(token string, c *gin.Context) error {
 	}
 
 	guest := db.Guest{}
-	if err := db.DB.Take(&guest, "id = ?", id).Error; err != nil {
+	if err := a.db.Take(&guest, "id = ?", id).Error; err != nil {
 		return err
 	}
 
@@ -56,7 +65,7 @@ func authGuest(token string, c *gin.Context) error {
 	return nil
 }
 
-func Middleware() gin.HandlerFunc {
+func (a *Auth) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer c.Next()
 
@@ -68,12 +77,12 @@ func Middleware() gin.HandlerFunc {
 
 		token := tokens[0]
 
-		if err := authGuest(token, c); err != nil {
+		if err := a.authGuest(token, c); err != nil {
 			fmt.Printf("err: %v\n", err)
 			return
 		}
 
-		if err := authUser(token, c); err != nil {
+		if err := a.authUser(token, c); err != nil {
 			fmt.Printf("err: %v\n", err)
 			return
 		}

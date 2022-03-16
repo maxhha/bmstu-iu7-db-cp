@@ -79,7 +79,8 @@ func main() {
 	corsConfig.AllowMethods = []string{"POST, GET, OPTIONS"}
 	r.Use(cors.New(corsConfig))
 
-	r.Use(auth.Middleware())
+	a := auth.New(db.DB)
+	r.Use(a.Middleware())
 	r.Any("/graphql", graphqlHandler())
 	r.GET("/graphiql", playgroundHandler())
 	r.Run()
