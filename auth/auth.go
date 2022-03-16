@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Auth struct {
+type auth struct {
 	db *gorm.DB
 }
 
@@ -21,11 +21,7 @@ type contextKey struct {
 var viewerContextKey = &contextKey{"viewer"}
 var guestContextKey = &contextKey{"guest"}
 
-func New(db *gorm.DB) Auth {
-	return Auth{db}
-}
-
-func (a *Auth) authUser(token string, c *gin.Context) error {
+func (a *auth) authUser(token string, c *gin.Context) error {
 	id, err := jwt.ParseUser(token)
 	if err != nil {
 		if err.Error() == "subject is not user" {
@@ -45,7 +41,7 @@ func (a *Auth) authUser(token string, c *gin.Context) error {
 	return nil
 }
 
-func (a *Auth) authGuest(token string, c *gin.Context) error {
+func (a *auth) authGuest(token string, c *gin.Context) error {
 	id, err := jwt.ParseGuest(token)
 	if err != nil {
 		if err.Error() == "subject is not guest" {
@@ -65,27 +61,32 @@ func (a *Auth) authGuest(token string, c *gin.Context) error {
 	return nil
 }
 
-func (a *Auth) Middleware() gin.HandlerFunc {
+func (a *auth) apply(c *gin.Context) {
+	defer c.Next()
+
+	tokens, ok := c.Request.Header["Authorization"]
+
+	if !ok || len(tokens) == 0 {
+		return
+	}
+
+	token := tokens[0]
+
+	if err := a.authGuest(token, c); err != nil {
+		fmt.Fprintf(gin.DefaultErrorWriter, "auth err: %v\n", err)
+		return
+	}
+
+	if err := a.authUser(token, c); err != nil {
+		fmt.Fprintf(gin.DefaultErrorWriter, "auth err: %v\n", err)
+		return
+	}
+}
+
+func New(db *gorm.DB) gin.HandlerFunc {
+	a := auth{db}
 	return func(c *gin.Context) {
-		defer c.Next()
-
-		tokens, ok := c.Request.Header["Authorization"]
-
-		if !ok || len(tokens) == 0 {
-			return
-		}
-
-		token := tokens[0]
-
-		if err := a.authGuest(token, c); err != nil {
-			fmt.Printf("err: %v\n", err)
-			return
-		}
-
-		if err := a.authUser(token, c); err != nil {
-			fmt.Printf("err: %v\n", err)
-			return
-		}
+		a.apply(c)
 	}
 }
 

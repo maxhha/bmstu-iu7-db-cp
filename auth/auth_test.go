@@ -25,10 +25,10 @@ func init() {
 
 type AuthSuite struct {
 	suite.Suite
-	db   *sql.DB
-	DB   *gorm.DB
-	mock sqlmock.Sqlmock
-	a    Auth
+	db      *sql.DB
+	DB      *gorm.DB
+	mock    sqlmock.Sqlmock
+	handler gin.HandlerFunc
 }
 
 func (s *AuthSuite) SetupTest() {
@@ -48,7 +48,7 @@ func (s *AuthSuite) SetupTest() {
 	s.DB, err = gorm.Open(dialector, &gorm.Config{})
 	require.NoError(s.T(), err)
 
-	s.a = New(s.DB)
+	s.handler = New(s.DB)
 }
 
 func (s *AuthSuite) TearDownTest() {
@@ -73,7 +73,7 @@ func (s *AuthSuite) TestUser() {
 		WithArgs(id).
 		WillReturnRows(test.MockRows(db.User{ID: id}))
 
-	s.a.Middleware()(&ctx)
+	s.handler(&ctx)
 
 	user := ForViewer(ctx.Request.Context())
 	require.NotNil(s.T(), user)
@@ -101,7 +101,7 @@ func (s *AuthSuite) TestUnknownUser() {
 		WithArgs(id).
 		WillReturnError(sql.ErrNoRows)
 
-	s.a.Middleware()(&ctx)
+	s.handler(&ctx)
 
 	user := ForViewer(ctx.Request.Context())
 	require.Nil(s.T(), user)
@@ -125,7 +125,7 @@ func (s *AuthSuite) TestGuest() {
 		WithArgs(id).
 		WillReturnRows(test.MockRows(db.Guest{ID: id}))
 
-	s.a.Middleware()(&ctx)
+	s.handler(&ctx)
 
 	guest := ForGuest(ctx.Request.Context())
 	require.NotNil(s.T(), guest)
@@ -153,7 +153,7 @@ func (s *AuthSuite) TestUnknownGuest() {
 		WithArgs(id).
 		WillReturnError(sql.ErrNoRows)
 
-	s.a.Middleware()(&ctx)
+	s.handler(&ctx)
 
 	guest := ForGuest(ctx.Request.Context())
 	require.Nil(s.T(), guest)
