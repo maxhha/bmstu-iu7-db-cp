@@ -1,0 +1,20 @@
+version: '3'
+# https://taskfile.dev/#/installation
+
+tasks:
+  gqlgen:
+    desc: Generate code for GraphQL schema
+    cmds:
+      - go run github.com/99designs/gqlgen generate
+    sources:
+      - graph/schema/**/*.graphqls
+    generates:
+      - graph/generated/generated.go
+      - graph/model/models_gen.go
+  cover:
+    desc: Get code coverage
+    cmds:
+      - go test -coverprofile=coverage.tmp.out ./...
+      # remove generated code from coverage 
+      - cat coverage.tmp.out | grep -v "_gen.go" > coverage.out
+      - go tool cover -func=coverage.out

@@ -64,6 +64,10 @@ type CreateTokenInput struct {
 	Data   map[string]interface{} `json:"data"`
 }
 
+type CreateUserResult struct {
+	Token string `json:"token"`
+}
+
 type IncreaseBalanceInput struct {
 	UserID string  `json:"userId"`
 	Amount float64 `json:"amount"`
@@ -117,14 +121,6 @@ type ProductsConnection struct {
 type ProductsConnectionEdge struct {
 	Cursor string   `json:"cursor"`
 	Node   *Product `json:"node"`
-}
-
-type RegisterGuestResult struct {
-	Token string `json:"token"`
-}
-
-type RegisterResult struct {
-	Token string `json:"token"`
 }
 
 type RemoveOfferInput struct {

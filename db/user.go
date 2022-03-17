@@ -2,16 +2,12 @@ package db
 
 import (
 	"database/sql"
-
-	"gorm.io/gorm"
+	"time"
 )
 
 type User struct {
-	gorm.Model
-	ID           string
-	Email        string
-	Phone        string
-	Password     string
-	Name         string
+	ID           string    `gorm:"default:generated();"`
+	CreatedAt    time.Time `gorm:"default:now();"`
+	DeletedAt    sql.NullTime
 	BlockedUntil sql.NullTime
 }

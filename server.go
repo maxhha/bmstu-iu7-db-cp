@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
+	"gorm.io/gorm"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -22,9 +23,9 @@ import (
 	"auction-back/db"
 )
 
-func graphqlHandler() gin.HandlerFunc {
+func graphqlHandler(db *gorm.DB) gin.HandlerFunc {
 
-	h := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: graph.New()}))
+	h := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: graph.New(db)}))
 
 	h.AddTransport(transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,
@@ -70,7 +71,7 @@ func init() {
 }
 
 func main() {
-	db.ConnectDatabase()
+	DB := db.ConnectDatabase()
 
 	r := gin.Default()
 
@@ -79,8 +80,8 @@ func main() {
 	corsConfig.AllowMethods = []string{"POST, GET, OPTIONS"}
 	r.Use(cors.New(corsConfig))
 
-	r.Use(auth.New(db.DB))
-	r.Any("/graphql", graphqlHandler())
+	r.Use(auth.New(DB))
+	r.Any("/graphql", graphqlHandler(DB))
 	r.GET("/graphiql", playgroundHandler())
 	r.Run()
 }

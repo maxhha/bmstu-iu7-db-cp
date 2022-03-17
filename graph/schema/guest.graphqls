@@ -1,7 +1,0 @@
-type RegisterGuestResult {
-  token: String!
-}
-
-extend type Mutation {
-  registerGuest: RegisterGuestResult!
-}

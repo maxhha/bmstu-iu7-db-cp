@@ -31,19 +31,6 @@ func NewUser(id string) (string, error) {
 	return token.SignedString(signingKey)
 }
 
-func NewGuest(id string, expiresAt time.Time) (string, error) {
-	claims := jwt.StandardClaims{
-		Id:        id,
-		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: expiresAt.Unix(),
-		Subject:   "guest",
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	return token.SignedString(signingKey)
-}
-
 func parse(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 
@@ -86,44 +73,6 @@ func ParseUser(tokenString string) (*string, error) {
 
 	if subject != "user" {
 		return nil, fmt.Errorf("subject is not user")
-	}
-
-	id, ok := claims["jti"].(string)
-
-	if !ok {
-		return nil, fmt.Errorf("failed to convert jti")
-	}
-
-	return &id, nil
-}
-
-func ParseGuest(tokenString string) (*string, error) {
-	claims, err := parse(tokenString)
-
-	if err != nil {
-		return nil, err
-	}
-
-	subject, ok := claims["sub"].(string)
-
-	if !ok {
-		return nil, fmt.Errorf("failed to convert sub")
-	}
-
-	if subject != "guest" {
-		return nil, fmt.Errorf("subject is not guest")
-	}
-
-	fmt.Printf("exp: %d", claims["exp"])
-
-	expiresAt, ok := claims["exp"].(float64)
-
-	if !ok {
-		return nil, fmt.Errorf("failed to convert exp")
-	}
-
-	if time.Now().Unix() > int64(expiresAt) {
-		return nil, fmt.Errorf("token expired")
 	}
 
 	id, ok := claims["jti"].(string)

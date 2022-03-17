@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
@@ -78,9 +77,6 @@ func (s *AuthSuite) TestUser() {
 	user := ForViewer(ctx.Request.Context())
 	require.NotNil(s.T(), user)
 	require.Equal(s.T(), user.ID, id)
-
-	guest := ForGuest(ctx.Request.Context())
-	require.Nil(s.T(), guest)
 }
 
 // Test User in context is nil if token passed but id is unknown
@@ -105,58 +101,6 @@ func (s *AuthSuite) TestUnknownUser() {
 
 	user := ForViewer(ctx.Request.Context())
 	require.Nil(s.T(), user)
-}
-
-// Test Guest in context if token passed
-func (s *AuthSuite) TestGuest() {
-	id := "test-guest"
-	token, err := jwt.NewGuest(id, time.Now().Add(time.Hour*time.Duration(1)))
-	require.NoError(s.T(), err)
-
-	ctx := gin.Context{
-		Request: &http.Request{
-			Header: http.Header{
-				"Authorization": []string{token},
-			},
-		},
-	}
-
-	s.mock.ExpectQuery("SELECT \\* FROM \"guests\" WHERE id =").
-		WithArgs(id).
-		WillReturnRows(test.MockRows(db.Guest{ID: id}))
-
-	s.handler(&ctx)
-
-	guest := ForGuest(ctx.Request.Context())
-	require.NotNil(s.T(), guest)
-	require.Equal(s.T(), guest.ID, id)
-
-	user := ForViewer(ctx.Request.Context())
-	require.Nil(s.T(), user)
-}
-
-// Test Guest in context is nil if token passed but id is unknown
-func (s *AuthSuite) TestUnknownGuest() {
-	id := "test-unknown"
-	token, err := jwt.NewGuest(id, time.Now().Add(time.Hour*time.Duration(1)))
-	require.NoError(s.T(), err)
-
-	ctx := gin.Context{
-		Request: &http.Request{
-			Header: http.Header{
-				"Authorization": []string{token},
-			},
-		},
-	}
-
-	s.mock.ExpectQuery("SELECT \\* FROM \"guest\" WHERE id =").
-		WithArgs(id).
-		WillReturnError(sql.ErrNoRows)
-
-	s.handler(&ctx)
-
-	guest := ForGuest(ctx.Request.Context())
-	require.Nil(s.T(), guest)
 }
 
 func TestAuthSuite(t *testing.T) {

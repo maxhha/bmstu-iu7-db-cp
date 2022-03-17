@@ -7,9 +7,10 @@ import (
 	"gorm.io/gorm"
 )
 
+// @depricated
 var DB *gorm.DB
 
-func ConnectDatabase() {
+func ConnectDatabase() *gorm.DB {
 	dsn, ok := os.LookupEnv("POSTGRES_CONNECTION")
 
 	if !ok {
@@ -22,5 +23,8 @@ func ConnectDatabase() {
 		panic("Failed to connect to database!")
 	}
 
+	// TODO remove me
 	DB = database
+
+	return database
 }

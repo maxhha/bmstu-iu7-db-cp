@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 type TokenAction string
@@ -16,10 +15,10 @@ const (
 )
 
 type Token struct {
-	gorm.Model
 	ID          uint
-	CreatorID   string
-	Creator     TokenCreator
+	UserID      string
+	User        User
+	CreatedAt   time.Time `gorm:"default:now();"`
 	ActivatedAt sql.NullTime
 	ExpiresAt   time.Time
 	Action      TokenAction

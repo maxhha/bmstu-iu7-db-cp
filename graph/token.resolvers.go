@@ -4,6 +4,7 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
+	"auction-back/auth"
 	"auction-back/db"
 	"auction-back/graph/model"
 	"context"
@@ -13,10 +14,10 @@ import (
 )
 
 func (r *mutationResolver) CreateToken(ctx context.Context, input *model.CreateTokenInput) (*bool, error) {
-	creator, err := getTokenCreator(ctx)
+	viewer := auth.ForViewer(ctx)
 
-	if err != nil {
-		return nil, err
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
 	}
 
 	tokenAction := db.TokenAction(input.Action.String())
@@ -33,10 +34,10 @@ func (r *mutationResolver) CreateToken(ctx context.Context, input *model.CreateT
 		ExpiresAt: time.Now().Add(time.Hour * time.Duration(1)),
 		Action:    tokenAction,
 		Data:      input.Data,
-		CreatorID: creator.ID,
+		UserID:    viewer.ID,
 	}
 
-	if err := db.DB.Create(&token).Error; err != nil {
+	if err := r.DB.Create(&token).Error; err != nil {
 		return nil, err
 	}
 
@@ -44,15 +45,20 @@ func (r *mutationResolver) CreateToken(ctx context.Context, input *model.CreateT
 	fmt.Println("token:", token.ID)
 
 	res := true
-
 	return &res, nil
 }
 
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
 func (r *mutationResolver) ActivateToken(ctx context.Context, input *model.ActivateTokenInput) (*bool, error) {
-	creator, err := getTokenCreator(ctx)
+	viewer := auth.ForViewer(ctx)
 
-	if err != nil {
-		return nil, err
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
 	}
 
 	token := db.Token{}
@@ -61,7 +67,7 @@ func (r *mutationResolver) ActivateToken(ctx context.Context, input *model.Activ
 		return nil, fmt.Errorf("take: %w", err)
 	}
 
-	if token.CreatorID != creator.ID {
+	if token.UserID != viewer.ID {
 		return nil, fmt.Errorf("creator is other")
 	}
 

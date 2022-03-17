@@ -14,6 +14,6 @@ input ActivateTokenInput {
 }
 
 extend type Mutation {
+  # Create and send token to user
   createToken(input: CreateTokenInput): Boolean
-  activateToken(input: ActivateTokenInput): Boolean
 }

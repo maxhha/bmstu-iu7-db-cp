@@ -6,31 +6,18 @@ package graph
 import (
 	"auction-back/auth"
 	"auction-back/db"
-	"auction-back/graph/generated"
 	"auction-back/graph/model"
 	"auction-back/jwt"
 	"context"
 	"fmt"
 	"time"
-
-	"github.com/teris-io/shortid"
 )
 
-func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult, error) {
-	id, err := shortid.Generate()
+func (r *mutationResolver) CreateUser(ctx context.Context) (*model.CreateUserResult, error) {
+	user := db.User{}
 
-	if err != nil {
-		return nil, err
-	}
-
-	user := db.User{
-		ID: id,
-	}
-
-	result := db.DB.Create(&user)
-
-	if result.Error != nil {
-		return nil, result.Error
+	if err := r.DB.Create(&user).Error; err != nil {
+		return nil, fmt.Errorf("create: %w", err)
 	}
 
 	token, err := jwt.NewUser(user.ID)
@@ -39,7 +26,7 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult,
 		return nil, err
 	}
 
-	return &model.RegisterResult{
+	return &model.CreateUserResult{
 		Token: token,
 	}, nil
 }
@@ -47,7 +34,7 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult,
 func (r *mutationResolver) IncreaseBalance(ctx context.Context, input model.IncreaseBalanceInput) (*model.IncreaseBalanceResult, error) {
 	user := db.User{}
 
-	result := db.DB.First(&user, "id = ?", input.UserID)
+	result := r.DB.First(&user, "id = ?", input.UserID)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -62,7 +49,7 @@ func (r *mutationResolver) IncreaseBalance(ctx context.Context, input model.Incr
 
 	// user.Available = available
 
-	db.DB.Save(&user)
+	r.DB.Save(&user)
 
 	u, err := (&model.User{}).From(&user)
 
@@ -85,38 +72,37 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model.User, error) {
 	return (&model.User{}).From(viewer)
 }
 
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+
 func (r *userResolver) Email(ctx context.Context, obj *model.User) (string, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-
 func (r *userResolver) Phone(ctx context.Context, obj *model.User) (string, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-
 func (r *userResolver) Name(ctx context.Context, obj *model.User) (string, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-
 func (r *userResolver) BlockedUntil(ctx context.Context, obj *model.User) (*time.Time, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-
 func (r *userResolver) IsAdmin(ctx context.Context, obj *model.User) (bool, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-
 func (r *userResolver) Available(ctx context.Context, obj *model.User) ([]*model.Money, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-
 func (r *userResolver) Blocked(ctx context.Context, obj *model.User) ([]*model.Money, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-
 func (r *userResolver) Accounts(ctx context.Context, obj *model.User, first *int, after *string) (*model.UserAccountsConnection, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-
 func (r *userResolver) Offers(ctx context.Context, obj *model.User, first *int, after *string) (*model.OffersConnection, error) {
 	viewer := auth.ForViewer(ctx)
 
@@ -132,7 +118,6 @@ func (r *userResolver) Offers(ctx context.Context, obj *model.User, first *int, 
 
 	return OfferPagination(query, first, after)
 }
-
 func (r *userResolver) Products(ctx context.Context, obj *model.User, first *int, after *string) (*model.ProductsConnection, error) {
 	viewer := auth.ForViewer(ctx)
 
@@ -148,8 +133,5 @@ func (r *userResolver) Products(ctx context.Context, obj *model.User, first *int
 
 	return ProductPagination(query, first, after)
 }
-
-// User returns generated.UserResolver implementation.
-func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
 type userResolver struct{ *Resolver }

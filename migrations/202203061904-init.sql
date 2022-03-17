@@ -37,7 +37,7 @@ SELECT EXISTS (
         LOOP
             -- deal with user-supplied keys, they don't have to be valid base64
             -- only the right length for the type
-            IF NEW.id IS NOT NULL AND length(NEW.id) > 0 THEN
+            IF NEW.id IS NOT NULL THEN
                 key := NEW.id;
                 user_id := TRUE;
 
@@ -88,31 +88,12 @@ SELECT EXISTS (
     END
     $$ language 'plpgsql';
 
-    -- guests are users that dont have anything but tokens
-    CREATE TABLE guests (
-        id SHORTKEY PRIMARY KEY,
-        expires_at TIMESTAMP NOT NULL
-    );
-
-    -- generate shortkey for each insert
-    CREATE TRIGGER trgr_guests_genid 
-        BEFORE INSERT ON guests FOR EACH ROW 
-        EXECUTE PROCEDURE shortkey_generate();
-
-    -- remove expired guests record
-    -- FIXME: change to 0 0 * * * and add VACUUM
-    SELECT cron.schedule('*/5 * * * *', $$DELETE FROM guests WHERE expires_at < NOW()$$);
-
+    -- represents only user id
     CREATE TABLE users (
         id SHORTKEY PRIMARY KEY,
-        email VARCHAR NOT NULL,
-        phone VARCHAR NOT NULL,
-        password VARCHAR NOT NULL,
-        name VARCHAR NOT NULL,
-        blocked_until TIMESTAMP,
-        created_at TIMESTAMP NOT NULL,
-        updated_at TIMESTAMP NOT NULL,
-        deleted_at TIMESTAMP
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
+        blocked_until TIMESTAMP
     );
 
     -- generate shortkey for each insert
@@ -122,41 +103,42 @@ SELECT EXISTS (
 
     CREATE INDEX idx_user_indices_deleted_at ON users(deleted_at);
 
-    -- first, each guest have its own token creator
-    -- when guest become a user he inherits token creator
-    CREATE TABLE token_creators (
-        ID SHORTKEY PRIMARY KEY,
-        user_id SHORTKEY,
-        guest_id SHORTKEY,
-        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-        CONSTRAINT fk_guest FOREIGN KEY (guest_id) REFERENCES guests(id) ON DELETE SET NULL,
-        CONSTRAINT chk_user_or_guest CHECK (
-            user_id IS NULL OR guest_id IS NULL OR user_id = guest_id),
-        UNIQUE (user_id, guest_id)
+    CREATE TYPE user_form_state AS ENUM (
+        'CREATED',
+        'MODERATING',
+        'APPROVED',
+        'DECLAINED'
     );
 
-    -- generate shortkey for each insert
-    CREATE TRIGGER trgr_token_creators_genid 
-        BEFORE INSERT ON token_creators FOR EACH ROW 
-        EXECUTE PROCEDURE shortkey_generate();
+    -- represents user data
+    CREATE TABLE user_forms (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id SHORTKEY NOT NULL,
+        state user_form_state NOT NULL DEFAULT 'CREATED',
+        name VARCHAR,
+        password VARCHAR,
+        phone VARCHAR,
+        email VARCHAR,
+        declain_reason TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) -- TODO add on delete behevior
+    );
 
-    -- remove token creators without any foreign key
+    CREATE INDEX idx_user_form_indices_deleted_at ON user_forms(deleted_at);
+
+    -- remove expired guests record
     -- FIXME: change to 0 0 * * * and add VACUUM
-    SELECT cron.schedule('*/5 * * * *', $$DELETE FROM token_creators WHERE user_id IS NULL AND guest_id IS NULL$$);
-
-    CREATE OR REPLACE FUNCTION insert_token_creator_for_guest()
-    RETURNS TRIGGER AS $$
-    BEGIN
-        INSERT INTO token_creators (guest_id)
-        SELECT NEW.id;
-
-        RETURN NEW;
-    END
-    $$ LANGUAGE 'plpgsql' STRICT;
-
-    CREATE TRIGGER trger_guests_token_creator
-        AFTER INSERT ON guests FOR EACH ROW 
-        EXECUTE PROCEDURE insert_token_creator_for_guest();
+    SELECT cron.schedule('*/5 * * * *', $$
+        DELETE FROM users
+        WHERE 
+            created_at < NOW() - interval '4 hour'
+            AND id NOT IN (
+                SELECT user_id
+                FROM user_forms
+            )
+    $$);
 
     CREATE TYPE token_action AS ENUM (
       'APPROVE_USER_EMAIL',
@@ -167,19 +149,15 @@ SELECT EXISTS (
     -- they must be activated to perform some actions 
     CREATE TABLE tokens (
         id DECIMAL(6, 0),
+        user_id SHORTKEY NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         activated_at TIMESTAMP,
         expires_at TIMESTAMP NOT NULL,
         action token_action NOT NULL,
         data JSONB,
-        creator_id SHORTKEY NOT NULL,
-        created_at TIMESTAMP NOT NULL,
-        updated_at TIMESTAMP NOT NULL,
-        deleted_at TIMESTAMP,
-        CONSTRAINT fk_creator FOREIGN KEY (creator_id) REFERENCES token_creators(id) ON DELETE CASCADE,
-        PRIMARY KEY (id, creator_id)
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        PRIMARY KEY (id, user_id)
     );
-
-    CREATE INDEX idx_token_indices_deleted_at ON tokens(deleted_at);
 
     -- delete expired and not activated tokens
     -- FIXME: change to 0 0 * * * and add VACUUM
@@ -198,12 +176,12 @@ SELECT EXISTS (
             RAISE 'Tokens id must be generated by database';
         END IF;
 
-        IF NEW.creator_id IS NULL OR length(NEW.creator_id) <> 11 THEN
-            RAISE 'creator_id must be provided';
+        IF NEW.user_id IS NULL THEN
+            RAISE 'user_id must be provided';
         END IF;
 
         -- query to check if this token already exists
-        qry := 'SELECT id, creator_id FROM tokens WHERE creator_id = ' || quote_literal(NEW.creator_id) || ' AND id =';
+        qry := 'SELECT id, user_id FROM tokens WHERE user_id = ' || quote_literal(NEW.user_id) || ' AND id =';
 
         LOOP
             key := floor(random() * 999999 + 1);

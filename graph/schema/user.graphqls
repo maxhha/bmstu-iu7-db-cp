@@ -1,25 +1,23 @@
 type User {
   id: ID!
-  # User email
-  email: String!
-  # User phone
-  phone: String!
-  # User name
-  name: String!
-  # End date of blocking this user
-  blockedUntil: DateTime
-  # Flag of admin
-  isAdmin: Boolean!
-  # Available moneys
-  available: [Money!]!
-  # Money that is blocked in some offers
-  blocked: [Money!]!
-  # User accounts
-  accounts(first: Int, after: Cursor): UserAccountsConnection!
-  # User offers
-  offers(first: Int, after: Cursor): OffersConnection!
-  # User products in which he is owner
-  products(first: Int, after: Cursor): ProductsConnection!
+  # # User email
+  # email: String!
+  # # User phone
+  # phone: String!
+  # # User name
+  # name: String!
+  # # End date of blocking this user
+  # blockedUntil: DateTime
+  # # Available moneys
+  # available: [Money!]!
+  # # Money that is blocked in some offers
+  # blocked: [Money!]!
+  # # User accounts
+  # accounts(first: Int, after: Cursor): UserAccountsConnection!
+  # # User offers
+  # offers(first: Int, after: Cursor): OffersConnection!
+  # # User products in which he is owner
+  # products(first: Int, after: Cursor): ProductsConnection!
 }
 
 type UsersConnectionEdge {
@@ -36,7 +34,7 @@ extend type Query {
   viewer: User
 }
 
-type RegisterResult {
+type CreateUserResult {
   token: String!
 }
 
@@ -50,6 +48,6 @@ type IncreaseBalanceResult {
 }
 
 extend type Mutation {
-  register: RegisterResult!
+  createUser: CreateUserResult!
   increaseBalance(input: IncreaseBalanceInput!): IncreaseBalanceResult!
 }

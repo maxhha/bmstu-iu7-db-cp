@@ -161,9 +161,13 @@ func (r *offerResolver) Transactions(ctx context.Context, obj *model.Offer) ([]*
 	panic(fmt.Errorf("not implemented"))
 }
 
+// Mutation returns generated.MutationResolver implementation.
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+
 // Offer returns generated.OfferResolver implementation.
 func (r *Resolver) Offer() generated.OfferResolver { return &offerResolver{r} }
 
+type mutationResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
 
 // !!! WARNING !!!
