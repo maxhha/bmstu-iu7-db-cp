@@ -9,7 +9,8 @@ input CreateTokenInput {
   data: Map
 }
 
-input ActivateTokenInput {
+# Used for actions activation
+input TokenInput {
   token: String!
 }
 

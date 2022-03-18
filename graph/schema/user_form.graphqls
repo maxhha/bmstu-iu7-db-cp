@@ -1,0 +1,29 @@
+# User personal information
+type UserForm {
+  # User email
+  email: String
+  # User phone
+  phone: String
+  # User name
+  name: String
+}
+
+# UserFrom with all required fields filled in
+type UserFormFilled {
+  # User email
+  email: String!
+  # User phone
+  phone: String!
+  # User name
+  name: String!
+}
+
+type UserFormsConnectionEdge {
+  cursor: Cursor!
+  node: UserForm!
+}
+
+type UserFormsConnection {
+  pageInfo: PageInfo!
+  edges: [UserFormsConnectionEdge!]!
+}

@@ -3,6 +3,7 @@
 package model
 
 import (
+	"auction-back/db"
 	"fmt"
 	"io"
 	"strconv"
@@ -21,10 +22,6 @@ type AccountsConnection struct {
 type AccountsConnectionEdge struct {
 	Cursor string  `json:"cursor"`
 	Node   Account `json:"node"`
-}
-
-type ActivateTokenInput struct {
-	Token string `json:"token"`
 }
 
 type Bank struct {
@@ -62,19 +59,6 @@ type CreateProductResult struct {
 type CreateTokenInput struct {
 	Action TokenActionEnum        `json:"action"`
 	Data   map[string]interface{} `json:"data"`
-}
-
-type CreateUserResult struct {
-	Token string `json:"token"`
-}
-
-type IncreaseBalanceInput struct {
-	UserID string  `json:"userId"`
-	Amount float64 `json:"amount"`
-}
-
-type IncreaseBalanceResult struct {
-	User *User `json:"user"`
 }
 
 type Money struct {
@@ -123,6 +107,10 @@ type ProductsConnectionEdge struct {
 	Node   *Product `json:"node"`
 }
 
+type RegisterResult struct {
+	Token string `json:"token"`
+}
+
 type RemoveOfferInput struct {
 	OfferID string `json:"offerId"`
 }
@@ -145,6 +133,10 @@ type TakeOffProductInput struct {
 
 type TakeOffProductResult struct {
 	Product *Product `json:"product"`
+}
+
+type TokenInput struct {
+	Token string `json:"token"`
 }
 
 type Transaction struct {
@@ -174,7 +166,7 @@ type UserAccount struct {
 	ID           string                  `json:"id"`
 	Bank         *Bank                   `json:"bank"`
 	Transactions *TransactionsConnection `json:"transactions"`
-	User         *User                   `json:"user"`
+	User         *db.User                `json:"user"`
 }
 
 func (UserAccount) IsAccount() {}
@@ -189,14 +181,34 @@ type UserAccountsConnectionEdge struct {
 	Node   *UserAccount `json:"node"`
 }
 
+type UserFormFilled struct {
+	Email string `json:"email"`
+	Phone string `json:"phone"`
+	Name  string `json:"name"`
+}
+
+type UserFormsConnection struct {
+	PageInfo *PageInfo                  `json:"pageInfo"`
+	Edges    []*UserFormsConnectionEdge `json:"edges"`
+}
+
+type UserFormsConnectionEdge struct {
+	Cursor string       `json:"cursor"`
+	Node   *db.UserForm `json:"node"`
+}
+
+type UserResult struct {
+	User *db.User `json:"user"`
+}
+
 type UsersConnection struct {
 	PageInfo *PageInfo              `json:"pageInfo"`
 	Edges    []*UsersConnectionEdge `json:"edges"`
 }
 
 type UsersConnectionEdge struct {
-	Cursor string `json:"cursor"`
-	Node   *User  `json:"node"`
+	Cursor string   `json:"cursor"`
+	Node   *db.User `json:"node"`
 }
 
 type CurrencyEnum string

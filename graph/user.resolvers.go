@@ -6,14 +6,17 @@ package graph
 import (
 	"auction-back/auth"
 	"auction-back/db"
+	"auction-back/graph/generated"
 	"auction-back/graph/model"
 	"auction-back/jwt"
 	"context"
 	"fmt"
 	"time"
+
+	"gorm.io/gorm"
 )
 
-func (r *mutationResolver) CreateUser(ctx context.Context) (*model.CreateUserResult, error) {
+func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult, error) {
 	user := db.User{}
 
 	if err := r.DB.Create(&user).Error; err != nil {
@@ -26,84 +29,101 @@ func (r *mutationResolver) CreateUser(ctx context.Context) (*model.CreateUserRes
 		return nil, err
 	}
 
-	return &model.CreateUserResult{
+	return &model.RegisterResult{
 		Token: token,
 	}, nil
 }
 
-func (r *mutationResolver) IncreaseBalance(ctx context.Context, input model.IncreaseBalanceInput) (*model.IncreaseBalanceResult, error) {
-	user := db.User{}
-
-	result := r.DB.First(&user, "id = ?", input.UserID)
-
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	// TODO: fix precision
-	// available := user.Available.input.Amount
-
-	// if available < 0 {
-	// 	return nil, fmt.Errorf("available balance cant be negative")
-	// }
-
-	// user.Available = available
-
-	r.DB.Save(&user)
-
-	u, err := (&model.User{}).From(&user)
+func (r *mutationResolver) ApproveUserEmail(ctx context.Context, input *model.TokenInput) (*model.UserResult, error) {
+	viewer := auth.ForViewer(ctx)
+	token, err := r.Token.Activate(db.TokenActionApproveUserEmail, input.Token, viewer)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.IncreaseBalanceResult{
-		User: u,
-	}, nil
+	email, ok := token.Data["email"].(string)
+
+	if !ok {
+		return nil, fmt.Errorf("no email in token")
+	}
+
+	form := db.UserForm{}
+
+	err = r.DB.Order("created_at desc").Take(&form, "user_id = ?", viewer.ID).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			form.UserID = viewer.ID
+			if err = r.DB.Create(&form).Error; err != nil {
+				return nil, fmt.Errorf("create: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("take: %w", err)
+		}
+	}
+
+	if err = r.DB.Model(&form).Update("email", email).Error; err != nil {
+		return nil, err
+	}
+
+	return &model.UserResult{
+		User: viewer,
+	}, err
 }
 
-func (r *queryResolver) Viewer(ctx context.Context) (*model.User, error) {
+func (r *queryResolver) Viewer(ctx context.Context) (*db.User, error) {
+	viewer := auth.ForViewer(ctx)
+	return viewer, nil
+}
+
+func (r *userResolver) Form(ctx context.Context, obj *db.User) (*model.UserFormFilled, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *userResolver) DraftForm(ctx context.Context, user *db.User) (*db.UserForm, error) {
 	viewer := auth.ForViewer(ctx)
 
-	if viewer == nil {
+	if viewer.ID != user.ID {
+		return nil, fmt.Errorf("denied")
+	}
+
+	form := db.UserForm{}
+	query := "user_id = ? AND state in ('CREATED', 'MODERATING', 'DECLAINED')"
+	err := r.DB.Order("created_at desc").Take(&form, query, user.ID).Error
+
+	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
 
-	return (&model.User{}).From(viewer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &form, nil
 }
 
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *userResolver) FormHistory(ctx context.Context, obj *db.User, first *int, after *string) (*model.UserFormsConnection, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 
-func (r *userResolver) Email(ctx context.Context, obj *model.User) (string, error) {
+func (r *userResolver) BlockedUntil(ctx context.Context, obj *db.User) (*time.Time, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-func (r *userResolver) Phone(ctx context.Context, obj *model.User) (string, error) {
+
+func (r *userResolver) Available(ctx context.Context, obj *db.User) ([]*model.Money, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-func (r *userResolver) Name(ctx context.Context, obj *model.User) (string, error) {
+
+func (r *userResolver) Blocked(ctx context.Context, obj *db.User) ([]*model.Money, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-func (r *userResolver) BlockedUntil(ctx context.Context, obj *model.User) (*time.Time, error) {
+
+func (r *userResolver) Accounts(ctx context.Context, obj *db.User, first *int, after *string) (*model.UserAccountsConnection, error) {
 	panic(fmt.Errorf("not implemented"))
 }
-func (r *userResolver) IsAdmin(ctx context.Context, obj *model.User) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-func (r *userResolver) Available(ctx context.Context, obj *model.User) ([]*model.Money, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-func (r *userResolver) Blocked(ctx context.Context, obj *model.User) ([]*model.Money, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-func (r *userResolver) Accounts(ctx context.Context, obj *model.User, first *int, after *string) (*model.UserAccountsConnection, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-func (r *userResolver) Offers(ctx context.Context, obj *model.User, first *int, after *string) (*model.OffersConnection, error) {
+
+func (r *userResolver) Offers(ctx context.Context, obj *db.User, first *int, after *string) (*model.OffersConnection, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
@@ -118,7 +138,8 @@ func (r *userResolver) Offers(ctx context.Context, obj *model.User, first *int, 
 
 	return OfferPagination(query, first, after)
 }
-func (r *userResolver) Products(ctx context.Context, obj *model.User, first *int, after *string) (*model.ProductsConnection, error) {
+
+func (r *userResolver) Products(ctx context.Context, obj *db.User, first *int, after *string) (*model.ProductsConnection, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
@@ -133,5 +154,8 @@ func (r *userResolver) Products(ctx context.Context, obj *model.User, first *int
 
 	return ProductPagination(query, first, after)
 }
+
+// User returns generated.UserResolver implementation.
+func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
 type userResolver struct{ *Resolver }

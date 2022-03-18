@@ -16,15 +16,20 @@ type TokenService struct {
 	mock.Mock
 }
 
-func (m *TokenService) Validate(action db.TokenAction, data map[string]interface{}) error {
-	args := m.Called(action, data)
+func (t *TokenService) Validate(action db.TokenAction, data map[string]interface{}) error {
+	args := t.Called(action, data)
 	return args.Error(0)
 }
 
-func (m *TokenService) Send(token db.Token) error {
-	args := m.Called(token)
+func (t *TokenService) Send(token db.Token) error {
+	args := t.Called(token)
 
 	return args.Error(0)
+}
+
+func (t *TokenService) Activate(action db.TokenAction, token_code string, viewer *db.User) (db.Token, error) {
+	args := t.Called(action, token_code, viewer)
+	return args.Get(0).(db.Token), args.Error(1)
 }
 
 type GraphSuite struct {

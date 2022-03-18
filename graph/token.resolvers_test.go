@@ -49,6 +49,18 @@ func (s *CreateTokenSuite) TestCreateToken() {
 	require.Equal(s.T(), *result, true)
 }
 
+func (s *CreateTokenSuite) TestUnauthorized() {
+	ctx := context.Background()
+	input := model.CreateTokenInput{
+		Action: model.TokenActionEnumApproveUserEmail,
+		Data:   map[string]interface{}{},
+	}
+
+	result, err := s.resolver.Mutation().CreateToken(ctx, &input)
+	require.ErrorContains(s.T(), err, "unauthorized")
+	require.Nil(s.T(), result)
+}
+
 func TestCreateTokenSuite(t *testing.T) {
 	suite.Run(t, new(CreateTokenSuite))
 }

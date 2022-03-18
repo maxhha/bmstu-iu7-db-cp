@@ -73,7 +73,7 @@ func init() {
 
 func main() {
 	DB := db.ConnectDatabase()
-	t := token.New()
+	t := token.New(DB)
 
 	r := gin.Default()
 

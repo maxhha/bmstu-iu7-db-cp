@@ -237,7 +237,7 @@ func (r *productResolver) Title(ctx context.Context, obj *model.Product) (string
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *productResolver) Owner(ctx context.Context, obj *model.Product) (*model.User, error) {
+func (r *productResolver) Owner(ctx context.Context, obj *model.Product) (*db.User, error) {
 	panic(fmt.Errorf("not implemented"))
 	// if obj.DB.Owner.ID == obj.DB.OwnerID {
 	// 	return (&model.User{}).From(&obj.DB.Owner)
@@ -253,7 +253,7 @@ func (r *productResolver) Owner(ctx context.Context, obj *model.Product) (*model
 	// return (&model.User{}).From(&owner)
 }
 
-func (r *productResolver) Creator(ctx context.Context, obj *model.Product) (*model.User, error) {
+func (r *productResolver) Creator(ctx context.Context, obj *model.Product) (*db.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

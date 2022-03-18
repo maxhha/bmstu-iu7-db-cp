@@ -23,9 +23,6 @@ var viewerContextKey = &contextKey{"viewer"}
 func (a *auth) authUser(token string, c *gin.Context) error {
 	id, err := jwt.ParseUser(token)
 	if err != nil {
-		if err.Error() == "subject is not user" {
-			return nil
-		}
 		return err
 	}
 

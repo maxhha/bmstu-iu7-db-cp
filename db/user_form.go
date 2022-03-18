@@ -14,10 +14,12 @@ const (
 type UserForm struct {
 	gorm.Model
 	ID            string `gorm:"default:generated();"`
-	State         UserFormState
-	Name          *string
+	UserID        string
+	User          User
+	State         UserFormState `gorm:"default:'CREATED';"`
+	Name          *string       `json:"name"`
 	Password      *string
-	Phone         *string
-	Email         *string
+	Phone         *string `json:"phone"`
+	Email         *string `json:"email"`
 	DeclainReason *string
 }

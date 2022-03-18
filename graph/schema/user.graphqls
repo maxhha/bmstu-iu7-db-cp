@@ -1,24 +1,25 @@
 type User {
   id: ID!
-  # # User email
-  # email: String!
-  # # User phone
-  # phone: String!
-  # # User name
-  # name: String!
-  # # End date of blocking this user
-  # blockedUntil: DateTime
-  # # Available moneys
-  # available: [Money!]!
-  # # Money that is blocked in some offers
-  # blocked: [Money!]!
-  # # User accounts
-  # accounts(first: Int, after: Cursor): UserAccountsConnection!
-  # # User offers
-  # offers(first: Int, after: Cursor): OffersConnection!
-  # # User products in which he is owner
-  # products(first: Int, after: Cursor): ProductsConnection!
+  # User current personal information
+  form: UserFormFilled
+  # User new personal information
+  draftForm: UserForm
+  # User history of personal information (only for managers)
+  formHistory(first: Int, after: Cursor): UserFormsConnection!
+  # End date of blocking this user
+  blockedUntil: DateTime
+  # Available moneys
+  available: [Money!]!
+  # Money that is blocked in some offers
+  blocked: [Money!]!
+  # User accounts
+  accounts(first: Int, after: Cursor): UserAccountsConnection!
+  # User offers
+  offers(first: Int, after: Cursor): OffersConnection!
+  # User products in which he is owner
+  products(first: Int, after: Cursor): ProductsConnection!
 }
+
 
 type UsersConnectionEdge {
   cursor: Cursor!
@@ -34,20 +35,17 @@ extend type Query {
   viewer: User
 }
 
-type CreateUserResult {
+type RegisterResult {
   token: String!
 }
 
-input IncreaseBalanceInput {
-  userId: ID!
-  amount: Float!
-}
-
-type IncreaseBalanceResult {
+type UserResult {
   user: User!
 }
 
 extend type Mutation {
-  createUser: CreateUserResult!
-  increaseBalance(input: IncreaseBalanceInput!): IncreaseBalanceResult!
+  # Registrates empty user
+  register: RegisterResult!
+  # First input of users email
+  approveUserEmail(input: TokenInput): UserResult!
 }

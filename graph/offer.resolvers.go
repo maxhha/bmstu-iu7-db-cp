@@ -126,7 +126,7 @@ func (r *offerResolver) FailReason(ctx context.Context, obj *model.Offer) (*stri
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *offerResolver) User(ctx context.Context, obj *model.Offer) (*model.User, error) {
+func (r *offerResolver) User(ctx context.Context, obj *model.Offer) (*db.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -169,25 +169,3 @@ func (r *Resolver) Offer() generated.OfferResolver { return &offerResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *offerResolver) Consumer(ctx context.Context, obj *model.Offer) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
-	// if obj.DB.Consumer.ID == obj.DB.ConsumerID {
-	// 	return (&model.User{}).From(&obj.DB.Consumer)
-	// }
-
-	// user := db.User{}
-	// // result := db.DB.Take(&user, "id = ?", obj.DB.ConsumerID)
-
-	// if result.Error != nil {
-	// 	return nil, fmt.Errorf("db take: %w", result.Error)
-	// }
-
-	// return (&model.User{}).From(&user)
-}
