@@ -28,3 +28,6 @@ tmp
 
 # PostgreSQL config
 postgresql.conf
+
+# Taskfile cache
+.task

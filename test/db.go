@@ -17,6 +17,9 @@ func MockRows(objs ...interface{}) *sqlmock.Rows {
 
 	columns := make([]string, 0)
 	for _, field := range s.Fields {
+		if len(field.DBName) == 0 {
+			continue
+		}
 		columns = append(columns, field.DBName)
 	}
 
@@ -26,6 +29,9 @@ func MockRows(objs ...interface{}) *sqlmock.Rows {
 		row := make([]driver.Value, 0)
 
 		for _, field := range s.Fields {
+			if len(field.DBName) == 0 {
+				continue
+			}
 			r := reflect.ValueOf(obj)
 			f := reflect.Indirect(r).FieldByName(field.Name)
 			row = append(row, f.Interface())

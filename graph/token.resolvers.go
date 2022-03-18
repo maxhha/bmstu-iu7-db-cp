@@ -20,19 +20,14 @@ func (r *mutationResolver) CreateToken(ctx context.Context, input *model.CreateT
 		return nil, fmt.Errorf("unauthorized")
 	}
 
-	tokenAction := db.TokenAction(input.Action.String())
-	validate, found := validateTokenData[tokenAction]
-	if !found {
-		return nil, fmt.Errorf("not found validator for action")
-	}
-
-	if err := validate(input.Data); err != nil {
+	action := db.TokenAction(input.Action.String())
+	if err := r.Token.Validate(action, input.Data); err != nil {
 		return nil, fmt.Errorf("validate: %w", err)
 	}
 
 	token := db.Token{
 		ExpiresAt: time.Now().Add(time.Hour * time.Duration(1)),
-		Action:    tokenAction,
+		Action:    action,
 		Data:      input.Data,
 		UserID:    viewer.ID,
 	}
@@ -41,8 +36,9 @@ func (r *mutationResolver) CreateToken(ctx context.Context, input *model.CreateT
 		return nil, err
 	}
 
-	// TODO send token somehow
-	fmt.Println("token:", token.ID)
+	if err := r.Token.Send(token); err != nil {
+		return nil, fmt.Errorf("send: %w", err)
+	}
 
 	res := true
 	return &res, nil

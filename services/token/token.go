@@ -1,9 +1,21 @@
-package graph
+package token
 
 import (
 	"auction-back/db"
 	"fmt"
 )
+
+type Interface interface {
+	Validate(action db.TokenAction, data map[string]interface{}) error
+	Send(token db.Token) error
+}
+
+type TokenService struct {
+}
+
+func New() TokenService {
+	return TokenService{}
+}
 
 var validateTokenData = map[db.TokenAction]func(data map[string]interface{}) error{
 	db.TokenActionApproveUserEmail: func(data map[string]interface{}) error {
@@ -34,4 +46,21 @@ var validateTokenData = map[db.TokenAction]func(data map[string]interface{}) err
 
 		return nil
 	},
+}
+
+func (t *TokenService) Validate(action db.TokenAction, data map[string]interface{}) error {
+	validate, found := validateTokenData[action]
+	if !found {
+		return fmt.Errorf("not found validator for action")
+	}
+
+	if err := validate(data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *TokenService) Send(token db.Token) error {
+	return nil
 }
