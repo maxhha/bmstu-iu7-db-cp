@@ -2,14 +2,19 @@ scalar DateTime
 scalar Cursor
 scalar Map
 
-# Мoney in a specific currency
+"""Мoney in a specific currency"""
 type Money {
   amount: Float!
   currency: CurrencyEnum!
 }
 
-# Used for actions activation
+"""Used for actions activation"""
 input TokenInput {
+  token: String!
+}
+
+"""Used for login and registration"""
+type TokenResult {
   token: String!
 }
 

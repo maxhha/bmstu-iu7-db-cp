@@ -10,13 +10,14 @@ import (
 	"auction-back/graph/model"
 	"auction-back/jwt"
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult, error) {
+func (r *mutationResolver) Register(ctx context.Context) (*model.TokenResult, error) {
 	user := db.User{}
 
 	if err := r.DB.Create(&user).Error; err != nil {
@@ -29,7 +30,7 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult,
 		return nil, err
 	}
 
-	return &model.RegisterResult{
+	return &model.TokenResult{
 		Token: token,
 	}, nil
 }
@@ -80,19 +81,10 @@ func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input *model
 		return nil, fmt.Errorf("no email in token")
 	}
 
-	form := db.UserForm{}
-
-	err = r.DB.Order("created_at desc").Take(&form, "user_id = ?", viewer.ID).Error
+	form, err := r.getOrCreateUserForm(viewer)
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			form.UserID = viewer.ID
-			if err = r.DB.Create(&form).Error; err != nil {
-				return nil, fmt.Errorf("create: %w", err)
-			}
-		} else {
-			return nil, fmt.Errorf("take: %w", err)
-		}
+		return nil, err
 	}
 
 	if err = r.DB.Model(&form).Update("email", email).Error; err != nil {
@@ -105,7 +97,115 @@ func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input *model
 }
 
 func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input *model.TokenInput) (*model.UserResult, error) {
-	panic(fmt.Errorf("not implemented"))
+	viewer := auth.ForViewer(ctx)
+	token, err := r.Token.Activate(db.TokenActionSetUserEmail, input.Token, viewer)
+
+	if err != nil {
+		return nil, err
+	}
+
+	phone, ok := token.Data["phone"].(string)
+
+	if !ok {
+		return nil, fmt.Errorf("no phone in token")
+	}
+
+	form, err := r.getOrCreateUserForm(viewer)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err = r.DB.Model(&form).Update("phone", phone).Error; err != nil {
+		return nil, fmt.Errorf("update: err")
+	}
+
+	return &model.UserResult{
+		User: viewer,
+	}, nil
+}
+
+func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input *model.UpdateUserPasswordInput) (*model.UserResult, error) {
+	viewer := auth.ForViewer(ctx)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	form, err := r.getOrCreateUserForm(viewer)
+
+	if err != nil {
+		return nil, err
+	}
+
+	old_password_equal := false
+
+	if form.Password == nil && input.OldPassword == nil {
+		old_password_equal = true
+	}
+	if form.Password != nil && input.OldPassword != nil {
+		old_password_equal = checkHashAndPassword(*form.Password, *input.OldPassword)
+	}
+
+	if !old_password_equal {
+		return nil, fmt.Errorf("old password not match")
+	}
+
+	password, err := hashPassword(input.Password)
+
+	if err != nil {
+		return nil, fmt.Errorf("hash: %w", err)
+	}
+
+	if err = r.DB.Model(&form).Update("password", password).Error; err != nil {
+		return nil, fmt.Errorf("update: %w", err)
+	}
+
+	return &model.UserResult{
+		User: viewer,
+	}, nil
+}
+
+func (r *mutationResolver) Login(ctx context.Context, input *model.LoginInput) (*model.TokenResult, error) {
+	form := db.UserForm{}
+
+	err := r.DB.
+		Where(`(
+			state = 'APPROVED' 
+			OR (SELECT COUNT(1) FROM user_forms u WHERE "user_forms"."user_id" = u.user_id) = 1
+		)`).
+		Where(
+			"name = @username OR email = @username OR phone = @username",
+			sql.Named("username", input.Username),
+		).
+		Where(
+			"password IS NOT NULL",
+		).
+		Take(
+			&form,
+		).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("take: %w", err)
+	}
+
+	if form.Password == nil {
+		return nil, fmt.Errorf("password not set")
+	}
+
+	if !checkHashAndPassword(*form.Password, input.Password) {
+		return nil, fmt.Errorf("password mismatch")
+	}
+
+	token, err := jwt.NewUser(form.UserID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.TokenResult{
+		Token: token,
+	}, nil
 }
 
 func (r *queryResolver) Viewer(ctx context.Context) (*db.User, error) {

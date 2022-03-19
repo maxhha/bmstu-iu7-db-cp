@@ -91,6 +91,7 @@ type ComplexityRoot struct {
 		ApproveSetUserPhone func(childComplexity int, input *model.TokenInput) int
 		CreateOffer         func(childComplexity int, input model.CreateOfferInput) int
 		CreateProduct       func(childComplexity int, input model.CreateProductInput) int
+		Login               func(childComplexity int, input *model.LoginInput) int
 		OfferProduct        func(childComplexity int, input model.OfferProductInput) int
 		Register            func(childComplexity int) int
 		RemoveOffer         func(childComplexity int, input model.RemoveOfferInput) int
@@ -98,6 +99,7 @@ type ComplexityRoot struct {
 		RequestSetUserPhone func(childComplexity int, input *model.RequestSetUserPhoneInput) int
 		SellProduct         func(childComplexity int, input model.SellProductInput) int
 		TakeOffProduct      func(childComplexity int, input model.TakeOffProductInput) int
+		UpdateUserPassword  func(childComplexity int, input *model.UpdateUserPasswordInput) int
 	}
 
 	Offer struct {
@@ -166,10 +168,6 @@ type ComplexityRoot struct {
 		Viewer         func(childComplexity int) int
 	}
 
-	RegisterResult struct {
-		Token func(childComplexity int) int
-	}
-
 	RemoveOfferResult struct {
 		Status func(childComplexity int) int
 	}
@@ -184,6 +182,10 @@ type ComplexityRoot struct {
 
 	TakeOffProductResult struct {
 		Product func(childComplexity int) int
+	}
+
+	TokenResult struct {
+		Token func(childComplexity int) int
 	}
 
 	Transaction struct {
@@ -283,11 +285,13 @@ type MutationResolver interface {
 	OfferProduct(ctx context.Context, input model.OfferProductInput) (*model.OfferProductResult, error)
 	TakeOffProduct(ctx context.Context, input model.TakeOffProductInput) (*model.TakeOffProductResult, error)
 	SellProduct(ctx context.Context, input model.SellProductInput) (*model.SellProductResult, error)
-	Register(ctx context.Context) (*model.RegisterResult, error)
+	Register(ctx context.Context) (*model.TokenResult, error)
 	RequestSetUserEmail(ctx context.Context, input *model.RequestSetUserEmailInput) (*bool, error)
 	RequestSetUserPhone(ctx context.Context, input *model.RequestSetUserPhoneInput) (*bool, error)
 	ApproveSetUserEmail(ctx context.Context, input *model.TokenInput) (*model.UserResult, error)
 	ApproveSetUserPhone(ctx context.Context, input *model.TokenInput) (*model.UserResult, error)
+	UpdateUserPassword(ctx context.Context, input *model.UpdateUserPasswordInput) (*model.UserResult, error)
+	Login(ctx context.Context, input *model.LoginInput) (*model.TokenResult, error)
 }
 type OfferResolver interface {
 	State(ctx context.Context, obj *model.Offer) (model.OfferStateEnum, error)
@@ -494,6 +498,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateProduct(childComplexity, args["input"].(model.CreateProductInput)), true
 
+	case "Mutation.login":
+		if e.complexity.Mutation.Login == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_login_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Login(childComplexity, args["input"].(*model.LoginInput)), true
+
 	case "Mutation.offerProduct":
 		if e.complexity.Mutation.OfferProduct == nil {
 			break
@@ -572,6 +588,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.TakeOffProduct(childComplexity, args["input"].(model.TakeOffProductInput)), true
+
+	case "Mutation.updateUserPassword":
+		if e.complexity.Mutation.UpdateUserPassword == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateUserPassword_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateUserPassword(childComplexity, args["input"].(*model.UpdateUserPasswordInput)), true
 
 	case "Offer.createdAt":
 		if e.complexity.Offer.CreatedAt == nil {
@@ -835,13 +863,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Viewer(childComplexity), true
 
-	case "RegisterResult.token":
-		if e.complexity.RegisterResult.Token == nil {
-			break
-		}
-
-		return e.complexity.RegisterResult.Token(childComplexity), true
-
 	case "RemoveOfferResult.status":
 		if e.complexity.RemoveOfferResult.Status == nil {
 			break
@@ -869,6 +890,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.TakeOffProductResult.Product(childComplexity), true
+
+	case "TokenResult.token":
+		if e.complexity.TokenResult.Token == nil {
+			break
+		}
+
+		return e.complexity.TokenResult.Token(childComplexity), true
 
 	case "Transaction.accountFrom":
 		if e.complexity.Transaction.AccountFrom == nil {
@@ -1305,32 +1333,32 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "graph/schema/account.graphqls", Input: `# Nominal account
+	{Name: "graph/schema/account.graphqls", Input: `"""Nominal account"""
 interface Account {
   id: ID!
-  # Bank in which the account was created
+  """Bank in which the account was created"""
   bank: Bank!
-  # All transactions in which the account is involved
+  """All transactions in which the account is involved"""
   transactions(first: Int, after: Cursor): TransactionsConnection!
 }
 
-# Nominal account that was created for client
+"""Nominal account that was created for client"""
 type UserAccount implements Account {
     id: ID!
-    # Bank in which the account was created
+    """Bank in which the account was created"""
     bank: Bank!
-    # All transactions in which the account is involved
+    """All transactions in which the account is involved"""
     transactions(first: Int, after: Cursor): TransactionsConnection!
-    # Owner of account
+    """Owner of account"""
     user: User!
 } 
 
-# Special account for banks. Amount on this account is always nonpositve
+"""Special account for banks. Amount on this account is always nonpositve"""
 type BankAccount implements Account {
     id: ID!
-    # Owner of account. Each bank have one special account
+    """Owner of account. Each bank have one special account"""
     bank: Bank!
-    # All transactions in which the account is involved
+    """All transactions in which the account is involved"""
     transactions(first: Int, after: Cursor): TransactionsConnection!
 }
 
@@ -1344,7 +1372,7 @@ type AccountsConnection {
   edges: [AccountsConnectionEdge!]!
 }
 
-# Connection with UserAccount only
+"""Connection with UserAccount only"""
 type UserAccountsConnectionEdge {
   cursor: Cursor!
   node: UserAccount!
@@ -1356,12 +1384,12 @@ type UserAccountsConnection {
 }
 
 `, BuiltIn: false},
-	{Name: "graph/schema/bank.graphqls", Input: `# Bank that is cooperated with platform
+	{Name: "graph/schema/bank.graphqls", Input: `"""Bank that is cooperated with platform"""
 type Bank {
   id: ID!
-  # Name of bank
+  """Name of bank"""
   name: String!
-  # Special account of that bank
+  """Special account of that bank"""
   account: BankAccount!
 }
 `, BuiltIn: false},
@@ -1369,14 +1397,19 @@ type Bank {
 scalar Cursor
 scalar Map
 
-# Мoney in a specific currency
+"""Мoney in a specific currency"""
 type Money {
   amount: Float!
   currency: CurrencyEnum!
 }
 
-# Used for actions activation
+"""Used for actions activation"""
 input TokenInput {
+  token: String!
+}
+
+"""Used for login and registration"""
+type TokenResult {
   token: String!
 }
 
@@ -1402,21 +1435,21 @@ type PageInfo {
 
 type Offer {
   id: ID!
-  # Current offer state
+  """Current offer state"""
   state: OfferStateEnum!
-  # Reason of fail for *_FAILED states 
+  """Reason of fail for *_FAILED states"""
   failReason: String
-  # User created this offer 
+  """User created this offer"""
   user: User!
-  # Product for which this offer was created
+  """Product for which this offer was created"""
   product: Product!
-  # Total moneys offered
+  """Total moneys offered"""
   moneys: [Money!]!
-  # Offer creation time
+  """Offer creation time"""
   createdAt: DateTime!
-  # If set to true, the offer will be removed after the product is sold
+  """If set to true, the offer will be removed after the product is sold"""
   deleteOnSell: Boolean!
-  # Transactions of this offer
+  """Transactions of this offer"""
   transactions: [Transaction!]!
 }
 
@@ -1454,25 +1487,25 @@ extend type Mutation {
 `, BuiltIn: false},
 	{Name: "graph/schema/product.graphqls", Input: `type Product {
   id: ID!
-  # Title of product
+  """Title of product"""
   title: String!
-  # Product description
+  """Product description"""
   description: String!
-  # Current owner of product
+  """Current owner of product"""
   owner: User!
-  # Creator of product
+  """Creator of product"""
   creator: User!
-  # Product visibility on market
+  """Product visibility on market"""
   isOnMarket: Boolean!
-  # The greatest offer
+  """The greatest offer"""
   topOffer: Offer
-  # Product images
+  """Product images"""
   images: [ProductImage!]!
-  # Offers for this product
+  """Offers for this product"""
   offers(first: Int, after: String): OffersConnection!
 }
 
-# Product image
+"""Product image"""
 type ProductImage {
   id: ID!
   filename: String!
@@ -1561,23 +1594,23 @@ enum CurrencyEnum {
 
 type Transaction {
   id: ID!
-  # Time of apply this transaction
+  """Time of apply this transaction"""
   date: DateTime
-  # Current state
+  """Current state"""
   state: TransactionStateEnum!
-  # Transaction type
+  """Transaction type"""
   type: TransactionTypeEnum!
-  # Transaction currency
+  """Transaction currency"""
   currency: CurrencyEnum!
-  # Transaction amount
+  """Transaction amount"""
   amount: Float!
-  # Error message for state = ERROR or FAILED
+  """Error message for state = ERROR or FAILED"""
   error: String
-  # Offer for type = BUY
+  """Offer for type = BUY"""
   offer: Offer
-  # From account
+  """From account"""
   accountFrom: Account!
-  # To account
+  """To account"""
   accountTo: Account!
 }
 
@@ -1594,23 +1627,23 @@ type TransactionsConnection {
 `, BuiltIn: false},
 	{Name: "graph/schema/user.graphqls", Input: `type User {
   id: ID!
-  # User current personal information
+  """User current personal information"""
   form: UserFormFilled
-  # User new personal information
+  """User new personal information"""
   draftForm: UserForm
-  # User history of personal information (only for managers)
+  """User history of personal information (only for managers)"""
   formHistory(first: Int, after: Cursor): UserFormsConnection!
-  # End date of blocking this user
+  """End date of blocking this user"""
   blockedUntil: DateTime
-  # Available moneys
+  """Available moneys"""
   available: [Money!]!
-  # Money that is blocked in some offers
+  """Money that is blocked in some offers"""
   blocked: [Money!]!
-  # User accounts
+  """User accounts"""
   accounts(first: Int, after: Cursor): UserAccountsConnection!
-  # User offers
+  """User offers"""
   offers(first: Int, after: Cursor): OffersConnection!
-  # User products in which he is owner
+  """User products in which he is owner"""
   products(first: Int, after: Cursor): ProductsConnection!
 }
 
@@ -1629,10 +1662,6 @@ extend type Query {
   viewer: User
 }
 
-type RegisterResult {
-  token: String!
-}
-
 type UserResult {
   user: User!
 }
@@ -1645,36 +1674,51 @@ input RequestSetUserPhoneInput {
   phone: String!
 }
 
+input UpdateUserPasswordInput {
+  oldPassword: String
+  password: String!
+}
+
+input LoginInput {
+  username: String!
+  password: String!
+}
+
 extend type Mutation {
-  # Registrates empty user
-  register: RegisterResult!
-  # Request set user email
+  """Registrates empty user"""
+  register: TokenResult!
+  """Request set user email"""
   requestSetUserEmail(input: RequestSetUserEmailInput): Boolean
-  # Request set user email
+  """Request set user email"""
   requestSetUserPhone(input: RequestSetUserPhoneInput): Boolean
-  # First input of users email
+  """First input of users email"""
   approveSetUserEmail(input: TokenInput): UserResult!
-  # First input of users 
+  """First input of users """
   approveSetUserPhone(input: TokenInput): UserResult!
+  """Update user password using old password"""
+  updateUserPassword(input: UpdateUserPasswordInput): UserResult!
+
+  """User login"""
+  login(input: LoginInput): TokenResult!
 }
 `, BuiltIn: false},
-	{Name: "graph/schema/user_form.graphqls", Input: `# User personal information
+	{Name: "graph/schema/user_form.graphqls", Input: `"""User personal information"""
 type UserForm {
-  # User email
+  """User email"""
   email: String
-  # User phone
+  """User phone"""
   phone: String
-  # User name
+  """User name"""
   name: String
 }
 
-# UserFrom with all required fields filled in
+"""UserFrom with all required fields filled in"""
 type UserFormFilled {
-  # User email
+  """User email"""
   email: String!
-  # User phone
+  """User phone"""
   phone: String!
-  # User name
+  """User name"""
   name: String!
 }
 
@@ -1778,6 +1822,21 @@ func (ec *executionContext) field_Mutation_createProduct_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.LoginInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOLoginInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐLoginInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_offerProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1860,6 +1919,21 @@ func (ec *executionContext) field_Mutation_takeOffProduct_args(ctx context.Conte
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNTakeOffProductInput2auctionᚑbackᚋgraphᚋmodelᚐTakeOffProductInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateUserPassword_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.UpdateUserPasswordInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOUpdateUserPasswordInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐUpdateUserPasswordInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2868,9 +2942,9 @@ func (ec *executionContext) _Mutation_register(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.RegisterResult)
+	res := resTmp.(*model.TokenResult)
 	fc.Result = res
-	return ec.marshalNRegisterResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐRegisterResult(ctx, field.Selections, res)
+	return ec.marshalNTokenResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐTokenResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_requestSetUserEmail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3033,6 +3107,90 @@ func (ec *executionContext) _Mutation_approveSetUserPhone(ctx context.Context, f
 	res := resTmp.(*model.UserResult)
 	fc.Result = res
 	return ec.marshalNUserResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateUserPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateUserPassword_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateUserPassword(rctx, args["input"].(*model.UpdateUserPasswordInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserResult)
+	fc.Result = res
+	return ec.marshalNUserResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_login_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Login(rctx, args["input"].(*model.LoginInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TokenResult)
+	fc.Result = res
+	return ec.marshalNTokenResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐTokenResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Offer_id(ctx context.Context, field graphql.CollectedField, obj *model.Offer) (ret graphql.Marshaler) {
@@ -4365,41 +4523,6 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _RegisterResult_token(ctx context.Context, field graphql.CollectedField, obj *model.RegisterResult) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "RegisterResult",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Token, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _RemoveOfferResult_status(ctx context.Context, field graphql.CollectedField, obj *model.RemoveOfferResult) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4545,6 +4668,41 @@ func (ec *executionContext) _TakeOffProductResult_product(ctx context.Context, f
 	res := resTmp.(*model.Product)
 	fc.Result = res
 	return ec.marshalNProduct2ᚖauctionᚑbackᚋgraphᚋmodelᚐProduct(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TokenResult_token(ctx context.Context, field graphql.CollectedField, obj *model.TokenResult) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TokenResult",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_id(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -7384,6 +7542,37 @@ func (ec *executionContext) unmarshalInputCreateProductInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputLoginInput(ctx context.Context, obj interface{}) (model.LoginInput, error) {
+	var it model.LoginInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "username":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "password":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputOfferProductInput(ctx context.Context, obj interface{}) (model.OfferProductInput, error) {
 	var it model.OfferProductInput
 	asMap := map[string]interface{}{}
@@ -7536,6 +7725,37 @@ func (ec *executionContext) unmarshalInputTokenInput(ctx context.Context, obj in
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
 			it.Token, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateUserPasswordInput(ctx context.Context, obj interface{}) (model.UpdateUserPasswordInput, error) {
+	var it model.UpdateUserPasswordInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "oldPassword":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("oldPassword"))
+			it.OldPassword, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "password":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7979,6 +8199,26 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "approveSetUserPhone":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_approveSetUserPhone(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateUserPassword":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateUserPassword(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "login":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_login(ctx, field)
 			}
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
@@ -8741,37 +8981,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
-var registerResultImplementors = []string{"RegisterResult"}
-
-func (ec *executionContext) _RegisterResult(ctx context.Context, sel ast.SelectionSet, obj *model.RegisterResult) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, registerResultImplementors)
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("RegisterResult")
-		case "token":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._RegisterResult_token(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
 var removeOfferResultImplementors = []string{"RemoveOfferResult"}
 
 func (ec *executionContext) _RemoveOfferResult(ctx context.Context, sel ast.SelectionSet, obj *model.RemoveOfferResult) graphql.Marshaler {
@@ -8867,6 +9076,37 @@ func (ec *executionContext) _TakeOffProductResult(ctx context.Context, sel ast.S
 		case "product":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._TakeOffProductResult_product(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var tokenResultImplementors = []string{"TokenResult"}
+
+func (ec *executionContext) _TokenResult(ctx context.Context, sel ast.SelectionSet, obj *model.TokenResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tokenResultImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TokenResult")
+		case "token":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._TokenResult_token(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -10656,20 +10896,6 @@ func (ec *executionContext) marshalNProductsConnectionEdge2ᚖauctionᚑbackᚋg
 	return ec._ProductsConnectionEdge(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNRegisterResult2auctionᚑbackᚋgraphᚋmodelᚐRegisterResult(ctx context.Context, sel ast.SelectionSet, v model.RegisterResult) graphql.Marshaler {
-	return ec._RegisterResult(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNRegisterResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐRegisterResult(ctx context.Context, sel ast.SelectionSet, v *model.RegisterResult) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._RegisterResult(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNRemoveOfferInput2auctionᚑbackᚋgraphᚋmodelᚐRemoveOfferInput(ctx context.Context, v interface{}) (model.RemoveOfferInput, error) {
 	res, err := ec.unmarshalInputRemoveOfferInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -10761,6 +10987,20 @@ func (ec *executionContext) marshalNTakeOffProductResult2ᚖauctionᚑbackᚋgra
 		return graphql.Null
 	}
 	return ec._TakeOffProductResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTokenResult2auctionᚑbackᚋgraphᚋmodelᚐTokenResult(ctx context.Context, sel ast.SelectionSet, v model.TokenResult) graphql.Marshaler {
+	return ec._TokenResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTokenResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐTokenResult(ctx context.Context, sel ast.SelectionSet, v *model.TokenResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._TokenResult(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNTransaction2ᚕᚖauctionᚑbackᚋgraphᚋmodelᚐTransactionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Transaction) graphql.Marshaler {
@@ -11466,6 +11706,14 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	return res
 }
 
+func (ec *executionContext) unmarshalOLoginInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐLoginInput(ctx context.Context, v interface{}) (*model.LoginInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputLoginInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalOOffer2ᚖauctionᚑbackᚋgraphᚋmodelᚐOffer(ctx context.Context, sel ast.SelectionSet, v *model.Offer) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -11527,6 +11775,14 @@ func (ec *executionContext) unmarshalOTokenInput2ᚖauctionᚑbackᚋgraphᚋmod
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputTokenInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOUpdateUserPasswordInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐUpdateUserPasswordInput(ctx context.Context, v interface{}) (*model.UpdateUserPasswordInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputUpdateUserPasswordInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

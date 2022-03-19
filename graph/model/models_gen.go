@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Nominal account
 type Account interface {
 	IsAccount()
 }
@@ -24,15 +25,21 @@ type AccountsConnectionEdge struct {
 	Node   Account `json:"node"`
 }
 
+// Bank that is cooperated with platform
 type Bank struct {
-	ID      string       `json:"id"`
-	Name    string       `json:"name"`
+	ID string `json:"id"`
+	// Name of bank
+	Name string `json:"name"`
+	// Special account of that bank
 	Account *BankAccount `json:"account"`
 }
 
+// Special account for banks. Amount on this account is always nonpositve
 type BankAccount struct {
-	ID           string                  `json:"id"`
-	Bank         *Bank                   `json:"bank"`
+	ID string `json:"id"`
+	// Owner of account. Each bank have one special account
+	Bank *Bank `json:"bank"`
+	// All transactions in which the account is involved
 	Transactions *TransactionsConnection `json:"transactions"`
 }
 
@@ -56,6 +63,12 @@ type CreateProductResult struct {
 	Product *Product `json:"product"`
 }
 
+type LoginInput struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// Мoney in a specific currency
 type Money struct {
 	Amount   float64      `json:"amount"`
 	Currency CurrencyEnum `json:"currency"`
@@ -86,6 +99,7 @@ type PageInfo struct {
 	EndCursor       *string `json:"endCursor"`
 }
 
+// Product image
 type ProductImage struct {
 	ID       string `json:"id"`
 	Filename string `json:"filename"`
@@ -100,10 +114,6 @@ type ProductsConnection struct {
 type ProductsConnectionEdge struct {
 	Cursor string   `json:"cursor"`
 	Node   *Product `json:"node"`
-}
-
-type RegisterResult struct {
-	Token string `json:"token"`
 }
 
 type RemoveOfferInput struct {
@@ -138,21 +148,36 @@ type TakeOffProductResult struct {
 	Product *Product `json:"product"`
 }
 
+// Used for actions activation
 type TokenInput struct {
 	Token string `json:"token"`
 }
 
+// Used for login and registration
+type TokenResult struct {
+	Token string `json:"token"`
+}
+
 type Transaction struct {
-	ID          string               `json:"id"`
-	Date        *time.Time           `json:"date"`
-	State       TransactionStateEnum `json:"state"`
-	Type        TransactionTypeEnum  `json:"type"`
-	Currency    CurrencyEnum         `json:"currency"`
-	Amount      float64              `json:"amount"`
-	Error       *string              `json:"error"`
-	Offer       *Offer               `json:"offer"`
-	AccountFrom Account              `json:"accountFrom"`
-	AccountTo   Account              `json:"accountTo"`
+	ID string `json:"id"`
+	// Time of apply this transaction
+	Date *time.Time `json:"date"`
+	// Current state
+	State TransactionStateEnum `json:"state"`
+	// Transaction type
+	Type TransactionTypeEnum `json:"type"`
+	// Transaction currency
+	Currency CurrencyEnum `json:"currency"`
+	// Transaction amount
+	Amount float64 `json:"amount"`
+	// Error message for state = ERROR or FAILED
+	Error *string `json:"error"`
+	// Offer for type = BUY
+	Offer *Offer `json:"offer"`
+	// From account
+	AccountFrom Account `json:"accountFrom"`
+	// To account
+	AccountTo Account `json:"accountTo"`
 }
 
 type TransactionsConnection struct {
@@ -165,11 +190,20 @@ type TransactionsConnectionEdge struct {
 	Node   *Transaction `json:"node"`
 }
 
+type UpdateUserPasswordInput struct {
+	OldPassword *string `json:"oldPassword"`
+	Password    string  `json:"password"`
+}
+
+// Nominal account that was created for client
 type UserAccount struct {
-	ID           string                  `json:"id"`
-	Bank         *Bank                   `json:"bank"`
+	ID string `json:"id"`
+	// Bank in which the account was created
+	Bank *Bank `json:"bank"`
+	// All transactions in which the account is involved
 	Transactions *TransactionsConnection `json:"transactions"`
-	User         *db.User                `json:"user"`
+	// Owner of account
+	User *db.User `json:"user"`
 }
 
 func (UserAccount) IsAccount() {}
@@ -179,15 +213,20 @@ type UserAccountsConnection struct {
 	Edges    []*UserAccountsConnectionEdge `json:"edges"`
 }
 
+// Connection with UserAccount only
 type UserAccountsConnectionEdge struct {
 	Cursor string       `json:"cursor"`
 	Node   *UserAccount `json:"node"`
 }
 
+// UserFrom with all required fields filled in
 type UserFormFilled struct {
+	// User email
 	Email string `json:"email"`
+	// User phone
 	Phone string `json:"phone"`
-	Name  string `json:"name"`
+	// User name
+	Name string `json:"name"`
 }
 
 type UserFormsConnection struct {

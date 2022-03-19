@@ -1,20 +1,20 @@
-# User personal information
+"""User personal information"""
 type UserForm {
-  # User email
+  """User email"""
   email: String
-  # User phone
+  """User phone"""
   phone: String
-  # User name
+  """User name"""
   name: String
 }
 
-# UserFrom with all required fields filled in
+"""UserFrom with all required fields filled in"""
 type UserFormFilled {
-  # User email
+  """User email"""
   email: String!
-  # User phone
+  """User phone"""
   phone: String!
-  # User name
+  """User name"""
   name: String!
 }
 

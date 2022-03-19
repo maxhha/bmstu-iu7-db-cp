@@ -22,23 +22,23 @@ enum CurrencyEnum {
 
 type Transaction {
   id: ID!
-  # Time of apply this transaction
+  """Time of apply this transaction"""
   date: DateTime
-  # Current state
+  """Current state"""
   state: TransactionStateEnum!
-  # Transaction type
+  """Transaction type"""
   type: TransactionTypeEnum!
-  # Transaction currency
+  """Transaction currency"""
   currency: CurrencyEnum!
-  # Transaction amount
+  """Transaction amount"""
   amount: Float!
-  # Error message for state = ERROR or FAILED
+  """Error message for state = ERROR or FAILED"""
   error: String
-  # Offer for type = BUY
+  """Offer for type = BUY"""
   offer: Offer
-  # From account
+  """From account"""
   accountFrom: Account!
-  # To account
+  """To account"""
   accountTo: Account!
 }
 

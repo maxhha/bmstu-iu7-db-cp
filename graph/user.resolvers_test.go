@@ -19,7 +19,9 @@ import (
 
 func init() {
 	os.Setenv("SIGNING_KEY", "test")
+	os.Setenv("PASSWORD_HASH_SALT", "test")
 	jwt.Init()
+	InitPasswordHashSalt()
 }
 
 type RegisterSuite struct {
@@ -58,21 +60,21 @@ func TestRegisterSuite(t *testing.T) {
 	suite.Run(t, new(RegisterSuite))
 }
 
-type ApproveUserEmailSuite struct {
+type ApproveSetUserEmailSuite struct {
 	test.GraphSuite
 	resolver *Resolver
 }
 
-func (s *ApproveUserEmailSuite) SetupTest() {
+func (s *ApproveSetUserEmailSuite) SetupTest() {
 	s.GraphSuite.SetupTest()
 	s.resolver = New(s.DB, &s.TokenMock)
 }
 
-func (s *ApproveUserEmailSuite) TearDownTest() {
+func (s *ApproveSetUserEmailSuite) TearDownTest() {
 	s.GraphSuite.TearDownTest()
 }
 
-func (s *ApproveUserEmailSuite) TestApproveUserEmail() {
+func (s *ApproveSetUserEmailSuite) TestApproveSetUserEmail() {
 	token := "123456"
 	email := "email-test"
 	viewer := db.User{ID: "user-test"}
@@ -103,6 +105,51 @@ func (s *ApproveUserEmailSuite) TestApproveUserEmail() {
 	require.Equal(s.T(), result.User, &viewer)
 }
 
-func TestApproveUserEmailSuite(t *testing.T) {
-	suite.Run(t, new(ApproveUserEmailSuite))
+func TestApproveSetUserEmailSuite(t *testing.T) {
+	suite.Run(t, new(ApproveSetUserEmailSuite))
+}
+
+type UpdateUserPasswordSuite struct {
+	test.GraphSuite
+	resolver *Resolver
+}
+
+func (s *UpdateUserPasswordSuite) SetupTest() {
+	s.GraphSuite.SetupTest()
+	s.resolver = New(s.DB, &s.TokenMock)
+}
+
+func (s *UpdateUserPasswordSuite) TearDownTest() {
+	s.GraphSuite.TearDownTest()
+}
+
+func (s *UpdateUserPasswordSuite) TestUpdatePassword() {
+	password := "test-password"
+	viewer := db.User{ID: "user-test"}
+	user_form := db.UserForm{
+		ID:    "test",
+		State: db.UserFormStateCreated,
+	}
+
+	ctx := auth.WithViewer(context.Background(), &viewer)
+
+	s.SqlMock.ExpectQuery("SELECT \\* FROM \"user_forms\"").
+		WithArgs(viewer.ID).
+		WillReturnRows(test.MockRows(user_form))
+
+	hash, err := hashPassword(password)
+	require.NoError(s.T(), err)
+
+	s.SqlMock.ExpectExec("UPDATE \"user_forms\" SET \"password\"").
+		WithArgs(hash, sqlmock.AnyArg(), user_form.ID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	result, err := s.resolver.Mutation().UpdateUserPassword(ctx, &model.UpdateUserPasswordInput{Password: password})
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), result)
+	require.Equal(s.T(), result.User, &viewer)
+}
+
+func TestUpdateUserPasswordSuite(t *testing.T) {
+	suite.Run(t, new(UpdateUserPasswordSuite))
 }

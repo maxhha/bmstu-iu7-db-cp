@@ -13,21 +13,21 @@ enum OfferStateEnum {
 
 type Offer {
   id: ID!
-  # Current offer state
+  """Current offer state"""
   state: OfferStateEnum!
-  # Reason of fail for *_FAILED states 
+  """Reason of fail for *_FAILED states"""
   failReason: String
-  # User created this offer 
+  """User created this offer"""
   user: User!
-  # Product for which this offer was created
+  """Product for which this offer was created"""
   product: Product!
-  # Total moneys offered
+  """Total moneys offered"""
   moneys: [Money!]!
-  # Offer creation time
+  """Offer creation time"""
   createdAt: DateTime!
-  # If set to true, the offer will be removed after the product is sold
+  """If set to true, the offer will be removed after the product is sold"""
   deleteOnSell: Boolean!
-  # Transactions of this offer
+  """Transactions of this offer"""
   transactions: [Transaction!]!
 }
 
