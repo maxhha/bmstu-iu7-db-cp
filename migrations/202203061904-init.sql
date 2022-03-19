@@ -141,8 +141,8 @@ SELECT EXISTS (
     $$);
 
     CREATE TYPE token_action AS ENUM (
-      'APPROVE_USER_EMAIL',
-      'APPROVE_USER_PHONE'
+      'SET_USER_EMAIL',
+      'SET_USER_PHONE'
     );
 
     -- tokens are sent to clients by other means

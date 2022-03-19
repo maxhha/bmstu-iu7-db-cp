@@ -34,9 +34,41 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.RegisterResult,
 	}, nil
 }
 
-func (r *mutationResolver) ApproveUserEmail(ctx context.Context, input *model.TokenInput) (*model.UserResult, error) {
+func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input *model.RequestSetUserEmailInput) (*bool, error) {
 	viewer := auth.ForViewer(ctx)
-	token, err := r.Token.Activate(db.TokenActionApproveUserEmail, input.Token, viewer)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	data := map[string]interface{}{"email": input.Email}
+	if err := r.Token.Create(db.TokenActionSetUserEmail, viewer, data); err != nil {
+		return nil, err
+	}
+
+	res := true
+	return &res, nil
+}
+
+func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input *model.RequestSetUserPhoneInput) (*bool, error) {
+	viewer := auth.ForViewer(ctx)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	data := map[string]interface{}{"phone": input.Phone}
+	if err := r.Token.Create(db.TokenActionSetUserPhone, viewer, data); err != nil {
+		return nil, err
+	}
+
+	res := true
+	return &res, nil
+}
+
+func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input *model.TokenInput) (*model.UserResult, error) {
+	viewer := auth.ForViewer(ctx)
+	token, err := r.Token.Activate(db.TokenActionSetUserEmail, input.Token, viewer)
 
 	if err != nil {
 		return nil, err
@@ -69,7 +101,11 @@ func (r *mutationResolver) ApproveUserEmail(ctx context.Context, input *model.To
 
 	return &model.UserResult{
 		User: viewer,
-	}, err
+	}, nil
+}
+
+func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input *model.TokenInput) (*model.UserResult, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) Viewer(ctx context.Context) (*db.User, error) {
@@ -81,16 +117,16 @@ func (r *userResolver) Form(ctx context.Context, obj *db.User) (*model.UserFormF
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) DraftForm(ctx context.Context, user *db.User) (*db.UserForm, error) {
+func (r *userResolver) DraftForm(ctx context.Context, obj *db.User) (*db.UserForm, error) {
 	viewer := auth.ForViewer(ctx)
 
-	if viewer.ID != user.ID {
+	if viewer.ID != obj.ID {
 		return nil, fmt.Errorf("denied")
 	}
 
 	form := db.UserForm{}
 	query := "user_id = ? AND state in ('CREATED', 'MODERATING', 'DECLAINED')"
-	err := r.DB.Order("created_at desc").Take(&form, query, user.ID).Error
+	err := r.DB.Order("created_at desc").Take(&form, query, obj.ID).Error
 
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil

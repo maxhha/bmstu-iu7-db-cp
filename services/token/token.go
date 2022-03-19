@@ -10,8 +10,7 @@ import (
 )
 
 type Interface interface {
-	Validate(action db.TokenAction, data map[string]interface{}) error
-	Send(token db.Token) error
+	Create(action db.TokenAction, viewer *db.User, data map[string]interface{}) error
 	Activate(action db.TokenAction, token_code string, viewer *db.User) (db.Token, error)
 }
 
@@ -23,51 +22,26 @@ func New(db *gorm.DB) TokenService {
 	return TokenService{db}
 }
 
-var validateTokenData = map[db.TokenAction]func(data map[string]interface{}) error{
-	db.TokenActionApproveUserEmail: func(data map[string]interface{}) error {
-		email, found := data["email"]
-
-		if !found {
-			return fmt.Errorf("no email in data")
-		}
-
-		_, ok := email.(string)
-		if !ok {
-			return fmt.Errorf("email in data is not string")
-		}
-
-		return nil
-	},
-	db.TokenActionApproveUserPhone: func(data map[string]interface{}) error {
-		phone, found := data["phone"]
-
-		if !found {
-			return fmt.Errorf("no phone in data")
-		}
-
-		_, ok := phone.(string)
-		if !ok {
-			return fmt.Errorf("phone in data is not string")
-		}
-
-		return nil
-	},
-}
-
-func (t *TokenService) Validate(action db.TokenAction, data map[string]interface{}) error {
-	validate, found := validateTokenData[action]
-	if !found {
-		return fmt.Errorf("not found validator for action")
-	}
-
-	if err := validate(data); err != nil {
-		return err
-	}
-
+func (t *TokenService) send(token db.Token) error {
 	return nil
 }
 
-func (t *TokenService) Send(token db.Token) error {
+func (t *TokenService) Create(action db.TokenAction, viewer *db.User, data map[string]interface{}) error {
+	token := db.Token{
+		ExpiresAt: time.Now().Add(time.Hour * time.Duration(1)),
+		Action:    action,
+		Data:      data,
+		UserID:    viewer.ID,
+	}
+
+	if err := t.db.Create(&token).Error; err != nil {
+		return err
+	}
+
+	if err := t.send(token); err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
 	return nil
 }
 
@@ -84,6 +58,10 @@ func (t *TokenService) Activate(action db.TokenAction, token_code string, viewer
 
 	if token.Action != action {
 		return db.Token{}, fmt.Errorf("action not match")
+	}
+
+	if token.ActivatedAt.Valid {
+		return token, fmt.Errorf("activated")
 	}
 
 	token.ActivatedAt = sql.NullTime{

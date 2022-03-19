@@ -10,8 +10,8 @@ import (
 type TokenAction string
 
 const (
-	TokenActionApproveUserEmail TokenAction = "APPROVE_USER_EMAIL"
-	TokenActionApproveUserPhone TokenAction = "APPROVE_USER_PHONE"
+	TokenActionSetUserEmail TokenAction = "SET_USER_EMAIL"
+	TokenActionSetUserPhone TokenAction = "SET_USER_PHONE"
 )
 
 type Token struct {

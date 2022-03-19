@@ -56,11 +56,6 @@ type CreateProductResult struct {
 	Product *Product `json:"product"`
 }
 
-type CreateTokenInput struct {
-	Action TokenActionEnum        `json:"action"`
-	Data   map[string]interface{} `json:"data"`
-}
-
 type Money struct {
 	Amount   float64      `json:"amount"`
 	Currency CurrencyEnum `json:"currency"`
@@ -117,6 +112,14 @@ type RemoveOfferInput struct {
 
 type RemoveOfferResult struct {
 	Status string `json:"status"`
+}
+
+type RequestSetUserEmailInput struct {
+	Email string `json:"email"`
+}
+
+type RequestSetUserPhoneInput struct {
+	Phone string `json:"phone"`
 }
 
 type SellProductInput struct {
@@ -308,47 +311,6 @@ func (e *OfferStateEnum) UnmarshalGQL(v interface{}) error {
 }
 
 func (e OfferStateEnum) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-type TokenActionEnum string
-
-const (
-	TokenActionEnumApproveUserEmail TokenActionEnum = "APPROVE_USER_EMAIL"
-	TokenActionEnumApproveUserPhone TokenActionEnum = "APPROVE_USER_PHONE"
-)
-
-var AllTokenActionEnum = []TokenActionEnum{
-	TokenActionEnumApproveUserEmail,
-	TokenActionEnumApproveUserPhone,
-}
-
-func (e TokenActionEnum) IsValid() bool {
-	switch e {
-	case TokenActionEnumApproveUserEmail, TokenActionEnumApproveUserPhone:
-		return true
-	}
-	return false
-}
-
-func (e TokenActionEnum) String() string {
-	return string(e)
-}
-
-func (e *TokenActionEnum) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = TokenActionEnum(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid TokenActionEnum", str)
-	}
-	return nil
-}
-
-func (e TokenActionEnum) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

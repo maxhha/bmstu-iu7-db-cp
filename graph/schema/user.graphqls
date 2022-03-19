@@ -43,9 +43,23 @@ type UserResult {
   user: User!
 }
 
+input RequestSetUserEmailInput {
+  email: String!
+}
+
+input RequestSetUserPhoneInput {
+  phone: String!
+}
+
 extend type Mutation {
   # Registrates empty user
   register: RegisterResult!
+  # Request set user email
+  requestSetUserEmail(input: RequestSetUserEmailInput): Boolean
+  # Request set user email
+  requestSetUserPhone(input: RequestSetUserPhoneInput): Boolean
   # First input of users email
-  approveUserEmail(input: TokenInput): UserResult!
+  approveSetUserEmail(input: TokenInput): UserResult!
+  # First input of users 
+  approveSetUserPhone(input: TokenInput): UserResult!
 }

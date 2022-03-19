@@ -8,6 +8,11 @@ type Money {
   currency: CurrencyEnum!
 }
 
+# Used for actions activation
+input TokenInput {
+  token: String!
+}
+
 type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!

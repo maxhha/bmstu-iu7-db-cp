@@ -87,15 +87,17 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ApproveUserEmail func(childComplexity int, input *model.TokenInput) int
-		CreateOffer      func(childComplexity int, input model.CreateOfferInput) int
-		CreateProduct    func(childComplexity int, input model.CreateProductInput) int
-		CreateToken      func(childComplexity int, input *model.CreateTokenInput) int
-		OfferProduct     func(childComplexity int, input model.OfferProductInput) int
-		Register         func(childComplexity int) int
-		RemoveOffer      func(childComplexity int, input model.RemoveOfferInput) int
-		SellProduct      func(childComplexity int, input model.SellProductInput) int
-		TakeOffProduct   func(childComplexity int, input model.TakeOffProductInput) int
+		ApproveSetUserEmail func(childComplexity int, input *model.TokenInput) int
+		ApproveSetUserPhone func(childComplexity int, input *model.TokenInput) int
+		CreateOffer         func(childComplexity int, input model.CreateOfferInput) int
+		CreateProduct       func(childComplexity int, input model.CreateProductInput) int
+		OfferProduct        func(childComplexity int, input model.OfferProductInput) int
+		Register            func(childComplexity int) int
+		RemoveOffer         func(childComplexity int, input model.RemoveOfferInput) int
+		RequestSetUserEmail func(childComplexity int, input *model.RequestSetUserEmailInput) int
+		RequestSetUserPhone func(childComplexity int, input *model.RequestSetUserPhoneInput) int
+		SellProduct         func(childComplexity int, input model.SellProductInput) int
+		TakeOffProduct      func(childComplexity int, input model.TakeOffProductInput) int
 	}
 
 	Offer struct {
@@ -281,9 +283,11 @@ type MutationResolver interface {
 	OfferProduct(ctx context.Context, input model.OfferProductInput) (*model.OfferProductResult, error)
 	TakeOffProduct(ctx context.Context, input model.TakeOffProductInput) (*model.TakeOffProductResult, error)
 	SellProduct(ctx context.Context, input model.SellProductInput) (*model.SellProductResult, error)
-	CreateToken(ctx context.Context, input *model.CreateTokenInput) (*bool, error)
 	Register(ctx context.Context) (*model.RegisterResult, error)
-	ApproveUserEmail(ctx context.Context, input *model.TokenInput) (*model.UserResult, error)
+	RequestSetUserEmail(ctx context.Context, input *model.RequestSetUserEmailInput) (*bool, error)
+	RequestSetUserPhone(ctx context.Context, input *model.RequestSetUserPhoneInput) (*bool, error)
+	ApproveSetUserEmail(ctx context.Context, input *model.TokenInput) (*model.UserResult, error)
+	ApproveSetUserPhone(ctx context.Context, input *model.TokenInput) (*model.UserResult, error)
 }
 type OfferResolver interface {
 	State(ctx context.Context, obj *model.Offer) (model.OfferStateEnum, error)
@@ -442,17 +446,29 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Money.Currency(childComplexity), true
 
-	case "Mutation.approveUserEmail":
-		if e.complexity.Mutation.ApproveUserEmail == nil {
+	case "Mutation.approveSetUserEmail":
+		if e.complexity.Mutation.ApproveSetUserEmail == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_approveUserEmail_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_approveSetUserEmail_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ApproveUserEmail(childComplexity, args["input"].(*model.TokenInput)), true
+		return e.complexity.Mutation.ApproveSetUserEmail(childComplexity, args["input"].(*model.TokenInput)), true
+
+	case "Mutation.approveSetUserPhone":
+		if e.complexity.Mutation.ApproveSetUserPhone == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_approveSetUserPhone_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ApproveSetUserPhone(childComplexity, args["input"].(*model.TokenInput)), true
 
 	case "Mutation.createOffer":
 		if e.complexity.Mutation.CreateOffer == nil {
@@ -477,18 +493,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateProduct(childComplexity, args["input"].(model.CreateProductInput)), true
-
-	case "Mutation.createToken":
-		if e.complexity.Mutation.CreateToken == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createToken_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateToken(childComplexity, args["input"].(*model.CreateTokenInput)), true
 
 	case "Mutation.offerProduct":
 		if e.complexity.Mutation.OfferProduct == nil {
@@ -520,6 +524,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.RemoveOffer(childComplexity, args["input"].(model.RemoveOfferInput)), true
+
+	case "Mutation.requestSetUserEmail":
+		if e.complexity.Mutation.RequestSetUserEmail == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_requestSetUserEmail_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RequestSetUserEmail(childComplexity, args["input"].(*model.RequestSetUserEmailInput)), true
+
+	case "Mutation.requestSetUserPhone":
+		if e.complexity.Mutation.RequestSetUserPhone == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_requestSetUserPhone_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RequestSetUserPhone(childComplexity, args["input"].(*model.RequestSetUserPhoneInput)), true
 
 	case "Mutation.sellProduct":
 		if e.complexity.Mutation.SellProduct == nil {
@@ -1347,6 +1375,11 @@ type Money {
   currency: CurrencyEnum!
 }
 
+# Used for actions activation
+input TokenInput {
+  token: String!
+}
+
 type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
@@ -1504,27 +1537,6 @@ type Subscription {
   productOffered: Product
 }
 `, BuiltIn: false},
-	{Name: "graph/schema/token.graphqls", Input: `
-enum TokenActionEnum {
-  APPROVE_USER_EMAIL,
-  APPROVE_USER_PHONE
-}
-
-input CreateTokenInput {
-  action: TokenActionEnum!
-  data: Map
-}
-
-# Used for actions activation
-input TokenInput {
-  token: String!
-}
-
-extend type Mutation {
-  # Create and send token to user
-  createToken(input: CreateTokenInput): Boolean
-}
-`, BuiltIn: false},
 	{Name: "graph/schema/transaction.graphqls", Input: `enum TransactionStateEnum {
   CREATED,
   CANCELLED,
@@ -1625,11 +1637,25 @@ type UserResult {
   user: User!
 }
 
+input RequestSetUserEmailInput {
+  email: String!
+}
+
+input RequestSetUserPhoneInput {
+  phone: String!
+}
+
 extend type Mutation {
   # Registrates empty user
   register: RegisterResult!
+  # Request set user email
+  requestSetUserEmail(input: RequestSetUserEmailInput): Boolean
+  # Request set user email
+  requestSetUserPhone(input: RequestSetUserPhoneInput): Boolean
   # First input of users email
-  approveUserEmail(input: TokenInput): UserResult!
+  approveSetUserEmail(input: TokenInput): UserResult!
+  # First input of users 
+  approveSetUserPhone(input: TokenInput): UserResult!
 }
 `, BuiltIn: false},
 	{Name: "graph/schema/user_form.graphqls", Input: `# User personal information
@@ -1692,7 +1718,22 @@ func (ec *executionContext) field_BankAccount_transactions_args(ctx context.Cont
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_approveUserEmail_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_approveSetUserEmail_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.TokenInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOTokenInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐTokenInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_approveSetUserPhone_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *model.TokenInput
@@ -1737,21 +1778,6 @@ func (ec *executionContext) field_Mutation_createProduct_args(ctx context.Contex
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_createToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *model.CreateTokenInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalOCreateTokenInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐCreateTokenInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_offerProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1774,6 +1800,36 @@ func (ec *executionContext) field_Mutation_removeOffer_args(ctx context.Context,
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNRemoveOfferInput2auctionᚑbackᚋgraphᚋmodelᚐRemoveOfferInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_requestSetUserEmail_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.RequestSetUserEmailInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalORequestSetUserEmailInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐRequestSetUserEmailInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_requestSetUserPhone_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.RequestSetUserPhoneInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalORequestSetUserPhoneInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐRequestSetUserPhoneInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2782,45 +2838,6 @@ func (ec *executionContext) _Mutation_sellProduct(ctx context.Context, field gra
 	return ec.marshalNSellProductResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐSellProductResult(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_createToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createToken_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateToken(rctx, args["input"].(*model.CreateTokenInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*bool)
-	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Mutation_register(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2856,7 +2873,7 @@ func (ec *executionContext) _Mutation_register(ctx context.Context, field graphq
 	return ec.marshalNRegisterResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐRegisterResult(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_approveUserEmail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_requestSetUserEmail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2873,7 +2890,7 @@ func (ec *executionContext) _Mutation_approveUserEmail(ctx context.Context, fiel
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_approveUserEmail_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_requestSetUserEmail_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -2881,7 +2898,127 @@ func (ec *executionContext) _Mutation_approveUserEmail(ctx context.Context, fiel
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ApproveUserEmail(rctx, args["input"].(*model.TokenInput))
+		return ec.resolvers.Mutation().RequestSetUserEmail(rctx, args["input"].(*model.RequestSetUserEmailInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_requestSetUserPhone(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_requestSetUserPhone_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RequestSetUserPhone(rctx, args["input"].(*model.RequestSetUserPhoneInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_approveSetUserEmail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_approveSetUserEmail_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ApproveSetUserEmail(rctx, args["input"].(*model.TokenInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserResult)
+	fc.Result = res
+	return ec.marshalNUserResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_approveSetUserPhone(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_approveSetUserPhone_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ApproveSetUserPhone(rctx, args["input"].(*model.TokenInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7247,37 +7384,6 @@ func (ec *executionContext) unmarshalInputCreateProductInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputCreateTokenInput(ctx context.Context, obj interface{}) (model.CreateTokenInput, error) {
-	var it model.CreateTokenInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "action":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
-			it.Action, err = ec.unmarshalNTokenActionEnum2auctionᚑbackᚋgraphᚋmodelᚐTokenActionEnum(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "data":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
-			it.Data, err = ec.unmarshalOMap2map(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputOfferProductInput(ctx context.Context, obj interface{}) (model.OfferProductInput, error) {
 	var it model.OfferProductInput
 	asMap := map[string]interface{}{}
@@ -7315,6 +7421,52 @@ func (ec *executionContext) unmarshalInputRemoveOfferInput(ctx context.Context, 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offerId"))
 			it.OfferID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRequestSetUserEmailInput(ctx context.Context, obj interface{}) (model.RequestSetUserEmailInput, error) {
+	var it model.RequestSetUserEmailInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "email":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			it.Email, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRequestSetUserPhoneInput(ctx context.Context, obj interface{}) (model.RequestSetUserPhoneInput, error) {
+	var it model.RequestSetUserPhoneInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "phone":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
+			it.Phone, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7790,13 +7942,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "createToken":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_createToken(ctx, field)
-			}
-
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
-
 		case "register":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_register(ctx, field)
@@ -7807,9 +7952,33 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "approveUserEmail":
+		case "requestSetUserEmail":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_approveUserEmail(ctx, field)
+				return ec._Mutation_requestSetUserEmail(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+		case "requestSetUserPhone":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_requestSetUserPhone(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+		case "approveSetUserEmail":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_approveSetUserEmail(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "approveSetUserPhone":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_approveSetUserPhone(ctx, field)
 			}
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
@@ -10594,16 +10763,6 @@ func (ec *executionContext) marshalNTakeOffProductResult2ᚖauctionᚑbackᚋgra
 	return ec._TakeOffProductResult(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNTokenActionEnum2auctionᚑbackᚋgraphᚋmodelᚐTokenActionEnum(ctx context.Context, v interface{}) (model.TokenActionEnum, error) {
-	var res model.TokenActionEnum
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNTokenActionEnum2auctionᚑbackᚋgraphᚋmodelᚐTokenActionEnum(ctx context.Context, sel ast.SelectionSet, v model.TokenActionEnum) graphql.Marshaler {
-	return v
-}
-
 func (ec *executionContext) marshalNTransaction2ᚕᚖauctionᚑbackᚋgraphᚋmodelᚐTransactionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Transaction) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -11259,14 +11418,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) unmarshalOCreateTokenInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐCreateTokenInput(ctx context.Context, v interface{}) (*model.CreateTokenInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputCreateTokenInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalOCursor2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -11315,22 +11466,6 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	return res
 }
 
-func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalMap(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]interface{}) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalMap(v)
-	return res
-}
-
 func (ec *executionContext) marshalOOffer2ᚖauctionᚑbackᚋgraphᚋmodelᚐOffer(ctx context.Context, sel ast.SelectionSet, v *model.Offer) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -11343,6 +11478,22 @@ func (ec *executionContext) marshalOProduct2ᚖauctionᚑbackᚋgraphᚋmodelᚐ
 		return graphql.Null
 	}
 	return ec._Product(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORequestSetUserEmailInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐRequestSetUserEmailInput(ctx context.Context, v interface{}) (*model.RequestSetUserEmailInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRequestSetUserEmailInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalORequestSetUserPhoneInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐRequestSetUserPhoneInput(ctx context.Context, v interface{}) (*model.RequestSetUserPhoneInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRequestSetUserPhoneInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

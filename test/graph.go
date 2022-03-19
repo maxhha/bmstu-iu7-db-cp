@@ -16,14 +16,8 @@ type TokenService struct {
 	mock.Mock
 }
 
-func (t *TokenService) Validate(action db.TokenAction, data map[string]interface{}) error {
-	args := t.Called(action, data)
-	return args.Error(0)
-}
-
-func (t *TokenService) Send(token db.Token) error {
-	args := t.Called(token)
-
+func (t *TokenService) Create(action db.TokenAction, viewer *db.User, data map[string]interface{}) error {
+	args := t.Called(action, viewer, data)
 	return args.Error(0)
 }
 

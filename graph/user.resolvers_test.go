@@ -79,7 +79,7 @@ func (s *ApproveUserEmailSuite) TestApproveUserEmail() {
 	user_form := db.UserForm{ID: "test"}
 
 	s.TokenMock.
-		On("Activate", db.TokenActionApproveUserEmail, token, &viewer).
+		On("Activate", db.TokenActionSetUserEmail, token, &viewer).
 		Return(
 			db.Token{Data: map[string]interface{}{"email": email}},
 			nil,
@@ -97,7 +97,7 @@ func (s *ApproveUserEmailSuite) TestApproveUserEmail() {
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	ctx := auth.WithViewer(context.Background(), &viewer)
-	result, err := s.resolver.Mutation().ApproveUserEmail(ctx, &model.TokenInput{Token: token})
+	result, err := s.resolver.Mutation().ApproveSetUserEmail(ctx, &model.TokenInput{Token: token})
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), result)
 	require.Equal(s.T(), result.User, &viewer)
