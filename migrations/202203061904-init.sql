@@ -96,6 +96,23 @@ SELECT EXISTS (
         blocked_until TIMESTAMP
     );
 
+    CREATE TYPE role_type AS ENUM (
+        'MANAGER',
+        'ADMIN'
+    );
+
+    CREATE TABLE roles (
+        type role_type NOT NULL,
+        user_id SHORTKEY NOT NULL,
+        issuer_id SHORTKEY NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id), -- TODO add on delete behevior
+        CONSTRAINT fk_issuer FOREIGN KEY (issuer_id) REFERENCES users(id) -- TODO add on delete behevior
+    );
+
+    CREATE INDEX indx_role_indices_pk ON roles(type, user_id, deleted_at);
+
     -- generate shortkey for each insert
     CREATE TRIGGER trgr_users_genid 
         BEFORE INSERT ON users FOR EACH ROW 
