@@ -60,6 +60,27 @@ func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input *m
 	}, nil
 }
 
+func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string, filter *model.UserFormsFilter) (*model.UserFormsConnection, error) {
+	viewer := auth.ForViewer(ctx)
+	if err := checkRole(r.DB, db.RoleTypeManager, viewer); err != nil {
+		return nil, err
+	}
+
+	query := r.DB.Model(&db.UserForm{}).Order("created_at desc")
+
+	if filter != nil {
+		if len(filter.ID) > 0 {
+			query = query.Where("id in ?", filter.ID)
+		}
+
+		if len(filter.State) > 0 {
+			query = query.Where("state in ?", filter.State)
+		}
+	}
+
+	return UserFormPagination(query, first, after)
+}
+
 func (r *userFormResolver) State(ctx context.Context, obj *db.UserForm) (model.UserFormStateEnum, error) {
 	return model.UserFormStateEnum(obj.State), nil
 }

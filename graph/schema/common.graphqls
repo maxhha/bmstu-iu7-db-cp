@@ -18,6 +18,11 @@ type TokenResult {
   token: String!
 }
 
+input DateTimeRange {
+  from: DateTime
+  to: DateTime
+}
+
 type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!

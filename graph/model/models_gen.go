@@ -63,6 +63,11 @@ type CreateProductResult struct {
 	Product *Product `json:"product"`
 }
 
+type DateTimeRange struct {
+	From *time.Time `json:"from"`
+	To   *time.Time `json:"to"`
+}
+
 type LoginInput struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -237,6 +242,11 @@ type UserFormsConnection struct {
 type UserFormsConnectionEdge struct {
 	Cursor string       `json:"cursor"`
 	Node   *db.UserForm `json:"node"`
+}
+
+type UserFormsFilter struct {
+	State []UserFormStateEnum `json:"state"`
+	ID    []string            `json:"id"`
 }
 
 type UserResult struct {

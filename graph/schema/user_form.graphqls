@@ -38,6 +38,16 @@ type UserFormsConnection {
   edges: [UserFormsConnectionEdge!]!
 }
 
+input UserFormsFilter {
+  state: [UserFormStateEnum!] = []
+  id: [ID!] = []
+}
+
+extend type Query {
+  """List of user forms"""
+  userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}): UserFormsConnection!
+}
+
 extend type Mutation {
   """Send token for user form moderation"""
   requestModerateUserForm: Boolean!

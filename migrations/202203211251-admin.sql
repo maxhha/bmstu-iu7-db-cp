@@ -38,8 +38,8 @@ SELECT EXISTS (
     INSERT INTO users (deleted_at, blocked_until)
     VALUES (NULL, NULL) RETURNING id AS admin_id \gset
 
-    INSERT INTO user_forms (user_id, state, email, password)
-    VALUES (:'admin_id', 'APPROVED', :'PROJECT_ADMIN_EMAIL', :'PROJECT_ADMIN_PASSWORD');
+    INSERT INTO user_forms (user_id, state, email, password, name)
+    VALUES (:'admin_id', 'APPROVED', :'PROJECT_ADMIN_EMAIL', :'PROJECT_ADMIN_PASSWORD', 'admin');
 
     INSERT INTO roles (type, user_id, issuer_id)
     VALUES ('MANAGER', :'admin_id', :'admin_id'),
