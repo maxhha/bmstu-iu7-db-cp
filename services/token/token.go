@@ -23,6 +23,7 @@ func New(db *gorm.DB) TokenService {
 }
 
 func (t *TokenService) send(token db.Token) error {
+	fmt.Println("token:", token.ID)
 	return nil
 }
 

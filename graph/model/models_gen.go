@@ -446,3 +446,48 @@ func (e *TransactionTypeEnum) UnmarshalGQL(v interface{}) error {
 func (e TransactionTypeEnum) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
+
+type UserFormStateEnum string
+
+const (
+	UserFormStateEnumCreated    UserFormStateEnum = "CREATED"
+	UserFormStateEnumModerating UserFormStateEnum = "MODERATING"
+	UserFormStateEnumApproved   UserFormStateEnum = "APPROVED"
+	UserFormStateEnumDeclained  UserFormStateEnum = "DECLAINED"
+)
+
+var AllUserFormStateEnum = []UserFormStateEnum{
+	UserFormStateEnumCreated,
+	UserFormStateEnumModerating,
+	UserFormStateEnumApproved,
+	UserFormStateEnumDeclained,
+}
+
+func (e UserFormStateEnum) IsValid() bool {
+	switch e {
+	case UserFormStateEnumCreated, UserFormStateEnumModerating, UserFormStateEnumApproved, UserFormStateEnumDeclained:
+		return true
+	}
+	return false
+}
+
+func (e UserFormStateEnum) String() string {
+	return string(e)
+}
+
+func (e *UserFormStateEnum) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = UserFormStateEnum(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid UserFormStateEnum", str)
+	}
+	return nil
+}
+
+func (e UserFormStateEnum) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}

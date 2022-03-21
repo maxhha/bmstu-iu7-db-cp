@@ -45,6 +45,7 @@ type ResolverRoot interface {
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
 	User() UserResolver
+	UserForm() UserFormResolver
 }
 
 type DirectiveRoot struct {
@@ -87,19 +88,21 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ApproveSetUserEmail func(childComplexity int, input *model.TokenInput) int
-		ApproveSetUserPhone func(childComplexity int, input *model.TokenInput) int
-		CreateOffer         func(childComplexity int, input model.CreateOfferInput) int
-		CreateProduct       func(childComplexity int, input model.CreateProductInput) int
-		Login               func(childComplexity int, input *model.LoginInput) int
-		OfferProduct        func(childComplexity int, input model.OfferProductInput) int
-		Register            func(childComplexity int) int
-		RemoveOffer         func(childComplexity int, input model.RemoveOfferInput) int
-		RequestSetUserEmail func(childComplexity int, input *model.RequestSetUserEmailInput) int
-		RequestSetUserPhone func(childComplexity int, input *model.RequestSetUserPhoneInput) int
-		SellProduct         func(childComplexity int, input model.SellProductInput) int
-		TakeOffProduct      func(childComplexity int, input model.TakeOffProductInput) int
-		UpdateUserPassword  func(childComplexity int, input *model.UpdateUserPasswordInput) int
+		ApproveModerateUserForm func(childComplexity int, input *model.TokenInput) int
+		ApproveSetUserEmail     func(childComplexity int, input *model.TokenInput) int
+		ApproveSetUserPhone     func(childComplexity int, input *model.TokenInput) int
+		CreateOffer             func(childComplexity int, input model.CreateOfferInput) int
+		CreateProduct           func(childComplexity int, input model.CreateProductInput) int
+		Login                   func(childComplexity int, input *model.LoginInput) int
+		OfferProduct            func(childComplexity int, input model.OfferProductInput) int
+		Register                func(childComplexity int) int
+		RemoveOffer             func(childComplexity int, input model.RemoveOfferInput) int
+		RequestModerateUserForm func(childComplexity int) int
+		RequestSetUserEmail     func(childComplexity int, input *model.RequestSetUserEmailInput) int
+		RequestSetUserPhone     func(childComplexity int, input *model.RequestSetUserPhoneInput) int
+		SellProduct             func(childComplexity int, input model.SellProductInput) int
+		TakeOffProduct          func(childComplexity int, input model.TakeOffProductInput) int
+		UpdateUserPassword      func(childComplexity int, input *model.UpdateUserPasswordInput) int
 	}
 
 	Offer struct {
@@ -243,8 +246,10 @@ type ComplexityRoot struct {
 
 	UserForm struct {
 		Email func(childComplexity int) int
+		ID    func(childComplexity int) int
 		Name  func(childComplexity int) int
 		Phone func(childComplexity int) int
+		State func(childComplexity int) int
 	}
 
 	UserFormFilled struct {
@@ -286,12 +291,14 @@ type MutationResolver interface {
 	TakeOffProduct(ctx context.Context, input model.TakeOffProductInput) (*model.TakeOffProductResult, error)
 	SellProduct(ctx context.Context, input model.SellProductInput) (*model.SellProductResult, error)
 	Register(ctx context.Context) (*model.TokenResult, error)
-	RequestSetUserEmail(ctx context.Context, input *model.RequestSetUserEmailInput) (*bool, error)
-	RequestSetUserPhone(ctx context.Context, input *model.RequestSetUserPhoneInput) (*bool, error)
+	Login(ctx context.Context, input *model.LoginInput) (*model.TokenResult, error)
+	RequestSetUserEmail(ctx context.Context, input *model.RequestSetUserEmailInput) (bool, error)
+	RequestSetUserPhone(ctx context.Context, input *model.RequestSetUserPhoneInput) (bool, error)
 	ApproveSetUserEmail(ctx context.Context, input *model.TokenInput) (*model.UserResult, error)
 	ApproveSetUserPhone(ctx context.Context, input *model.TokenInput) (*model.UserResult, error)
 	UpdateUserPassword(ctx context.Context, input *model.UpdateUserPasswordInput) (*model.UserResult, error)
-	Login(ctx context.Context, input *model.LoginInput) (*model.TokenResult, error)
+	RequestModerateUserForm(ctx context.Context) (bool, error)
+	ApproveModerateUserForm(ctx context.Context, input *model.TokenInput) (*model.UserResult, error)
 }
 type OfferResolver interface {
 	State(ctx context.Context, obj *model.Offer) (model.OfferStateEnum, error)
@@ -330,6 +337,9 @@ type UserResolver interface {
 	Accounts(ctx context.Context, obj *db.User, first *int, after *string) (*model.UserAccountsConnection, error)
 	Offers(ctx context.Context, obj *db.User, first *int, after *string) (*model.OffersConnection, error)
 	Products(ctx context.Context, obj *db.User, first *int, after *string) (*model.ProductsConnection, error)
+}
+type UserFormResolver interface {
+	State(ctx context.Context, obj *db.UserForm) (model.UserFormStateEnum, error)
 }
 
 type executableSchema struct {
@@ -450,6 +460,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Money.Currency(childComplexity), true
 
+	case "Mutation.approveModerateUserForm":
+		if e.complexity.Mutation.ApproveModerateUserForm == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_approveModerateUserForm_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ApproveModerateUserForm(childComplexity, args["input"].(*model.TokenInput)), true
+
 	case "Mutation.approveSetUserEmail":
 		if e.complexity.Mutation.ApproveSetUserEmail == nil {
 			break
@@ -540,6 +562,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.RemoveOffer(childComplexity, args["input"].(model.RemoveOfferInput)), true
+
+	case "Mutation.requestModerateUserForm":
+		if e.complexity.Mutation.RequestModerateUserForm == nil {
+			break
+		}
+
+		return e.complexity.Mutation.RequestModerateUserForm(childComplexity), true
 
 	case "Mutation.requestSetUserEmail":
 		if e.complexity.Mutation.RequestSetUserEmail == nil {
@@ -1154,6 +1183,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UserForm.Email(childComplexity), true
 
+	case "UserForm.id":
+		if e.complexity.UserForm.ID == nil {
+			break
+		}
+
+		return e.complexity.UserForm.ID(childComplexity), true
+
 	case "UserForm.name":
 		if e.complexity.UserForm.Name == nil {
 			break
@@ -1167,6 +1203,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UserForm.Phone(childComplexity), true
+
+	case "UserForm.state":
+		if e.complexity.UserForm.State == nil {
+			break
+		}
+
+		return e.complexity.UserForm.State(childComplexity), true
 
 	case "UserFormFilled.email":
 		if e.complexity.UserFormFilled.Email == nil {
@@ -1687,23 +1730,33 @@ input LoginInput {
 extend type Mutation {
   """Registrates empty user"""
   register: TokenResult!
+  """User login"""
+  login(input: LoginInput): TokenResult!
+
   """Request set user email"""
-  requestSetUserEmail(input: RequestSetUserEmailInput): Boolean
+  requestSetUserEmail(input: RequestSetUserEmailInput): Boolean!
   """Request set user email"""
-  requestSetUserPhone(input: RequestSetUserPhoneInput): Boolean
+  requestSetUserPhone(input: RequestSetUserPhoneInput): Boolean!
   """First input of users email"""
   approveSetUserEmail(input: TokenInput): UserResult!
-  """First input of users """
+  """First input of users"""
   approveSetUserPhone(input: TokenInput): UserResult!
   """Update user password using old password"""
   updateUserPassword(input: UpdateUserPasswordInput): UserResult!
-
-  """User login"""
-  login(input: LoginInput): TokenResult!
 }
 `, BuiltIn: false},
-	{Name: "graph/schema/user_form.graphqls", Input: `"""User personal information"""
+	{Name: "graph/schema/user_form.graphqls", Input: `enum UserFormStateEnum {
+  CREATED
+  MODERATING
+  APPROVED
+  DECLAINED
+}
+
+"""User personal information"""
 type UserForm {
+  id: ID!
+  """User form state"""
+  state: UserFormStateEnum!
   """User email"""
   email: String
   """User phone"""
@@ -1730,7 +1783,15 @@ type UserFormsConnectionEdge {
 type UserFormsConnection {
   pageInfo: PageInfo!
   edges: [UserFormsConnectionEdge!]!
-}`, BuiltIn: false},
+}
+
+extend type Mutation {
+  """Send token for user form moderation"""
+  requestModerateUserForm: Boolean!
+  """Set user form state to moderate"""
+  approveModerateUserForm(input: TokenInput): UserResult!
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -1759,6 +1820,21 @@ func (ec *executionContext) field_BankAccount_transactions_args(ctx context.Cont
 		}
 	}
 	args["after"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_approveModerateUserForm_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.TokenInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOTokenInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐTokenInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -2947,6 +3023,48 @@ func (ec *executionContext) _Mutation_register(ctx context.Context, field graphq
 	return ec.marshalNTokenResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐTokenResult(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_login_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Login(rctx, args["input"].(*model.LoginInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TokenResult)
+	fc.Result = res
+	return ec.marshalNTokenResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐTokenResult(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_requestSetUserEmail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2979,11 +3097,14 @@ func (ec *executionContext) _Mutation_requestSetUserEmail(ctx context.Context, f
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_requestSetUserPhone(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3018,11 +3139,14 @@ func (ec *executionContext) _Mutation_requestSetUserPhone(ctx context.Context, f
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_approveSetUserEmail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3151,7 +3275,42 @@ func (ec *executionContext) _Mutation_updateUserPassword(ctx context.Context, fi
 	return ec.marshalNUserResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserResult(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_requestModerateUserForm(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RequestModerateUserForm(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_approveModerateUserForm(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3168,7 +3327,7 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_login_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_approveModerateUserForm_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -3176,7 +3335,7 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Login(rctx, args["input"].(*model.LoginInput))
+		return ec.resolvers.Mutation().ApproveModerateUserForm(rctx, args["input"].(*model.TokenInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3188,9 +3347,9 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.TokenResult)
+	res := resTmp.(*model.UserResult)
 	fc.Result = res
-	return ec.marshalNTokenResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐTokenResult(ctx, field.Selections, res)
+	return ec.marshalNUserResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Offer_id(ctx context.Context, field graphql.CollectedField, obj *model.Offer) (ret graphql.Marshaler) {
@@ -5842,6 +6001,76 @@ func (ec *executionContext) _UserAccountsConnectionEdge_node(ctx context.Context
 	return ec.marshalNUserAccount2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserAccount(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _UserForm_id(ctx context.Context, field graphql.CollectedField, obj *db.UserForm) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserForm",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserForm_state(ctx context.Context, field graphql.CollectedField, obj *db.UserForm) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserForm",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.UserForm().State(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UserFormStateEnum)
+	fc.Result = res
+	return ec.marshalNUserFormStateEnum2auctionᚑbackᚋgraphᚋmodelᚐUserFormStateEnum(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _UserForm_email(ctx context.Context, field graphql.CollectedField, obj *db.UserForm) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -8172,6 +8401,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "login":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_login(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "requestSetUserEmail":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_requestSetUserEmail(ctx, field)
@@ -8179,6 +8418,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "requestSetUserPhone":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_requestSetUserPhone(ctx, field)
@@ -8186,6 +8428,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "approveSetUserEmail":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_approveSetUserEmail(ctx, field)
@@ -8216,9 +8461,19 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "login":
+		case "requestModerateUserForm":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_login(ctx, field)
+				return ec._Mutation_requestModerateUserForm(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "approveModerateUserForm":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_approveModerateUserForm(ctx, field)
 			}
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
@@ -9674,6 +9929,36 @@ func (ec *executionContext) _UserForm(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("UserForm")
+		case "id":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._UserForm_id(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "state":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UserForm_state(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "email":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._UserForm_email(ctx, field, obj)
@@ -11241,6 +11526,16 @@ func (ec *executionContext) marshalNUserForm2ᚖauctionᚑbackᚋdbᚐUserForm(c
 		return graphql.Null
 	}
 	return ec._UserForm(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUserFormStateEnum2auctionᚑbackᚋgraphᚋmodelᚐUserFormStateEnum(ctx context.Context, v interface{}) (model.UserFormStateEnum, error) {
+	var res model.UserFormStateEnum
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUserFormStateEnum2auctionᚑbackᚋgraphᚋmodelᚐUserFormStateEnum(ctx context.Context, sel ast.SelectionSet, v model.UserFormStateEnum) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNUserFormsConnection2auctionᚑbackᚋgraphᚋmodelᚐUserFormsConnection(ctx context.Context, sel ast.SelectionSet, v model.UserFormsConnection) graphql.Marshaler {

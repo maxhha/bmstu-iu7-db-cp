@@ -35,36 +35,76 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.TokenResult, er
 	}, nil
 }
 
-func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input *model.RequestSetUserEmailInput) (*bool, error) {
+func (r *mutationResolver) Login(ctx context.Context, input *model.LoginInput) (*model.TokenResult, error) {
+	form := db.UserForm{}
+
+	err := r.DB.
+		Where(`(
+			state = 'APPROVED' 
+			OR (SELECT COUNT(1) FROM user_forms u WHERE "user_forms"."user_id" = u.user_id) = 1
+		)`).
+		Where(
+			"name = @username OR email = @username OR phone = @username",
+			sql.Named("username", input.Username),
+		).
+		Where(
+			"password IS NOT NULL",
+		).
+		Take(
+			&form,
+		).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("take: %w", err)
+	}
+
+	if form.Password == nil {
+		return nil, fmt.Errorf("password not set")
+	}
+
+	if !checkHashAndPassword(*form.Password, input.Password) {
+		return nil, fmt.Errorf("password mismatch")
+	}
+
+	token, err := jwt.NewUser(form.UserID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.TokenResult{
+		Token: token,
+	}, nil
+}
+
+func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input *model.RequestSetUserEmailInput) (bool, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
-		return nil, fmt.Errorf("unauthorized")
+		return false, fmt.Errorf("unauthorized")
 	}
 
 	data := map[string]interface{}{"email": input.Email}
 	if err := r.Token.Create(db.TokenActionSetUserEmail, viewer, data); err != nil {
-		return nil, err
+		return false, err
 	}
 
-	res := true
-	return &res, nil
+	return true, nil
 }
 
-func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input *model.RequestSetUserPhoneInput) (*bool, error) {
+func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input *model.RequestSetUserPhoneInput) (bool, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
-		return nil, fmt.Errorf("unauthorized")
+		return false, fmt.Errorf("unauthorized")
 	}
 
 	data := map[string]interface{}{"phone": input.Phone}
 	if err := r.Token.Create(db.TokenActionSetUserPhone, viewer, data); err != nil {
-		return nil, err
+		return false, err
 	}
 
-	res := true
-	return &res, nil
+	return true, nil
 }
 
 func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input *model.TokenInput) (*model.UserResult, error) {
@@ -72,7 +112,7 @@ func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input *model
 	token, err := r.Token.Activate(db.TokenActionSetUserEmail, input.Token, viewer)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("token activate: %w", err)
 	}
 
 	email, ok := token.Data["email"].(string)
@@ -101,7 +141,7 @@ func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input *model
 	token, err := r.Token.Activate(db.TokenActionSetUserEmail, input.Token, viewer)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("token activate: %w", err)
 	}
 
 	phone, ok := token.Data["phone"].(string)
@@ -117,7 +157,7 @@ func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input *model
 	}
 
 	if err = r.DB.Model(&form).Update("phone", phone).Error; err != nil {
-		return nil, fmt.Errorf("update: err")
+		return nil, fmt.Errorf("update: %w", err)
 	}
 
 	return &model.UserResult{
@@ -163,48 +203,6 @@ func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input *model.
 
 	return &model.UserResult{
 		User: viewer,
-	}, nil
-}
-
-func (r *mutationResolver) Login(ctx context.Context, input *model.LoginInput) (*model.TokenResult, error) {
-	form := db.UserForm{}
-
-	err := r.DB.
-		Where(`(
-			state = 'APPROVED' 
-			OR (SELECT COUNT(1) FROM user_forms u WHERE "user_forms"."user_id" = u.user_id) = 1
-		)`).
-		Where(
-			"name = @username OR email = @username OR phone = @username",
-			sql.Named("username", input.Username),
-		).
-		Where(
-			"password IS NOT NULL",
-		).
-		Take(
-			&form,
-		).Error
-
-	if err != nil {
-		return nil, fmt.Errorf("take: %w", err)
-	}
-
-	if form.Password == nil {
-		return nil, fmt.Errorf("password not set")
-	}
-
-	if !checkHashAndPassword(*form.Password, input.Password) {
-		return nil, fmt.Errorf("password mismatch")
-	}
-
-	token, err := jwt.NewUser(form.UserID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &model.TokenResult{
-		Token: token,
 	}, nil
 }
 

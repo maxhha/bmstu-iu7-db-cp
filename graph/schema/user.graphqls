@@ -60,17 +60,17 @@ input LoginInput {
 extend type Mutation {
   """Registrates empty user"""
   register: TokenResult!
+  """User login"""
+  login(input: LoginInput): TokenResult!
+
   """Request set user email"""
-  requestSetUserEmail(input: RequestSetUserEmailInput): Boolean
+  requestSetUserEmail(input: RequestSetUserEmailInput): Boolean!
   """Request set user email"""
-  requestSetUserPhone(input: RequestSetUserPhoneInput): Boolean
+  requestSetUserPhone(input: RequestSetUserPhoneInput): Boolean!
   """First input of users email"""
   approveSetUserEmail(input: TokenInput): UserResult!
-  """First input of users """
+  """First input of users"""
   approveSetUserPhone(input: TokenInput): UserResult!
   """Update user password using old password"""
   updateUserPassword(input: UpdateUserPasswordInput): UserResult!
-
-  """User login"""
-  login(input: LoginInput): TokenResult!
 }

@@ -1,5 +1,15 @@
+enum UserFormStateEnum {
+  CREATED
+  MODERATING
+  APPROVED
+  DECLAINED
+}
+
 """User personal information"""
 type UserForm {
+  id: ID!
+  """User form state"""
+  state: UserFormStateEnum!
   """User email"""
   email: String
   """User phone"""
@@ -26,4 +36,11 @@ type UserFormsConnectionEdge {
 type UserFormsConnection {
   pageInfo: PageInfo!
   edges: [UserFormsConnectionEdge!]!
+}
+
+extend type Mutation {
+  """Send token for user form moderation"""
+  requestModerateUserForm: Boolean!
+  """Set user form state to moderate"""
+  approveModerateUserForm(input: TokenInput): UserResult!
 }
