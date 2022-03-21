@@ -7,6 +7,9 @@ tasks:
     cmds:
       - go run github.com/99designs/gqlgen generate
     sources:
+      - db/**/*.resolvers.go
+      - graph/*.go
+      - graph/model/**/*.go
       - graph/schema/**/*.graphqls
     generates:
       - graph/generated/generated.go
