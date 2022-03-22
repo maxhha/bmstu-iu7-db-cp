@@ -153,3 +153,31 @@ func (s *UpdateUserPasswordSuite) TestUpdatePassword() {
 func TestUpdateUserPasswordSuite(t *testing.T) {
 	suite.Run(t, new(UpdateUserPasswordSuite))
 }
+
+type ViewerSuite struct {
+	test.GraphSuite
+	resolver *Resolver
+}
+
+func (s *ViewerSuite) SetupTest() {
+	s.GraphSuite.SetupTest()
+	s.resolver = New(s.DB, &s.TokenMock)
+}
+
+func (s *ViewerSuite) TearDownTest() {
+	s.GraphSuite.TearDownTest()
+}
+
+func (s *ViewerSuite) TestViewer() {
+	viewer := db.User{ID: "user-test"}
+	ctx := auth.WithViewer(context.Background(), &viewer)
+
+	result, err := s.resolver.Query().Viewer(ctx)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), result)
+	require.Equal(s.T(), result, &viewer)
+}
+
+func TestViewerSuite(t *testing.T) {
+	suite.Run(t, new(ViewerSuite))
+}

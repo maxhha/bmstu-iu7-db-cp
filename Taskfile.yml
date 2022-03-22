@@ -21,6 +21,7 @@ tasks:
       # remove generated code from coverage 
       - cat coverage.tmp.out | grep -v "_gen.go" > coverage.out
       - go tool cover -func=coverage.out
+      - go tool cover -html=coverage.out -o coverage.html
   dev:
     desc: Start dev server
     cmd: docker-compose --profile dev up

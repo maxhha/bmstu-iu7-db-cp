@@ -31,3 +31,6 @@ postgresql.conf
 
 # Taskfile cache
 .task
+
+# Coverage html result
+coverage.html
