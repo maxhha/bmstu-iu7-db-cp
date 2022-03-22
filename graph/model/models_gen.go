@@ -25,6 +25,10 @@ type AccountsConnectionEdge struct {
 	Node   Account `json:"node"`
 }
 
+type ApproveUserFormInput struct {
+	UserFormID string `json:"userFormId"`
+}
+
 // Bank that is cooperated with platform
 type Bank struct {
 	ID string `json:"id"`
@@ -66,6 +70,11 @@ type CreateProductResult struct {
 type DateTimeRange struct {
 	From *time.Time `json:"from"`
 	To   *time.Time `json:"to"`
+}
+
+type DeclineUserFormInput struct {
+	UserFormID    string  `json:"userFormId"`
+	DeclainReason *string `json:"declainReason"`
 }
 
 type LoginInput struct {
@@ -232,6 +241,10 @@ type UserFormFilled struct {
 	Phone string `json:"phone"`
 	// User name
 	Name string `json:"name"`
+}
+
+type UserFormResult struct {
+	UserForm *db.UserForm `json:"userForm"`
 }
 
 type UserFormsConnection struct {

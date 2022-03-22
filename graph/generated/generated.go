@@ -91,8 +91,10 @@ type ComplexityRoot struct {
 		ApproveModerateUserForm func(childComplexity int, input *model.TokenInput) int
 		ApproveSetUserEmail     func(childComplexity int, input *model.TokenInput) int
 		ApproveSetUserPhone     func(childComplexity int, input *model.TokenInput) int
+		ApproveUserForm         func(childComplexity int, input *model.ApproveUserFormInput) int
 		CreateOffer             func(childComplexity int, input model.CreateOfferInput) int
 		CreateProduct           func(childComplexity int, input model.CreateProductInput) int
+		DeclineUserForm         func(childComplexity int, input *model.DeclineUserFormInput) int
 		Login                   func(childComplexity int, input *model.LoginInput) int
 		OfferProduct            func(childComplexity int, input model.OfferProductInput) int
 		Register                func(childComplexity int) int
@@ -259,6 +261,10 @@ type ComplexityRoot struct {
 		Phone func(childComplexity int) int
 	}
 
+	UserFormResult struct {
+		UserForm func(childComplexity int) int
+	}
+
 	UserFormsConnection struct {
 		Edges    func(childComplexity int) int
 		PageInfo func(childComplexity int) int
@@ -300,6 +306,8 @@ type MutationResolver interface {
 	UpdateUserPassword(ctx context.Context, input *model.UpdateUserPasswordInput) (*model.UserResult, error)
 	RequestModerateUserForm(ctx context.Context) (bool, error)
 	ApproveModerateUserForm(ctx context.Context, input *model.TokenInput) (*model.UserResult, error)
+	ApproveUserForm(ctx context.Context, input *model.ApproveUserFormInput) (*model.UserFormResult, error)
+	DeclineUserForm(ctx context.Context, input *model.DeclineUserFormInput) (*model.UserFormResult, error)
 }
 type OfferResolver interface {
 	State(ctx context.Context, obj *model.Offer) (model.OfferStateEnum, error)
@@ -498,6 +506,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ApproveSetUserPhone(childComplexity, args["input"].(*model.TokenInput)), true
 
+	case "Mutation.approveUserForm":
+		if e.complexity.Mutation.ApproveUserForm == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_approveUserForm_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ApproveUserForm(childComplexity, args["input"].(*model.ApproveUserFormInput)), true
+
 	case "Mutation.createOffer":
 		if e.complexity.Mutation.CreateOffer == nil {
 			break
@@ -521,6 +541,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateProduct(childComplexity, args["input"].(model.CreateProductInput)), true
+
+	case "Mutation.declineUserForm":
+		if e.complexity.Mutation.DeclineUserForm == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_declineUserForm_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeclineUserForm(childComplexity, args["input"].(*model.DeclineUserFormInput)), true
 
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
@@ -1246,6 +1278,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UserFormFilled.Phone(childComplexity), true
 
+	case "UserFormResult.userForm":
+		if e.complexity.UserFormResult.UserForm == nil {
+			break
+		}
+
+		return e.complexity.UserFormResult.UserForm(childComplexity), true
+
 	case "UserFormsConnection.edges":
 		if e.complexity.UserFormsConnection.Edges == nil {
 			break
@@ -1810,8 +1849,21 @@ input UserFormsFilter {
 }
 
 extend type Query {
-  """List of user forms"""
+  """List of all user forms"""
   userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}): UserFormsConnection!
+}
+
+input ApproveUserFormInput {
+  userFormId: ID!
+}
+
+type UserFormResult {
+  userForm: UserForm!
+}
+
+input DeclineUserFormInput {
+  userFormId: ID!
+  declainReason: String
 }
 
 extend type Mutation {
@@ -1819,6 +1871,11 @@ extend type Mutation {
   requestModerateUserForm: Boolean!
   """Set user form state to moderate"""
   approveModerateUserForm(input: TokenInput): UserResult!
+
+  """Approve user form"""
+  approveUserForm(input: ApproveUserFormInput): UserFormResult!
+  """Decline user form"""
+  declineUserForm(input: DeclineUserFormInput): UserFormResult!
 }
 `, BuiltIn: false},
 }
@@ -1897,6 +1954,21 @@ func (ec *executionContext) field_Mutation_approveSetUserPhone_args(ctx context.
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_approveUserForm_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.ApproveUserFormInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOApproveUserFormInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐApproveUserFormInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createOffer_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1919,6 +1991,21 @@ func (ec *executionContext) field_Mutation_createProduct_args(ctx context.Contex
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateProductInput2auctionᚑbackᚋgraphᚋmodelᚐCreateProductInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_declineUserForm_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.DeclineUserFormInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalODeclineUserFormInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐDeclineUserFormInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3412,6 +3499,90 @@ func (ec *executionContext) _Mutation_approveModerateUserForm(ctx context.Contex
 	res := resTmp.(*model.UserResult)
 	fc.Result = res
 	return ec.marshalNUserResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_approveUserForm(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_approveUserForm_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ApproveUserForm(rctx, args["input"].(*model.ApproveUserFormInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserFormResult)
+	fc.Result = res
+	return ec.marshalNUserFormResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserFormResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_declineUserForm(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_declineUserForm_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeclineUserForm(rctx, args["input"].(*model.DeclineUserFormInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserFormResult)
+	fc.Result = res
+	return ec.marshalNUserFormResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserFormResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Offer_id(ctx context.Context, field graphql.CollectedField, obj *model.Offer) (ret graphql.Marshaler) {
@@ -6376,6 +6547,41 @@ func (ec *executionContext) _UserFormFilled_name(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _UserFormResult_userForm(ctx context.Context, field graphql.CollectedField, obj *model.UserFormResult) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserFormResult",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserForm, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.UserForm)
+	fc.Result = res
+	return ec.marshalNUserForm2ᚖauctionᚑbackᚋdbᚐUserForm(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _UserFormsConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.UserFormsConnection) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -7813,6 +8019,29 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputApproveUserFormInput(ctx context.Context, obj interface{}) (model.ApproveUserFormInput, error) {
+	var it model.ApproveUserFormInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "userFormId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userFormId"))
+			it.UserFormID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateOfferInput(ctx context.Context, obj interface{}) (model.CreateOfferInput, error) {
 	var it model.CreateOfferInput
 	asMap := map[string]interface{}{}
@@ -7897,6 +8126,37 @@ func (ec *executionContext) unmarshalInputDateTimeRange(ctx context.Context, obj
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("to"))
 			it.To, err = ec.unmarshalODateTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeclineUserFormInput(ctx context.Context, obj interface{}) (model.DeclineUserFormInput, error) {
+	var it model.DeclineUserFormInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "userFormId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userFormId"))
+			it.UserFormID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "declainReason":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("declainReason"))
+			it.DeclainReason, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8647,6 +8907,26 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "approveModerateUserForm":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_approveModerateUserForm(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "approveUserForm":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_approveUserForm(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "declineUserForm":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_declineUserForm(ctx, field)
 			}
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
@@ -10238,6 +10518,37 @@ func (ec *executionContext) _UserFormFilled(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var userFormResultImplementors = []string{"UserFormResult"}
+
+func (ec *executionContext) _UserFormResult(ctx context.Context, sel ast.SelectionSet, obj *model.UserFormResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userFormResultImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserFormResult")
+		case "userForm":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._UserFormResult_userForm(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var userFormsConnectionImplementors = []string{"UserFormsConnection"}
 
 func (ec *executionContext) _UserFormsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.UserFormsConnection) graphql.Marshaler {
@@ -11724,6 +12035,20 @@ func (ec *executionContext) marshalNUserForm2ᚖauctionᚑbackᚋdbᚐUserForm(c
 	return ec._UserForm(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNUserFormResult2auctionᚑbackᚋgraphᚋmodelᚐUserFormResult(ctx context.Context, sel ast.SelectionSet, v model.UserFormResult) graphql.Marshaler {
+	return ec._UserFormResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserFormResult2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserFormResult(ctx context.Context, sel ast.SelectionSet, v *model.UserFormResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._UserFormResult(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNUserFormStateEnum2auctionᚑbackᚋgraphᚋmodelᚐUserFormStateEnum(ctx context.Context, v interface{}) (model.UserFormStateEnum, error) {
 	var res model.UserFormStateEnum
 	err := res.UnmarshalGQL(v)
@@ -12123,6 +12448,14 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) unmarshalOApproveUserFormInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐApproveUserFormInput(ctx context.Context, v interface{}) (*model.ApproveUserFormInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputApproveUserFormInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12179,6 +12512,14 @@ func (ec *executionContext) marshalODateTime2ᚖtimeᚐTime(ctx context.Context,
 	}
 	res := model.MarshalDateTime(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalODeclineUserFormInput2ᚖauctionᚑbackᚋgraphᚋmodelᚐDeclineUserFormInput(ctx context.Context, v interface{}) (*model.DeclineUserFormInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDeclineUserFormInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOID2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {

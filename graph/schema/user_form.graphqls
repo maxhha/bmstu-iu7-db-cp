@@ -44,8 +44,21 @@ input UserFormsFilter {
 }
 
 extend type Query {
-  """List of user forms"""
+  """List of all user forms"""
   userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}): UserFormsConnection!
+}
+
+input ApproveUserFormInput {
+  userFormId: ID!
+}
+
+type UserFormResult {
+  userForm: UserForm!
+}
+
+input DeclineUserFormInput {
+  userFormId: ID!
+  declainReason: String
 }
 
 extend type Mutation {
@@ -53,4 +66,9 @@ extend type Mutation {
   requestModerateUserForm: Boolean!
   """Set user form state to moderate"""
   approveModerateUserForm(input: TokenInput): UserResult!
+
+  """Approve user form"""
+  approveUserForm(input: ApproveUserFormInput): UserFormResult!
+  """Decline user form"""
+  declineUserForm(input: DeclineUserFormInput): UserFormResult!
 }

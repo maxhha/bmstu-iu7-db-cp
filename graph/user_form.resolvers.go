@@ -60,6 +60,88 @@ func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input *m
 	}, nil
 }
 
+func (r *mutationResolver) ApproveUserForm(ctx context.Context, input *model.ApproveUserFormInput) (*model.UserFormResult, error) {
+	viewer := auth.ForViewer(ctx)
+	if err := checkRole(r.DB, db.RoleTypeManager, viewer); err != nil {
+		return nil, err
+	}
+
+	form := db.UserForm{}
+
+	if err := r.DB.Take(&form, "id = ?", input.UserFormID).Error; err != nil {
+		return nil, fmt.Errorf("take: %w", err)
+	}
+
+	if form.State != db.UserFormStateModerating {
+		return nil, fmt.Errorf("state is not %s", db.UserFormStateModerating)
+	}
+
+	errors := make([]error, 0, 4)
+
+	if form.Name == nil {
+		errors = append(errors, fmt.Errorf("name is nil"))
+	}
+
+	if form.Password == nil {
+		errors = append(errors, fmt.Errorf("password is nil"))
+	}
+
+	if form.Phone == nil {
+		errors = append(errors, fmt.Errorf("phone is nil"))
+	}
+
+	if form.Email == nil {
+		errors = append(errors, fmt.Errorf("email is nil"))
+	}
+
+	if len(errors) > 0 {
+		err := errors[0]
+		for _, e := range errors[1:] {
+			err = fmt.Errorf("%v, %v", err, e)
+		}
+
+		return nil, fmt.Errorf("errors: [%w]", err)
+	}
+
+	form.State = db.UserFormStateApproved
+
+	if err := r.DB.Save(&form).Error; err != nil {
+		return nil, fmt.Errorf("save: %w", err)
+	}
+
+	return &model.UserFormResult{
+		UserForm: &form,
+	}, nil
+}
+
+func (r *mutationResolver) DeclineUserForm(ctx context.Context, input *model.DeclineUserFormInput) (*model.UserFormResult, error) {
+	viewer := auth.ForViewer(ctx)
+	if err := checkRole(r.DB, db.RoleTypeManager, viewer); err != nil {
+		return nil, err
+	}
+
+	form := db.UserForm{}
+
+	if err := r.DB.Take(&form, "id = ?", input.UserFormID).Error; err != nil {
+		return nil, fmt.Errorf("take: %w", err)
+	}
+
+	if form.State != db.UserFormStateModerating {
+		return nil, fmt.Errorf("state is not %s", db.UserFormStateModerating)
+	}
+
+	form.State = db.UserFormStateDeclained
+	form.DeclainReason = input.DeclainReason
+
+	if err := r.DB.Save(&form).Error; err != nil {
+		return nil, fmt.Errorf("save: %w", err)
+	}
+
+	return &model.UserFormResult{
+		UserForm: &form,
+	}, nil
+}
+
 func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string, filter *model.UserFormsFilter) (*model.UserFormsConnection, error) {
 	viewer := auth.ForViewer(ctx)
 	if err := checkRole(r.DB, db.RoleTypeManager, viewer); err != nil {
