@@ -9,6 +9,7 @@ Client -> Server: `register`
 
 note:
 **regitster** создает нового User в базе данных.
+
 _Запись гостя удалится из бд через 4 часа, если он окончательно не зарегистрируется_
 
 Client <- Server: JWT token
@@ -52,6 +53,10 @@ Manager <- Server: userForms
 if: Анкета заполнена правильно
 
 Manager -> Server: `approveUserForm`
+
+note:
+После подтверждения отправляется заявка в банк на создание аккаунта.
+
 Server --> Client: Send email
 Server --> Manager: Updated UserForm
 

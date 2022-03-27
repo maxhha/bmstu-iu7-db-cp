@@ -14,17 +14,7 @@ import (
 )
 
 type RequestModerateUserFormSuite struct {
-	test.GraphSuite
-	resolver *Resolver
-}
-
-func (s *RequestModerateUserFormSuite) SetupTest() {
-	s.GraphSuite.SetupTest()
-	s.resolver = New(s.DB, &s.TokenMock)
-}
-
-func (s *RequestModerateUserFormSuite) TearDownTest() {
-	s.GraphSuite.TearDownTest()
+	GraphSuite
 }
 
 func (s *RequestModerateUserFormSuite) TestRequestModerateUserForm() {
@@ -46,17 +36,7 @@ func TestRequestModerateUserFormSuite(t *testing.T) {
 }
 
 type ApproveModerateUserFormSuite struct {
-	test.GraphSuite
-	resolver *Resolver
-}
-
-func (s *ApproveModerateUserFormSuite) SetupTest() {
-	s.GraphSuite.SetupTest()
-	s.resolver = New(s.DB, &s.TokenMock)
-}
-
-func (s *ApproveModerateUserFormSuite) TearDownTest() {
-	s.GraphSuite.TearDownTest()
+	GraphSuite
 }
 
 func (s *ApproveModerateUserFormSuite) TestApproveModerateUserForm() {

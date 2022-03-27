@@ -14,20 +14,20 @@ type Interface interface {
 	Activate(action db.TokenAction, token_code string, viewer *db.User) (db.Token, error)
 }
 
-type TokenService struct {
+type TokenPort struct {
 	db *gorm.DB
 }
 
-func New(db *gorm.DB) TokenService {
-	return TokenService{db}
+func New(db *gorm.DB) TokenPort {
+	return TokenPort{db}
 }
 
-func (t *TokenService) send(token db.Token) error {
+func (t *TokenPort) send(token db.Token) error {
 	fmt.Println("token:", token.ID)
 	return nil
 }
 
-func (t *TokenService) Create(action db.TokenAction, viewer *db.User, data map[string]interface{}) error {
+func (t *TokenPort) Create(action db.TokenAction, viewer *db.User, data map[string]interface{}) error {
 	token := db.Token{
 		ExpiresAt: time.Now().Add(time.Hour * time.Duration(1)),
 		Action:    action,
@@ -46,7 +46,7 @@ func (t *TokenService) Create(action db.TokenAction, viewer *db.User, data map[s
 	return nil
 }
 
-func (t *TokenService) Activate(action db.TokenAction, token_code string, viewer *db.User) (db.Token, error) {
+func (t *TokenPort) Activate(action db.TokenAction, token_code string, viewer *db.User) (db.Token, error) {
 	if viewer == nil {
 		return db.Token{}, fmt.Errorf("unauthorized")
 	}

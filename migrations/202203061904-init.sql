@@ -221,29 +221,39 @@ SELECT EXISTS (
         BEFORE INSERT ON tokens FOR EACH ROW 
         EXECUTE PROCEDURE token_generate();
 
-    -- CREATE TABLE banks (
-    --     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    --     name VARCHAR UNIQUE NOT NULL,
-    --     created_at TIMESTAMP NOT NULL,
-    --     updated_at TIMESTAMP NOT NULL,
-    --     deleted_at TIMESTAMP
-    -- );
+    CREATE TABLE banks (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR UNIQUE NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP
+    );
 
-    -- CREATE INDEX idx_bank_indices_deleted_at ON banks(deleted_at);
+    CREATE INDEX idx_bank_indices_deleted_at ON banks(deleted_at);
 
-    -- CREATE TABLE accounts (
-    --     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    --     is_bank BOOLEAN NOT NULL,
-    --     user_id UUID,
-    --     bank_id UUID NOT NULL,
-    --     created_at TIMESTAMP NOT NULL,
-    --     updated_at TIMESTAMP NOT NULL,
-    --     deleted_at TIMESTAMP,
-    --     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
-    --     CONSTRAINT fk_bank FOREIGN KEY (bank_id) REFERENCES banks(id)
-    -- );
+    CREATE TYPE account_type AS ENUM (
+      'USER',
+      'BANK'
+    );
 
-    -- CREATE INDEX idx_account_indices_deleted_at ON accounts(deleted_at);
+    CREATE TABLE accounts (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        type account_type NOT NULL,
+        user_id SHORTKEY,
+        bank_id UUID NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
+        CONSTRAINT fk_bank FOREIGN KEY (bank_id) REFERENCES banks(id),
+        CONSTRAINT chk_type CHECK (
+            CASE WHEN type='USER'THEN user_id IS NOT NULL 
+            WHEN type='BANK' THEN user_id IS NULL
+            ELSE false
+            END)
+    );
+
+    CREATE INDEX idx_account_indices_deleted_at ON accounts(deleted_at);
 
     -- CREATE TABLE products (
     --     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

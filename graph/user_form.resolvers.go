@@ -105,6 +105,10 @@ func (r *mutationResolver) ApproveUserForm(ctx context.Context, input *model.App
 
 	form.State = db.UserFormStateApproved
 
+	if err := r.Bank.UserFormApproved(form); err != nil {
+		return nil, fmt.Errorf("bank: %w", err)
+	}
+
 	if err := r.DB.Save(&form).Error; err != nil {
 		return nil, fmt.Errorf("save: %w", err)
 	}

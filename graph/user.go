@@ -31,7 +31,7 @@ func (r *mutationResolver) getOrCreateUserForm(viewer *db.User) (db.UserForm, er
 		if form.State == db.UserFormStateCreated || form.State == db.UserFormStateDeclained {
 			return form, nil
 		} else if form.State == db.UserFormStateApproved {
-			// create new form duplicating previos one
+			// clone form
 			form.ID = ""
 			form.State = db.UserFormStateCreated
 		} else if form.State == db.UserFormStateModerating {

@@ -25,17 +25,7 @@ func init() {
 }
 
 type RegisterSuite struct {
-	test.GraphSuite
-	resolver *Resolver
-}
-
-func (s *RegisterSuite) SetupTest() {
-	s.GraphSuite.SetupTest()
-	s.resolver = New(s.DB, &s.TokenMock)
-}
-
-func (s *RegisterSuite) TearDownTest() {
-	s.GraphSuite.TearDownTest()
+	GraphSuite
 }
 
 func (s *RegisterSuite) TestRegister() {
@@ -61,17 +51,7 @@ func TestRegisterSuite(t *testing.T) {
 }
 
 type ApproveSetUserEmailSuite struct {
-	test.GraphSuite
-	resolver *Resolver
-}
-
-func (s *ApproveSetUserEmailSuite) SetupTest() {
-	s.GraphSuite.SetupTest()
-	s.resolver = New(s.DB, &s.TokenMock)
-}
-
-func (s *ApproveSetUserEmailSuite) TearDownTest() {
-	s.GraphSuite.TearDownTest()
+	GraphSuite
 }
 
 func (s *ApproveSetUserEmailSuite) TestApproveSetUserEmail() {
@@ -110,17 +90,7 @@ func TestApproveSetUserEmailSuite(t *testing.T) {
 }
 
 type UpdateUserPasswordSuite struct {
-	test.GraphSuite
-	resolver *Resolver
-}
-
-func (s *UpdateUserPasswordSuite) SetupTest() {
-	s.GraphSuite.SetupTest()
-	s.resolver = New(s.DB, &s.TokenMock)
-}
-
-func (s *UpdateUserPasswordSuite) TearDownTest() {
-	s.GraphSuite.TearDownTest()
+	GraphSuite
 }
 
 func (s *UpdateUserPasswordSuite) TestUpdatePassword() {
@@ -155,17 +125,7 @@ func TestUpdateUserPasswordSuite(t *testing.T) {
 }
 
 type ViewerSuite struct {
-	test.GraphSuite
-	resolver *Resolver
-}
-
-func (s *ViewerSuite) SetupTest() {
-	s.GraphSuite.SetupTest()
-	s.resolver = New(s.DB, &s.TokenMock)
-}
-
-func (s *ViewerSuite) TearDownTest() {
-	s.GraphSuite.TearDownTest()
+	GraphSuite
 }
 
 func (s *ViewerSuite) TestViewer() {

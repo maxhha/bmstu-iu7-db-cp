@@ -19,7 +19,7 @@ tasks:
     cmds:
       - go test -coverprofile=coverage.tmp.out ./...
       # remove generated code from coverage 
-      - cat coverage.tmp.out | grep -v "_gen.go" > coverage.out
+      - cat coverage.tmp.out | grep -v "_gen.go\|_suite.go" > coverage.out
       - go tool cover -func=coverage.out
       - go tool cover -html=coverage.out -o coverage.html
   dev:

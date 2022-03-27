@@ -2,7 +2,8 @@ package graph
 
 import (
 	"auction-back/graph/model"
-	"auction-back/services/token"
+	"auction-back/ports/bank"
+	"auction-back/ports/token"
 	"sync"
 
 	"gorm.io/gorm"
@@ -17,14 +18,16 @@ type Resolver struct {
 	Market     map[string]chan *model.Product
 	MarketLock sync.Mutex
 	Token      token.Interface
+	Bank       bank.Interface
 }
 
-func New(db *gorm.DB, token token.Interface) *Resolver {
+func New(db *gorm.DB, token token.Interface, bank bank.Interface) *Resolver {
 	r := Resolver{
 		DB:         db,
 		Market:     make(map[string]chan *model.Product),
 		MarketLock: sync.Mutex{},
 		Token:      token,
+		Bank:       bank,
 	}
 
 	return &r

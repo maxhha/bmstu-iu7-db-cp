@@ -9,22 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type Bank struct {
-	gorm.Model
-	ID   string `gorm:"type:varchar(16);"`
-	Name string `gorm:"unique"`
-}
-
-type Account struct {
-	gorm.Model
-	ID     string `gorm:"type:varchar(16);"`
-	IsBank bool
-	UserID *string `gorm:"type:varchar(16);"`
-	BankID string  `gorm:"type:varchar(16);"`
-	User   *User
-	Bank   Bank
-}
-
 type Product struct {
 	gorm.Model
 	ID          string `gorm:"type:varchar(16);"`

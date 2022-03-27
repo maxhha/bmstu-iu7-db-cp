@@ -5,7 +5,8 @@ import (
 	"auction-back/graph"
 	"auction-back/graph/generated"
 	"auction-back/jwt"
-	"auction-back/services/token"
+	"auction-back/ports/bank"
+	"auction-back/ports/token"
 	"net/http"
 	"time"
 
@@ -24,8 +25,8 @@ import (
 	"auction-back/db"
 )
 
-func graphqlHandler(db *gorm.DB, token token.Interface) gin.HandlerFunc {
-	resolver := graph.New(db, token)
+func graphqlHandler(db *gorm.DB, token token.Interface, bank bank.Interface) gin.HandlerFunc {
+	resolver := graph.New(db, token, bank)
 	h := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	h.AddTransport(transport.Websocket{
@@ -73,7 +74,8 @@ func init() {
 
 func main() {
 	DB := db.ConnectDatabase()
-	t := token.New(DB)
+	tokenPort := token.New(DB)
+	bankPort := bank.New(DB)
 
 	r := gin.Default()
 
@@ -83,7 +85,7 @@ func main() {
 	r.Use(cors.New(corsConfig))
 
 	r.Use(auth.New(DB))
-	r.Any("/graphql", graphqlHandler(DB, &t))
+	r.Any("/graphql", graphqlHandler(DB, &tokenPort, &bankPort))
 	r.GET("/graphiql", playgroundHandler())
 	r.Run()
 }
