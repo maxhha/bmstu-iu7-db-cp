@@ -10,6 +10,8 @@ import (
 	"auction-back/graph/model"
 	"context"
 	"fmt"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, error) {
@@ -17,6 +19,22 @@ func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, e
 
 	if viewer == nil {
 		return false, fmt.Errorf("unauthorized")
+	}
+
+	form, err := r.User().DraftForm(ctx, viewer)
+
+	if err != nil {
+		return false, fmt.Errorf("draft form: %w", err)
+	}
+
+	_, err = (&model.UserFormFilled{}).From(form)
+
+	if form.Password == nil {
+		err = multierror.Append(err, fmt.Errorf("no password"))
+	}
+
+	if err != nil {
+		return false, err
 	}
 
 	data := map[string]interface{}{}
@@ -69,33 +87,6 @@ func (r *mutationResolver) ApproveUserForm(ctx context.Context, input model.Appr
 
 	if form.State != db.UserFormStateModerating {
 		return nil, fmt.Errorf("state is not %s", db.UserFormStateModerating)
-	}
-
-	errors := make([]error, 0, 4)
-
-	if form.Name == nil {
-		errors = append(errors, fmt.Errorf("name is nil"))
-	}
-
-	if form.Password == nil {
-		errors = append(errors, fmt.Errorf("password is nil"))
-	}
-
-	if form.Phone == nil {
-		errors = append(errors, fmt.Errorf("phone is nil"))
-	}
-
-	if form.Email == nil {
-		errors = append(errors, fmt.Errorf("email is nil"))
-	}
-
-	if len(errors) > 0 {
-		err := errors[0]
-		for _, e := range errors[1:] {
-			err = fmt.Errorf("%v, %v", err, e)
-		}
-
-		return nil, fmt.Errorf("errors: [%w]", err)
 	}
 
 	form.State = db.UserFormStateApproved

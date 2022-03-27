@@ -6,8 +6,8 @@ import (
 	"auction-back/graph/generated"
 	"auction-back/jwt"
 	"auction-back/ports/bank"
+	"auction-back/ports/role"
 	"auction-back/ports/token"
-	"auction-back/role"
 	"net/http"
 	"time"
 
@@ -26,11 +26,10 @@ import (
 	"auction-back/db"
 )
 
-func graphqlHandler(db *gorm.DB, token token.Interface, bank bank.Interface) gin.HandlerFunc {
-	resolver := graph.New(db, token, bank)
-
+func graphqlHandler(db *gorm.DB, token *token.TokenPort, bank *bank.BankPort, role *role.RolePort) gin.HandlerFunc {
+	resolver := graph.New(db, token, bank, role)
 	config := generated.Config{Resolvers: resolver}
-	config.Directives.HasRole = role.New(db)
+	config.Directives.HasRole = role.Handler()
 
 	h := handler.New(generated.NewExecutableSchema(config))
 
@@ -81,6 +80,7 @@ func main() {
 	DB := db.ConnectDatabase()
 	tokenPort := token.New(DB)
 	bankPort := bank.New(DB)
+	rolePort := role.New(DB)
 
 	r := gin.Default()
 
@@ -90,7 +90,7 @@ func main() {
 	r.Use(cors.New(corsConfig))
 
 	r.Use(auth.New(DB))
-	r.Any("/graphql", graphqlHandler(DB, &tokenPort, &bankPort))
+	r.Any("/graphql", graphqlHandler(DB, &tokenPort, &bankPort, &rolePort))
 	r.GET("/graphiql", playgroundHandler())
 	r.Run()
 }

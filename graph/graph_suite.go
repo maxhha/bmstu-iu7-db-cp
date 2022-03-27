@@ -13,6 +13,7 @@ type GraphSuite struct {
 	test.DBSuite
 	TokenMock test.TokenPort
 	BankMock  test.BankPort
+	RoleMock  test.RolePort
 	resolver  *Resolver
 }
 
@@ -35,5 +36,5 @@ func (s *GraphSuite) SetupTest() {
 	})
 	require.NoError(s.T(), err)
 
-	s.resolver = New(s.DB, &s.TokenMock, &s.BankMock)
+	s.resolver = New(s.DB, &s.TokenMock, &s.BankMock, &s.RoleMock)
 }

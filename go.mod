@@ -9,6 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gorilla/websocket v1.5.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/joho/godotenv v1.4.0
 	github.com/stretchr/testify v1.7.1
 	github.com/vektah/gqlparser/v2 v2.2.0
@@ -18,6 +19,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect

@@ -19,8 +19,24 @@ type RequestModerateUserFormSuite struct {
 
 func (s *RequestModerateUserFormSuite) TestRequestModerateUserForm() {
 	viewer := db.User{ID: "user-test"}
+	phone := "phone"
+	name := "name"
+	password := "password"
+	email := "email"
+
+	draft_form := db.UserForm{
+		State:    db.UserFormStateCreated,
+		Phone:    &phone,
+		Name:     &name,
+		Password: &password,
+		Email:    &email,
+	}
 
 	ctx := auth.WithViewer(context.Background(), &viewer)
+
+	s.SqlMock.ExpectQuery("SELECT \\* FROM \"user_forms\"").
+		WithArgs(viewer.ID).
+		WillReturnRows(test.MockRows(draft_form))
 
 	s.TokenMock.
 		On("Create", db.TokenActionModerateUserForm, &viewer, map[string]interface{}{}).

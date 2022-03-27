@@ -236,14 +236,39 @@ func (r *queryResolver) Viewer(ctx context.Context) (*db.User, error) {
 }
 
 func (r *userResolver) Form(ctx context.Context, obj *db.User) (*model.UserFormFilled, error) {
-	panic(fmt.Errorf("not implemented"))
+	viewer := auth.ForViewer(ctx)
+
+	if viewer.ID != obj.ID {
+		if err := r.Role.HasRole(db.RoleTypeManager, viewer); err != nil {
+			return nil, err
+		}
+	}
+
+	form := db.UserForm{}
+	err := r.DB.Order("created_at desc").Take(&form, "user_id = ? AND state = 'APPROVED'", obj.ID).Error
+
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return (&model.UserFormFilled{}).From(&form)
 }
 
 func (r *userResolver) DraftForm(ctx context.Context, obj *db.User) (*db.UserForm, error) {
 	viewer := auth.ForViewer(ctx)
 
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
 	if viewer.ID != obj.ID {
-		return nil, fmt.Errorf("denied")
+		if err := r.Role.HasRole(db.RoleTypeManager, viewer); err != nil {
+			return nil, err
+		}
 	}
 
 	form := db.UserForm{}
