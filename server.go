@@ -7,6 +7,7 @@ import (
 	"auction-back/jwt"
 	"auction-back/ports/bank"
 	"auction-back/ports/token"
+	"auction-back/role"
 	"net/http"
 	"time"
 
@@ -27,7 +28,11 @@ import (
 
 func graphqlHandler(db *gorm.DB, token token.Interface, bank bank.Interface) gin.HandlerFunc {
 	resolver := graph.New(db, token, bank)
-	h := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
+
+	config := generated.Config{Resolvers: resolver}
+	config.Directives.HasRole = role.New(db)
+
+	h := handler.New(generated.NewExecutableSchema(config))
 
 	h.AddTransport(transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,

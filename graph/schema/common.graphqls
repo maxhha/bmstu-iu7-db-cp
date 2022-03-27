@@ -29,3 +29,10 @@ type PageInfo {
   startCursor: Cursor
   endCursor: Cursor
 }
+
+enum Role {
+    ADMIN
+    MANAGER
+}
+
+directive @hasRole(role: Role!) on FIELD_DEFINITION

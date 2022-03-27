@@ -49,6 +49,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
+	HasRole func(ctx context.Context, obj interface{}, next graphql.Resolver, role model.Role) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -1520,6 +1521,13 @@ type PageInfo {
   startCursor: Cursor
   endCursor: Cursor
 }
+
+enum Role {
+    ADMIN
+    MANAGER
+}
+
+directive @hasRole(role: Role!) on FIELD_DEFINITION
 `, BuiltIn: false},
 	{Name: "graph/schema/offer.graphqls", Input: `enum OfferStateEnum {
   CREATED,
@@ -1850,7 +1858,7 @@ input UserFormsFilter {
 
 extend type Query {
   """List of all user forms"""
-  userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}): UserFormsConnection!
+  userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}): UserFormsConnection! @hasRole(role: MANAGER)
 }
 
 input ApproveUserFormInput {
@@ -1873,9 +1881,9 @@ extend type Mutation {
   approveModerateUserForm(input: TokenInput): UserResult!
 
   """Approve user form"""
-  approveUserForm(input: ApproveUserFormInput): UserFormResult!
+  approveUserForm(input: ApproveUserFormInput): UserFormResult! @hasRole(role: MANAGER)
   """Decline user form"""
-  declineUserForm(input: DeclineUserFormInput): UserFormResult!
+  declineUserForm(input: DeclineUserFormInput): UserFormResult! @hasRole(role: MANAGER)
 }
 `, BuiltIn: false},
 }
@@ -1884,6 +1892,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) dir_hasRole_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.Role
+	if tmp, ok := rawArgs["role"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
+		arg0, err = ec.unmarshalNRole2auctionᚑbackᚋgraphᚋmodelᚐRole(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["role"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_BankAccount_transactions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -3525,8 +3548,32 @@ func (ec *executionContext) _Mutation_approveUserForm(ctx context.Context, field
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ApproveUserForm(rctx, args["input"].(*model.ApproveUserFormInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ApproveUserForm(rctx, args["input"].(*model.ApproveUserFormInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRole2auctionᚑbackᚋgraphᚋmodelᚐRole(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.UserFormResult); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/graph/model.UserFormResult`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3567,8 +3614,32 @@ func (ec *executionContext) _Mutation_declineUserForm(ctx context.Context, field
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeclineUserForm(rctx, args["input"].(*model.DeclineUserFormInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DeclineUserForm(rctx, args["input"].(*model.DeclineUserFormInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRole2auctionᚑbackᚋgraphᚋmodelᚐRole(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.UserFormResult); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/graph/model.UserFormResult`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4868,8 +4939,32 @@ func (ec *executionContext) _Query_userForms(ctx context.Context, field graphql.
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().UserForms(rctx, args["first"].(*int), args["after"].(*string), args["filter"].(*model.UserFormsFilter))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().UserForms(rctx, args["first"].(*int), args["after"].(*string), args["filter"].(*model.UserFormsFilter))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRole2auctionᚑbackᚋgraphᚋmodelᚐRole(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.UserFormsConnection); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/graph/model.UserFormsConnection`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -11705,6 +11800,16 @@ func (ec *executionContext) marshalNRemoveOfferResult2ᚖauctionᚑbackᚋgraph�
 		return graphql.Null
 	}
 	return ec._RemoveOfferResult(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRole2auctionᚑbackᚋgraphᚋmodelᚐRole(ctx context.Context, v interface{}) (model.Role, error) {
+	var res model.Role
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRole2auctionᚑbackᚋgraphᚋmodelᚐRole(ctx context.Context, sel ast.SelectionSet, v model.Role) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNSellProductInput2auctionᚑbackᚋgraphᚋmodelᚐSellProductInput(ctx context.Context, v interface{}) (model.SellProductInput, error) {

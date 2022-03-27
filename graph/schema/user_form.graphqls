@@ -45,7 +45,7 @@ input UserFormsFilter {
 
 extend type Query {
   """List of all user forms"""
-  userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}): UserFormsConnection!
+  userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}): UserFormsConnection! @hasRole(role: MANAGER)
 }
 
 input ApproveUserFormInput {
@@ -68,7 +68,7 @@ extend type Mutation {
   approveModerateUserForm(input: TokenInput): UserResult!
 
   """Approve user form"""
-  approveUserForm(input: ApproveUserFormInput): UserFormResult!
+  approveUserForm(input: ApproveUserFormInput): UserFormResult! @hasRole(role: MANAGER)
   """Decline user form"""
-  declineUserForm(input: DeclineUserFormInput): UserFormResult!
+  declineUserForm(input: DeclineUserFormInput): UserFormResult! @hasRole(role: MANAGER)
 }

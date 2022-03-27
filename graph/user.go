@@ -71,22 +71,3 @@ func checkHashAndPassword(hash string, password string) bool {
 	hash2, _ := hashPassword(password)
 	return hash == hash2
 }
-
-func checkRole(DB *gorm.DB, roleType db.RoleType, viewer *db.User) error {
-	if viewer == nil {
-		return fmt.Errorf("unauthorized")
-	}
-
-	role := make([]db.Role, 1)
-
-	err := DB.Limit(1).Find(&role, "user_id = ? AND type = ?", viewer.ID, roleType).Error
-	if err != nil {
-		return fmt.Errorf("take: %w", err)
-	}
-
-	if len(role) == 0 {
-		return fmt.Errorf("no role %s", roleType)
-	}
-
-	return nil
-}

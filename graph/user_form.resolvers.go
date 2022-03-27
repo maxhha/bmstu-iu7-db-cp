@@ -61,11 +61,6 @@ func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input *m
 }
 
 func (r *mutationResolver) ApproveUserForm(ctx context.Context, input *model.ApproveUserFormInput) (*model.UserFormResult, error) {
-	viewer := auth.ForViewer(ctx)
-	if err := checkRole(r.DB, db.RoleTypeManager, viewer); err != nil {
-		return nil, err
-	}
-
 	form := db.UserForm{}
 
 	if err := r.DB.Take(&form, "id = ?", input.UserFormID).Error; err != nil {
@@ -119,11 +114,6 @@ func (r *mutationResolver) ApproveUserForm(ctx context.Context, input *model.App
 }
 
 func (r *mutationResolver) DeclineUserForm(ctx context.Context, input *model.DeclineUserFormInput) (*model.UserFormResult, error) {
-	viewer := auth.ForViewer(ctx)
-	if err := checkRole(r.DB, db.RoleTypeManager, viewer); err != nil {
-		return nil, err
-	}
-
 	form := db.UserForm{}
 
 	if err := r.DB.Take(&form, "id = ?", input.UserFormID).Error; err != nil {
@@ -147,11 +137,6 @@ func (r *mutationResolver) DeclineUserForm(ctx context.Context, input *model.Dec
 }
 
 func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string, filter *model.UserFormsFilter) (*model.UserFormsConnection, error) {
-	viewer := auth.ForViewer(ctx)
-	if err := checkRole(r.DB, db.RoleTypeManager, viewer); err != nil {
-		return nil, err
-	}
-
 	query := r.DB.Model(&db.UserForm{}).Order("created_at desc")
 
 	if filter != nil {
