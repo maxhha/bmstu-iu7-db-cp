@@ -1,21 +1,15 @@
 // Powered by https://swimlanes.io
 title: Регистрация пользователя
 
-order: Manager, Client, Server, DB
+order: Manager, Client, Server
 
 _: **1. Создание гостя**
 
 Client -> Server: `register`
 
 note:
-**regitster** создает нового User в базеданных
-
-Server --> DB: INSERT INTO user
-
-note:
-_удалить запись гостя из бд через 4 часа, если он окончательно не зарегистрируется_
-
-Server <-- DB: `id`
+**regitster** создает нового User в базе данных.
+_Запись гостя удалится из бд через 4 часа, если он окончательно не зарегистрируется_
 
 Client <- Server: JWT token
 
@@ -23,22 +17,12 @@ _: **2. Заполнение анкеты**
 
 Client -> Server: `requestSetUserEmail`
 
-Server --> DB: INSERT INTO tokens
-
-Server <-- DB: `token`
-
 Server --> Client: Send token to email
 
 Client -> Server: `approveSetUserEmail(token)`
 
-if: Если анекты еще нет в бд
-  Server --> DB: INSERT INTO user_forms
-  Server <-- DB: `id`
-end
-
-Server --> DB: UPDATE user_forms SET email
-
-DB --> Server: Updated
+note:
+Создает пустую анкету, если ее ранее не было и устанвливает в ней переданную почту.
 
 Server -> Client: Updated UserForm
 
@@ -49,10 +33,6 @@ Client -> Server: `updateUserPassword`
 note:
 Установка начального пароля
 
-Server --> DB: UPDATE user_forms SET password
-
-Server <-- DB: Updated
-
 Server -> Client: Updated UserForm
 
 // TODO: add setUserName
@@ -61,12 +41,8 @@ _: **3. Модерация анкеты**
 
 Client -> Server: `requestModerateUserForm`
 
-Server --> DB: INSERT INTO tokens
-Server <-- DB: `token`
-Client <-- Server: Send token through email or phone
+Client <-- Server: Send token over email or phone
 Client -> Server: `approveModerateUserForm(token)`
-Server --> DB: UPDATE user_forms SET state
-Server <-- DB: Updated
 Client <- Server: Updated UserForm
 
 ...: Менеджер приступил к подтвержению анкет
@@ -76,16 +52,12 @@ Manager <- Server: userForms
 if: Анкета заполнена правильно
 
 Manager -> Server: `approveUserForm`
-Server --> DB: UPDATE user_forms SET state
-Server <-- DB: Updated
 Server --> Client: Send email
 Server --> Manager: Updated UserForm
 
 else: В анкете существуют ошибки или неточности
 
 Manager -> Server: `declineUserForm`
-Server --> DB: UPDATE user_forms SET state
-Server <-- DB: Updated
 Server --> Client: Send email
 Server --> Manager: Updated UserForm
 
