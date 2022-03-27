@@ -27,7 +27,7 @@ func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, e
 	return true, nil
 }
 
-func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input *model.TokenInput) (*model.UserResult, error) {
+func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input model.TokenInput) (*model.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
 	token, err := r.Token.Activate(db.TokenActionModerateUserForm, input.Token, viewer)
 
@@ -60,7 +60,7 @@ func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input *m
 	}, nil
 }
 
-func (r *mutationResolver) ApproveUserForm(ctx context.Context, input *model.ApproveUserFormInput) (*model.UserFormResult, error) {
+func (r *mutationResolver) ApproveUserForm(ctx context.Context, input model.ApproveUserFormInput) (*model.UserFormResult, error) {
 	form := db.UserForm{}
 
 	if err := r.DB.Take(&form, "id = ?", input.UserFormID).Error; err != nil {
@@ -113,7 +113,7 @@ func (r *mutationResolver) ApproveUserForm(ctx context.Context, input *model.App
 	}, nil
 }
 
-func (r *mutationResolver) DeclineUserForm(ctx context.Context, input *model.DeclineUserFormInput) (*model.UserFormResult, error) {
+func (r *mutationResolver) DeclineUserForm(ctx context.Context, input model.DeclineUserFormInput) (*model.UserFormResult, error) {
 	form := db.UserForm{}
 
 	if err := r.DB.Take(&form, "id = ?", input.UserFormID).Error; err != nil {

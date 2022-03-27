@@ -35,7 +35,7 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.TokenResult, er
 	}, nil
 }
 
-func (r *mutationResolver) Login(ctx context.Context, input *model.LoginInput) (*model.TokenResult, error) {
+func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.TokenResult, error) {
 	form := db.UserForm{}
 
 	err := r.DB.
@@ -77,7 +77,7 @@ func (r *mutationResolver) Login(ctx context.Context, input *model.LoginInput) (
 	}, nil
 }
 
-func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input *model.RequestSetUserEmailInput) (bool, error) {
+func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input model.RequestSetUserEmailInput) (bool, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
@@ -92,7 +92,7 @@ func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input *model
 	return true, nil
 }
 
-func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input *model.RequestSetUserPhoneInput) (bool, error) {
+func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input model.RequestSetUserPhoneInput) (bool, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
@@ -107,7 +107,7 @@ func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input *model
 	return true, nil
 }
 
-func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input *model.TokenInput) (*model.UserResult, error) {
+func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input model.TokenInput) (*model.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
 	token, err := r.Token.Activate(db.TokenActionSetUserEmail, input.Token, viewer)
 
@@ -121,7 +121,7 @@ func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input *model
 		return nil, fmt.Errorf("no email in token")
 	}
 
-	form, err := r.getOrCreateUserForm(viewer)
+	form, err := getOrCreateUserDraftForm(r.DB, viewer)
 
 	if err != nil {
 		return nil, err
@@ -136,9 +136,9 @@ func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input *model
 	}, nil
 }
 
-func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input *model.TokenInput) (*model.UserResult, error) {
+func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input model.TokenInput) (*model.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
-	token, err := r.Token.Activate(db.TokenActionSetUserEmail, input.Token, viewer)
+	token, err := r.Token.Activate(db.TokenActionSetUserPhone, input.Token, viewer)
 
 	if err != nil {
 		return nil, fmt.Errorf("token activate: %w", err)
@@ -150,7 +150,7 @@ func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input *model
 		return nil, fmt.Errorf("no phone in token")
 	}
 
-	form, err := r.getOrCreateUserForm(viewer)
+	form, err := getOrCreateUserDraftForm(r.DB, viewer)
 
 	if err != nil {
 		return nil, err
@@ -165,14 +165,14 @@ func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input *model
 	}, nil
 }
 
-func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input *model.UpdateUserPasswordInput) (*model.UserResult, error) {
+func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input model.UpdateUserPasswordInput) (*model.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
 		return nil, fmt.Errorf("unauthorized")
 	}
 
-	form, err := r.getOrCreateUserForm(viewer)
+	form, err := getOrCreateUserDraftForm(r.DB, viewer)
 
 	if err != nil {
 		return nil, err
@@ -206,6 +206,30 @@ func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input *model.
 	}, nil
 }
 
+func (r *mutationResolver) UpdateUserDraftForm(ctx context.Context, input model.UpdateUserDraftFormInput) (*model.UserResult, error) {
+	viewer := auth.ForViewer(ctx)
+
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	form, err := getOrCreateUserDraftForm(r.DB, viewer)
+
+	if err != nil {
+		return nil, err
+	}
+
+	form.Name = input.Name
+
+	if err = r.DB.Save(&form).Error; err != nil {
+		return nil, fmt.Errorf("save: %w", err)
+	}
+
+	return &model.UserResult{
+		User: viewer,
+	}, nil
+}
+
 func (r *queryResolver) Viewer(ctx context.Context) (*db.User, error) {
 	viewer := auth.ForViewer(ctx)
 	return viewer, nil
@@ -223,8 +247,7 @@ func (r *userResolver) DraftForm(ctx context.Context, obj *db.User) (*db.UserFor
 	}
 
 	form := db.UserForm{}
-	query := "user_id = ? AND state in ('CREATED', 'MODERATING', 'DECLAINED')"
-	err := r.DB.Order("created_at desc").Take(&form, query, obj.ID).Error
+	err := r.DB.Order("created_at desc").Take(&form, "user_id = ?", obj.ID).Error
 
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
@@ -234,7 +257,11 @@ func (r *userResolver) DraftForm(ctx context.Context, obj *db.User) (*db.UserFor
 		return nil, err
 	}
 
-	return &form, nil
+	if form.State == "CREATED" || form.State == "MODERATING" || form.State == "DECLAINED" {
+		return &form, nil
+	}
+
+	return nil, nil
 }
 
 func (r *userResolver) FormHistory(ctx context.Context, obj *db.User, first *int, after *string) (*model.UserFormsConnection, error) {

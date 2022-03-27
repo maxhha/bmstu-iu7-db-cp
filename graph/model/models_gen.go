@@ -204,6 +204,10 @@ type TransactionsConnectionEdge struct {
 	Node   *Transaction `json:"node"`
 }
 
+type UpdateUserDraftFormInput struct {
+	Name *string `json:"name"`
+}
+
 type UpdateUserPasswordInput struct {
 	OldPassword *string `json:"oldPassword"`
 	Password    string  `json:"password"`

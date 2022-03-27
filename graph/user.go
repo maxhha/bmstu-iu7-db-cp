@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"time"
 
 	"crypto/sha256"
 
@@ -22,10 +23,10 @@ func InitPasswordHashSalt() {
 	passwordHashSalt = []byte(key)
 }
 
-func (r *mutationResolver) getOrCreateUserForm(viewer *db.User) (db.UserForm, error) {
+func getOrCreateUserDraftForm(DB *gorm.DB, viewer *db.User) (db.UserForm, error) {
 	form := db.UserForm{}
 
-	err := r.DB.Order("created_at desc").Take(&form, "user_id = ?", viewer.ID).Error
+	err := DB.Order("created_at desc").Take(&form, "user_id = ?", viewer.ID).Error
 
 	if err == nil {
 		if form.State == db.UserFormStateCreated || form.State == db.UserFormStateDeclained {
@@ -34,6 +35,8 @@ func (r *mutationResolver) getOrCreateUserForm(viewer *db.User) (db.UserForm, er
 			// clone form
 			form.ID = ""
 			form.State = db.UserFormStateCreated
+			form.CreatedAt = time.Time{}
+			form.UpdatedAt = time.Time{}
 		} else if form.State == db.UserFormStateModerating {
 			return form, fmt.Errorf("moderating")
 		} else {
@@ -46,7 +49,7 @@ func (r *mutationResolver) getOrCreateUserForm(viewer *db.User) (db.UserForm, er
 	// Create new form only if no form exists
 	// or there is approved form for copy
 	form.UserID = viewer.ID
-	if err = r.DB.Create(&form).Error; err != nil {
+	if err = DB.Create(&form).Error; err != nil {
 		return form, fmt.Errorf("create: %w", err)
 	}
 

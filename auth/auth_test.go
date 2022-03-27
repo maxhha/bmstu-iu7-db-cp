@@ -23,24 +23,21 @@ func init() {
 }
 
 type AuthSuite struct {
-	suite.Suite
-	db      *sql.DB
-	DB      *gorm.DB
-	mock    sqlmock.Sqlmock
+	test.DBSuite
 	handler gin.HandlerFunc
 }
 
 func (s *AuthSuite) SetupTest() {
 	var err error
-	s.db, s.mock, err = sqlmock.New()
+	s.SqlDB, s.SqlMock, err = sqlmock.New()
 	require.NoError(s.T(), err)
-	require.NotNil(s.T(), s.db)
-	require.NotNil(s.T(), s.mock)
+	require.NotNil(s.T(), s.SqlDB)
+	require.NotNil(s.T(), s.SqlMock)
 
 	dialector := postgres.New(postgres.Config{
 		DSN:                  "sqlmock_db_0",
 		DriverName:           "postgres",
-		Conn:                 s.db,
+		Conn:                 s.SqlDB,
 		PreferSimpleProtocol: true,
 	})
 
@@ -51,7 +48,7 @@ func (s *AuthSuite) SetupTest() {
 }
 
 func (s *AuthSuite) TearDownTest() {
-	s.db.Close()
+	s.SqlDB.Close()
 }
 
 // Test User in context if token passed
@@ -68,7 +65,7 @@ func (s *AuthSuite) TestUser() {
 		},
 	}
 
-	s.mock.ExpectQuery("SELECT \\* FROM \"users\" WHERE id =").
+	s.SqlMock.ExpectQuery("SELECT \\* FROM \"users\" WHERE id =").
 		WithArgs(id).
 		WillReturnRows(test.MockRows(db.User{ID: id}))
 
@@ -93,7 +90,7 @@ func (s *AuthSuite) TestUnknownUser() {
 		},
 	}
 
-	s.mock.ExpectQuery("SELECT \\* FROM \"users\" WHERE id =").
+	s.SqlMock.ExpectQuery("SELECT \\* FROM \"users\" WHERE id =").
 		WithArgs(id).
 		WillReturnError(sql.ErrNoRows)
 

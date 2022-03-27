@@ -1,22 +1,16 @@
 package graph
 
 import (
-	"database/sql"
-
 	"auction-back/test"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type GraphSuite struct {
-	suite.Suite
-	SqlDB     *sql.DB
-	DB        *gorm.DB
-	SqlMock   sqlmock.Sqlmock
+	test.DBSuite
 	TokenMock test.TokenPort
 	BankMock  test.BankPort
 	resolver  *Resolver
@@ -42,8 +36,4 @@ func (s *GraphSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	s.resolver = New(s.DB, &s.TokenMock, &s.BankMock)
-}
-
-func (s *GraphSuite) TearDownTest() {
-	s.SqlDB.Close()
 }

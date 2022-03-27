@@ -79,7 +79,7 @@ func (s *ApproveSetUserEmailSuite) TestApproveSetUserEmail() {
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	ctx := auth.WithViewer(context.Background(), &viewer)
-	result, err := s.resolver.Mutation().ApproveSetUserEmail(ctx, &model.TokenInput{Token: token})
+	result, err := s.resolver.Mutation().ApproveSetUserEmail(ctx, model.TokenInput{Token: token})
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), result)
 	require.Equal(s.T(), result.User, &viewer)
@@ -114,7 +114,7 @@ func (s *UpdateUserPasswordSuite) TestUpdatePassword() {
 		WithArgs(hash, sqlmock.AnyArg(), user_form.ID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	result, err := s.resolver.Mutation().UpdateUserPassword(ctx, &model.UpdateUserPasswordInput{Password: password})
+	result, err := s.resolver.Mutation().UpdateUserPassword(ctx, model.UpdateUserPasswordInput{Password: password})
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), result)
 	require.Equal(s.T(), result.User, &viewer)

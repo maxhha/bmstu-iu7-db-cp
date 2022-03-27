@@ -1,7 +1,7 @@
 // Powered by https://swimlanes.io
 title: Регистрация пользователя
 
-order: Manager, Client, Server
+order: Client, Server, Manager
 
 _: **1. Создание гостя**
 
@@ -36,7 +36,12 @@ note:
 
 Server -> Client: Updated UserForm
 
-// TODO: add setUserName
+Client -> Server: `updateUserDraftForm`
+
+note:
+Заполняет все поля анкеты, которые не требуют проверки через токен. 
+
+Server -> Client: Updated UserForm
 
 _: **3. Модерация анкеты**
 

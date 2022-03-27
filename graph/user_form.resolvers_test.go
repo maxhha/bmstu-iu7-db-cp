@@ -58,7 +58,7 @@ func (s *ApproveModerateUserFormSuite) TestApproveModerateUserForm() {
 		WithArgs(db.UserFormStateModerating, sqlmock.AnyArg(), user_form.ID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	result, err := s.resolver.Mutation().ApproveModerateUserForm(ctx, &model.TokenInput{Token: token})
+	result, err := s.resolver.Mutation().ApproveModerateUserForm(ctx, model.TokenInput{Token: token})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), result.User, &viewer)
 }
