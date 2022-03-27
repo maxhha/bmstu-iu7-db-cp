@@ -13,7 +13,7 @@ SELECT EXISTS (
     INSERT INTO banks (name)
     VALUES ('fake') RETURNING id as bank_id \gset
 
-    INSERT INTO accounts (account_type, bank_id)
+    INSERT INTO accounts (type, bank_id)
     VALUES ('BANK', :'bank_id');
 
     INSERT INTO migrations(id) VALUES (:'MIGRATION_ID');
