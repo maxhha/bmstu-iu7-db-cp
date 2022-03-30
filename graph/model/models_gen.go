@@ -247,6 +247,11 @@ type UserFormFilled struct {
 	Name string `json:"name"`
 }
 
+type UserFormHistoryFilter struct {
+	State []UserFormStateEnum `json:"state"`
+	ID    []string            `json:"id"`
+}
+
 type UserFormResult struct {
 	UserForm *db.UserForm `json:"userForm"`
 }
@@ -262,8 +267,9 @@ type UserFormsConnectionEdge struct {
 }
 
 type UserFormsFilter struct {
-	State []UserFormStateEnum `json:"state"`
-	ID    []string            `json:"id"`
+	State  []UserFormStateEnum `json:"state"`
+	ID     []string            `json:"id"`
+	UserID []string            `json:"userId"`
 }
 
 type UserResult struct {

@@ -226,7 +226,7 @@ type ComplexityRoot struct {
 		BlockedUntil func(childComplexity int) int
 		DraftForm    func(childComplexity int) int
 		Form         func(childComplexity int) int
-		FormHistory  func(childComplexity int, first *int, after *string) int
+		FormHistory  func(childComplexity int, first *int, after *string, filter *model.UserFormHistoryFilter) int
 		ID           func(childComplexity int) int
 		Offers       func(childComplexity int, first *int, after *string) int
 		Products     func(childComplexity int, first *int, after *string) int
@@ -343,7 +343,7 @@ type SubscriptionResolver interface {
 type UserResolver interface {
 	Form(ctx context.Context, obj *db.User) (*model.UserFormFilled, error)
 	DraftForm(ctx context.Context, obj *db.User) (*db.UserForm, error)
-	FormHistory(ctx context.Context, obj *db.User, first *int, after *string) (*model.UserFormsConnection, error)
+	FormHistory(ctx context.Context, obj *db.User, first *int, after *string, filter *model.UserFormHistoryFilter) (*model.UserFormsConnection, error)
 	BlockedUntil(ctx context.Context, obj *db.User) (*time.Time, error)
 	Available(ctx context.Context, obj *db.User) ([]*model.Money, error)
 	Blocked(ctx context.Context, obj *db.User) ([]*model.Money, error)
@@ -1143,7 +1143,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.User.FormHistory(childComplexity, args["first"].(*int), args["after"].(*string)), true
+		return e.complexity.User.FormHistory(childComplexity, args["first"].(*int), args["after"].(*string), args["filter"].(*model.UserFormHistoryFilter)), true
 
 	case "User.id":
 		if e.complexity.User.ID == nil {
@@ -1748,14 +1748,20 @@ type TransactionsConnection {
 }
 
 `, BuiltIn: false},
-	{Name: "graph/schema/user.graphqls", Input: `type User {
+	{Name: "graph/schema/user.graphqls", Input: `input UserFormHistoryFilter {
+  state: [UserFormStateEnum!] = []
+  id: [ID!] = []
+}
+
+type User {
   id: ID!
   """User current personal information"""
   form: UserFormFilled
   """User new personal information"""
   draftForm: UserForm
   """User history of personal information (only for managers)"""
-  formHistory(first: Int, after: Cursor): UserFormsConnection!
+  formHistory(first: Int, after: Cursor, filter: UserFormHistoryFilter = {}): 
+    UserFormsConnection! @hasRole(role: MANAGER)
   """End date of blocking this user"""
   blockedUntil: DateTime
   """Available moneys"""
@@ -1874,11 +1880,13 @@ type UserFormsConnection {
 input UserFormsFilter {
   state: [UserFormStateEnum!] = []
   id: [ID!] = []
+  userId: [ID!] = []
 }
 
 extend type Query {
   """List of all user forms"""
-  userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}): UserFormsConnection! @hasRole(role: MANAGER)
+  userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}):
+    UserFormsConnection! @hasRole(role: MANAGER)
 }
 
 input ApproveUserFormInput {
@@ -2357,6 +2365,15 @@ func (ec *executionContext) field_User_formHistory_args(ctx context.Context, raw
 		}
 	}
 	args["after"] = arg1
+	var arg2 *model.UserFormHistoryFilter
+	if tmp, ok := rawArgs["filter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+		arg2, err = ec.unmarshalOUserFormHistoryFilter2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserFormHistoryFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filter"] = arg2
 	return args, nil
 }
 
@@ -5915,8 +5932,32 @@ func (ec *executionContext) _User_formHistory(ctx context.Context, field graphql
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().FormHistory(rctx, obj, args["first"].(*int), args["after"].(*string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.User().FormHistory(rctx, obj, args["first"].(*int), args["after"].(*string), args["filter"].(*model.UserFormHistoryFilter))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRole2auctionᚑbackᚋgraphᚋmodelᚐRole(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, obj, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.UserFormsConnection); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/graph/model.UserFormsConnection`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8584,8 +8625,8 @@ func (ec *executionContext) unmarshalInputUpdateUserPasswordInput(ctx context.Co
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputUserFormsFilter(ctx context.Context, obj interface{}) (model.UserFormsFilter, error) {
-	var it model.UserFormsFilter
+func (ec *executionContext) unmarshalInputUserFormHistoryFilter(ctx context.Context, obj interface{}) (model.UserFormHistoryFilter, error) {
+	var it model.UserFormHistoryFilter
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -8613,6 +8654,55 @@ func (ec *executionContext) unmarshalInputUserFormsFilter(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 			it.ID, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUserFormsFilter(ctx context.Context, obj interface{}) (model.UserFormsFilter, error) {
+	var it model.UserFormsFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["state"]; !present {
+		asMap["state"] = []interface{}{}
+	}
+	if _, present := asMap["id"]; !present {
+		asMap["id"] = []interface{}{}
+	}
+	if _, present := asMap["userId"]; !present {
+		asMap["userId"] = []interface{}{}
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "state":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+			it.State, err = ec.unmarshalOUserFormStateEnum2ᚕauctionᚑbackᚋgraphᚋmodelᚐUserFormStateEnumᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			it.UserID, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -12874,6 +12964,14 @@ func (ec *executionContext) marshalOUserFormFilled2ᚖauctionᚑbackᚋgraphᚋm
 		return graphql.Null
 	}
 	return ec._UserFormFilled(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOUserFormHistoryFilter2ᚖauctionᚑbackᚋgraphᚋmodelᚐUserFormHistoryFilter(ctx context.Context, v interface{}) (*model.UserFormHistoryFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputUserFormHistoryFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOUserFormStateEnum2ᚕauctionᚑbackᚋgraphᚋmodelᚐUserFormStateEnumᚄ(ctx context.Context, v interface{}) ([]model.UserFormStateEnum, error) {

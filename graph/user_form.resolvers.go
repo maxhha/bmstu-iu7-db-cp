@@ -138,6 +138,10 @@ func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string
 		if len(filter.State) > 0 {
 			query = query.Where("state in ?", filter.State)
 		}
+
+		if len(filter.UserID) > 0 {
+			query = query.Where("user_id in ?", filter.UserID)
+		}
 	}
 
 	return UserFormPagination(query, first, after)

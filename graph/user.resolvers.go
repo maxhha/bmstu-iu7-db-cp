@@ -289,8 +289,26 @@ func (r *userResolver) DraftForm(ctx context.Context, obj *db.User) (*db.UserFor
 	return nil, nil
 }
 
-func (r *userResolver) FormHistory(ctx context.Context, obj *db.User, first *int, after *string) (*model.UserFormsConnection, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *userResolver) FormHistory(ctx context.Context, obj *db.User, first *int, after *string, filter *model.UserFormHistoryFilter) (*model.UserFormsConnection, error) {
+	if obj == nil {
+		return nil, fmt.Errorf("user is nil")
+	}
+
+	query := r.DB.Model(&db.UserForm{}).
+		Order("created_at desc").
+		Where("user_id = ?", obj.ID)
+
+	if filter != nil {
+		if len(filter.ID) > 0 {
+			query = query.Where("id in ?", filter.ID)
+		}
+
+		if len(filter.State) > 0 {
+			query = query.Where("state in ?", filter.State)
+		}
+	}
+
+	return UserFormPagination(query, first, after)
 }
 
 func (r *userResolver) BlockedUntil(ctx context.Context, obj *db.User) (*time.Time, error) {

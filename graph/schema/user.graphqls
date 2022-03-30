@@ -1,3 +1,8 @@
+input UserFormHistoryFilter {
+  state: [UserFormStateEnum!] = []
+  id: [ID!] = []
+}
+
 type User {
   id: ID!
   """User current personal information"""
@@ -5,7 +10,8 @@ type User {
   """User new personal information"""
   draftForm: UserForm
   """User history of personal information (only for managers)"""
-  formHistory(first: Int, after: Cursor): UserFormsConnection!
+  formHistory(first: Int, after: Cursor, filter: UserFormHistoryFilter = {}): 
+    UserFormsConnection! @hasRole(role: MANAGER)
   """End date of blocking this user"""
   blockedUntil: DateTime
   """Available moneys"""

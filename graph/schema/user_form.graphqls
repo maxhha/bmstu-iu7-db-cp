@@ -41,11 +41,13 @@ type UserFormsConnection {
 input UserFormsFilter {
   state: [UserFormStateEnum!] = []
   id: [ID!] = []
+  userId: [ID!] = []
 }
 
 extend type Query {
   """List of all user forms"""
-  userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}): UserFormsConnection! @hasRole(role: MANAGER)
+  userForms(first: Int, after: Cursor, filter: UserFormsFilter = {}):
+    UserFormsConnection! @hasRole(role: MANAGER)
 }
 
 input ApproveUserFormInput {
