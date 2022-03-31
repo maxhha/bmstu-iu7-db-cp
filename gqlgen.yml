@@ -66,3 +66,14 @@ models:
   UserForm:
     model:
       - auction-back/db.UserForm
+  Bank:
+    model:
+      - auction-back/db.Bank
+  UserAccount:
+    fields:
+      bank:
+        resolver: true
+  BankAccount:
+    fields:
+      bank:
+        resolver: true

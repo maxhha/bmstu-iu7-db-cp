@@ -9,36 +9,22 @@ import (
 )
 
 // Creates pagination for user forms
-// query must be ordered: query.Order("created_at desc")
 func UserFormPagination(query *gorm.DB, first *int, after *string) (*model.UserFormsConnection, error) {
-	if first != nil {
-		if *first < 1 {
-			return nil, fmt.Errorf("first must be positive")
-		}
-		query = query.Limit(*first + 1)
-	}
+	query, err := PaginationByCreatedAtDesc(query, first, after)
 
-	if after != nil {
-		query.Where("created_at < ANY(SELECT created_at FROM user_forms u WHERE u.id = ?)", after)
+	if err != nil {
+		return nil, fmt.Errorf("pagination: %w", err)
 	}
 
 	var objs []db.UserForm
-
-	result := query.Find(&objs)
-
-	if result.Error != nil {
-		return nil, result.Error
+	if err := query.Find(&objs).Error; err != nil {
+		return nil, fmt.Errorf("find: %w", err)
 	}
 
 	if len(objs) == 0 {
 		return &model.UserFormsConnection{
-			PageInfo: &model.PageInfo{
-				HasNextPage:     false,
-				HasPreviousPage: false,
-				StartCursor:     nil,
-				EndCursor:       nil,
-			},
-			Edges: make([]*model.UserFormsConnectionEdge, 0),
+			PageInfo: &model.PageInfo{},
+			Edges:    make([]*model.UserFormsConnectionEdge, 0),
 		}, nil
 	}
 
@@ -62,10 +48,9 @@ func UserFormPagination(query *gorm.DB, first *int, after *string) (*model.UserF
 
 	return &model.UserFormsConnection{
 		PageInfo: &model.PageInfo{
-			HasNextPage:     hasNextPage,
-			HasPreviousPage: false,
-			StartCursor:     &objs[0].ID,
-			EndCursor:       &objs[len(objs)-1].ID,
+			HasNextPage: hasNextPage,
+			StartCursor: &objs[0].ID,
+			EndCursor:   &objs[len(objs)-1].ID,
 		},
 		Edges: edges,
 	}, nil

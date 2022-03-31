@@ -18,9 +18,9 @@ type Resolver struct {
 	DB         *gorm.DB
 	Market     map[string]chan *model.Product
 	MarketLock sync.Mutex
-	Token      token.Interface
-	Bank       bank.Interface
-	Role       role.Interface
+	TokenPort  token.Interface
+	BankPort   bank.Interface
+	RolePort   role.Interface
 }
 
 func New(db *gorm.DB, token token.Interface, bank bank.Interface, role role.Interface) *Resolver {
@@ -28,9 +28,9 @@ func New(db *gorm.DB, token token.Interface, bank bank.Interface, role role.Inte
 		DB:         db,
 		Market:     make(map[string]chan *model.Product),
 		MarketLock: sync.Mutex{},
-		Token:      token,
-		Bank:       bank,
-		Role:       role,
+		TokenPort:  token,
+		BankPort:   bank,
+		RolePort:   role,
 	}
 
 	return &r

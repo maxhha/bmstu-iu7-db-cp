@@ -38,7 +38,7 @@ func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, e
 	}
 
 	data := map[string]interface{}{}
-	if err := r.Token.Create(db.TokenActionModerateUserForm, viewer, data); err != nil {
+	if err := r.TokenPort.Create(db.TokenActionModerateUserForm, viewer, data); err != nil {
 		return false, err
 	}
 
@@ -47,7 +47,7 @@ func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, e
 
 func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input model.TokenInput) (*model.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
-	token, err := r.Token.Activate(db.TokenActionModerateUserForm, input.Token, viewer)
+	token, err := r.TokenPort.Activate(db.TokenActionModerateUserForm, input.Token, viewer)
 
 	if err != nil {
 		return nil, fmt.Errorf("token activate: %w", err)
@@ -91,7 +91,7 @@ func (r *mutationResolver) ApproveUserForm(ctx context.Context, input model.Appr
 
 	form.State = db.UserFormStateApproved
 
-	if err := r.Bank.UserFormApproved(form); err != nil {
+	if err := r.BankPort.UserFormApproved(form); err != nil {
 		return nil, fmt.Errorf("bank: %w", err)
 	}
 
@@ -128,7 +128,7 @@ func (r *mutationResolver) DeclineUserForm(ctx context.Context, input model.Decl
 }
 
 func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string, filter *model.UserFormsFilter) (*model.UserFormsConnection, error) {
-	query := r.DB.Model(&db.UserForm{}).Order("created_at desc")
+	query := r.DB.Model(&db.UserForm{})
 
 	if filter != nil {
 		if len(filter.ID) > 0 {

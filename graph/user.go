@@ -2,6 +2,7 @@ package graph
 
 import (
 	"auction-back/db"
+	"auction-back/graph/model"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"crypto/sha256"
 
+	"github.com/hashicorp/go-multierror"
 	"gorm.io/gorm"
 )
 
@@ -73,4 +75,78 @@ func hashPassword(password string) (string, error) {
 func checkHashAndPassword(hash string, password string) bool {
 	hash2, _ := hashPassword(password)
 	return hash == hash2
+}
+
+func (r *userResolver) isOwnerOrManager(viewer *db.User, obj *db.User) error {
+	if viewer == nil {
+		return fmt.Errorf("unauthorized")
+	}
+
+	if obj == nil {
+		return fmt.Errorf("user is nil")
+	}
+
+	var errors error
+
+	if viewer.ID != obj.ID {
+		errors = multierror.Append(errors, fmt.Errorf("viewer is not owner"))
+	} else {
+		return nil
+	}
+
+	if err := r.RolePort.HasRole(db.RoleTypeManager, viewer); err != nil {
+		errors = multierror.Append(errors, err)
+	} else {
+		return nil
+	}
+
+	return errors
+}
+
+// Creates pagination for users
+func UserPagination(query *gorm.DB, first *int, after *string) (*model.UsersConnection, error) {
+	query, err := PaginationByCreatedAtDesc(query, first, after)
+
+	if err != nil {
+		return nil, fmt.Errorf("pagination: %w", err)
+	}
+
+	var objs []db.User
+	if err := query.Find(&objs).Error; err != nil {
+		return nil, fmt.Errorf("find: %w", err)
+	}
+
+	if len(objs) == 0 {
+		return &model.UsersConnection{
+			PageInfo: &model.PageInfo{},
+			Edges:    make([]*model.UsersConnectionEdge, 0),
+		}, nil
+	}
+
+	hasNextPage := false
+
+	if first != nil {
+		hasNextPage = len(objs) > *first
+		objs = objs[:len(objs)-1]
+	}
+
+	edges := make([]*model.UsersConnectionEdge, 0, len(objs))
+
+	for _, obj := range objs {
+		node := obj
+
+		edges = append(edges, &model.UsersConnectionEdge{
+			Cursor: obj.ID,
+			Node:   &node,
+		})
+	}
+
+	return &model.UsersConnection{
+		PageInfo: &model.PageInfo{
+			HasNextPage: hasNextPage,
+			StartCursor: &objs[0].ID,
+			EndCursor:   &objs[len(objs)-1].ID,
+		},
+		Edges: edges,
+	}, nil
 }

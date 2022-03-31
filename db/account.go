@@ -18,3 +18,11 @@ type Account struct {
 	BankID string
 	Bank   Bank
 }
+
+func (a *Account) EnsureFillBank(db *gorm.DB) error {
+	if a.BankID == a.Bank.ID {
+		return nil
+	}
+
+	return DB.Take(&a.Bank, "id = ?", a.BankID).Error
+}

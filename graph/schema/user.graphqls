@@ -37,8 +37,16 @@ type UsersConnection {
   edges: [UsersConnectionEdge!]!
 }
 
+input UsersFilter {
+  id: [ID!] = []
+}
+
 extend type Query {
+  """Authorized user"""
   viewer: User
+  """List of all users"""
+  users(first: Int, after: Cursor, filter: UsersFilter = {}):
+    UsersConnection @hasRole(role: MANAGER)
 }
 
 type UserResult {

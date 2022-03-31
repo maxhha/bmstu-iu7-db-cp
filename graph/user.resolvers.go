@@ -85,7 +85,7 @@ func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input model.
 	}
 
 	data := map[string]interface{}{"email": input.Email}
-	if err := r.Token.Create(db.TokenActionSetUserEmail, viewer, data); err != nil {
+	if err := r.TokenPort.Create(db.TokenActionSetUserEmail, viewer, data); err != nil {
 		return false, err
 	}
 
@@ -100,7 +100,7 @@ func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input model.
 	}
 
 	data := map[string]interface{}{"phone": input.Phone}
-	if err := r.Token.Create(db.TokenActionSetUserPhone, viewer, data); err != nil {
+	if err := r.TokenPort.Create(db.TokenActionSetUserPhone, viewer, data); err != nil {
 		return false, err
 	}
 
@@ -109,7 +109,7 @@ func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input model.
 
 func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input model.TokenInput) (*model.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
-	token, err := r.Token.Activate(db.TokenActionSetUserEmail, input.Token, viewer)
+	token, err := r.TokenPort.Activate(db.TokenActionSetUserEmail, input.Token, viewer)
 
 	if err != nil {
 		return nil, fmt.Errorf("token activate: %w", err)
@@ -138,7 +138,7 @@ func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input model.
 
 func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input model.TokenInput) (*model.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
-	token, err := r.Token.Activate(db.TokenActionSetUserPhone, input.Token, viewer)
+	token, err := r.TokenPort.Activate(db.TokenActionSetUserPhone, input.Token, viewer)
 
 	if err != nil {
 		return nil, fmt.Errorf("token activate: %w", err)
@@ -235,13 +235,23 @@ func (r *queryResolver) Viewer(ctx context.Context) (*db.User, error) {
 	return viewer, nil
 }
 
+func (r *queryResolver) Users(ctx context.Context, first *int, after *string, filter *model.UsersFilter) (*model.UsersConnection, error) {
+	query := r.DB.Model(&db.User{})
+
+	if filter != nil {
+		if len(filter.ID) > 0 {
+			query = query.Where("id in ?", filter.ID)
+		}
+	}
+
+	return UserPagination(query, first, after)
+}
+
 func (r *userResolver) Form(ctx context.Context, obj *db.User) (*model.UserFormFilled, error) {
 	viewer := auth.ForViewer(ctx)
 
-	if viewer.ID != obj.ID {
-		if err := r.Role.HasRole(db.RoleTypeManager, viewer); err != nil {
-			return nil, err
-		}
+	if err := r.isOwnerOrManager(viewer, obj); err != nil {
+		return nil, fmt.Errorf("denied: %w", err)
 	}
 
 	form := db.UserForm{}
@@ -261,14 +271,8 @@ func (r *userResolver) Form(ctx context.Context, obj *db.User) (*model.UserFormF
 func (r *userResolver) DraftForm(ctx context.Context, obj *db.User) (*db.UserForm, error) {
 	viewer := auth.ForViewer(ctx)
 
-	if viewer == nil {
-		return nil, fmt.Errorf("unauthorized")
-	}
-
-	if viewer.ID != obj.ID {
-		if err := r.Role.HasRole(db.RoleTypeManager, viewer); err != nil {
-			return nil, err
-		}
+	if err := r.isOwnerOrManager(viewer, obj); err != nil {
+		return nil, fmt.Errorf("denied: %w", err)
 	}
 
 	form := db.UserForm{}
@@ -294,9 +298,7 @@ func (r *userResolver) FormHistory(ctx context.Context, obj *db.User, first *int
 		return nil, fmt.Errorf("user is nil")
 	}
 
-	query := r.DB.Model(&db.UserForm{}).
-		Order("created_at desc").
-		Where("user_id = ?", obj.ID)
+	query := r.DB.Model(&db.UserForm{}).Where("user_id = ?", obj.ID)
 
 	if filter != nil {
 		if len(filter.ID) > 0 {
@@ -324,7 +326,15 @@ func (r *userResolver) Blocked(ctx context.Context, obj *db.User) ([]*model.Mone
 }
 
 func (r *userResolver) Accounts(ctx context.Context, obj *db.User, first *int, after *string) (*model.UserAccountsConnection, error) {
-	panic(fmt.Errorf("not implemented"))
+	viewer := auth.ForViewer(ctx)
+
+	if err := r.isOwnerOrManager(viewer, obj); err != nil {
+		return nil, fmt.Errorf("denied: %w", err)
+	}
+
+	query := r.DB.Model(&db.Account{}).Where("user_id = ?", obj.ID)
+
+	return UserAccountPagination(query, first, after)
 }
 
 func (r *userResolver) Offers(ctx context.Context, obj *db.User, first *int, after *string) (*model.OffersConnection, error) {

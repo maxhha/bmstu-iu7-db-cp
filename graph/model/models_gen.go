@@ -29,26 +29,6 @@ type ApproveUserFormInput struct {
 	UserFormID string `json:"userFormId"`
 }
 
-// Bank that is cooperated with platform
-type Bank struct {
-	ID string `json:"id"`
-	// Name of bank
-	Name string `json:"name"`
-	// Special account of that bank
-	Account *BankAccount `json:"account"`
-}
-
-// Special account for banks. Amount on this account is always nonpositve
-type BankAccount struct {
-	ID string `json:"id"`
-	// Owner of account. Each bank have one special account
-	Bank *Bank `json:"bank"`
-	// All transactions in which the account is involved
-	Transactions *TransactionsConnection `json:"transactions"`
-}
-
-func (BankAccount) IsAccount() {}
-
 type CreateOfferInput struct {
 	ProductID string  `json:"productId"`
 	Amount    float64 `json:"amount"`
@@ -213,19 +193,6 @@ type UpdateUserPasswordInput struct {
 	Password    string  `json:"password"`
 }
 
-// Nominal account that was created for client
-type UserAccount struct {
-	ID string `json:"id"`
-	// Bank in which the account was created
-	Bank *Bank `json:"bank"`
-	// All transactions in which the account is involved
-	Transactions *TransactionsConnection `json:"transactions"`
-	// Owner of account
-	User *db.User `json:"user"`
-}
-
-func (UserAccount) IsAccount() {}
-
 type UserAccountsConnection struct {
 	PageInfo *PageInfo                     `json:"pageInfo"`
 	Edges    []*UserAccountsConnectionEdge `json:"edges"`
@@ -284,6 +251,10 @@ type UsersConnection struct {
 type UsersConnectionEdge struct {
 	Cursor string   `json:"cursor"`
 	Node   *db.User `json:"node"`
+}
+
+type UsersFilter struct {
+	ID []string `json:"id"`
 }
 
 type CurrencyEnum string
