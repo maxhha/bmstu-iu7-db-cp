@@ -10,7 +10,7 @@ import (
 
 // Creates pagination for user forms
 func UserFormPagination(query *gorm.DB, first *int, after *string) (*model.UserFormsConnection, error) {
-	query, err := PaginationByCreatedAtDesc(query, first, after)
+	query, err := PaginationQueryByCreatedAtDesc(query, first, after)
 
 	if err != nil {
 		return nil, fmt.Errorf("pagination: %w", err)

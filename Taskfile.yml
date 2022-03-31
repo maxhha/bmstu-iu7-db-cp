@@ -15,14 +15,46 @@ tasks:
     generates:
       - graph/generated/generated.go
       - graph/model/models_gen.go
-  cover:
-    desc: Get code coverage
-    cmds:
-      - go test -coverprofile=coverage.tmp.out ./...
-      # remove generated code from coverage 
-      - cat coverage.tmp.out | grep -v "_gen.go\|_suite.go" > coverage.out
-      - go tool cover -func=coverage.out
-      - go tool cover -html=coverage.out -o coverage.html
+
   dev:
     desc: Start dev server
-    cmd: docker-compose --profile dev up
+    env:
+      SERVER_DOTENV: .server-dev.env
+    cmds: 
+      - docker-compose --profile dev up -d
+      - defer: docker-compose --profile dev stop
+      - air
+  
+  dir:out:
+    desc: Creates out directiory
+    cmds:
+      - mkdir -p out
+    status:
+      - test -d out
+
+  test:unit:
+    desc: Get code coverage by unit tests
+    deps:
+      - dir:out
+    cmds:
+      - go test -coverprofile=out/unit-coverage.tmp.out ./...
+      # remove generated code from coverage 
+      - cat out/unit-coverage.tmp.out | grep -v "_gen.go\|_suite.go" > out/unit-coverage.out
+      - go tool cover -func=out/unit-coverage.out
+      - go tool cover -html=out/unit-coverage.out -o out/unit-coverage.html
+
+  test:it:
+    desc: Get code coverage by integration tests
+    deps:
+      - dir:out
+    env:
+      SERVER_DOTENV: .server-test.env
+      GIN_MODE: debug
+    cmds:
+      - docker-compose --profile test up --force-recreate -d
+      - defer: docker-compose --profile test down
+      - go test -tags=integration -coverprofile=out/it-coverage.tmp.out -coverpkg="auction-back/..."
+      # remove generated code from coverage 
+      - cat out/it-coverage.tmp.out | grep -v "_gen.go\|_suite.go\|generated.go" > out/it-coverage.out
+      - go tool cover -func=out/it-coverage.out
+      - go tool cover -html=out/it-coverage.out -o out/it-coverage.html

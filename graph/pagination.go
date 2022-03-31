@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func PaginationByCreatedAtDesc(query *gorm.DB, first *int, after *string) (*gorm.DB, error) {
+func PaginationQueryByCreatedAtDesc(query *gorm.DB, first *int, after *string) (*gorm.DB, error) {
 	pagination := query.Order("created_at desc")
 
 	if first != nil {

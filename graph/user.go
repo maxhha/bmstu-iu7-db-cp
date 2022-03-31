@@ -105,7 +105,7 @@ func (r *userResolver) isOwnerOrManager(viewer *db.User, obj *db.User) error {
 
 // Creates pagination for users
 func UserPagination(query *gorm.DB, first *int, after *string) (*model.UsersConnection, error) {
-	query, err := PaginationByCreatedAtDesc(query, first, after)
+	query, err := PaginationQueryByCreatedAtDesc(query, first, after)
 
 	if err != nil {
 		return nil, fmt.Errorf("pagination: %w", err)

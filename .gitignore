@@ -33,4 +33,7 @@ postgresql.conf
 .task
 
 # Coverage html result
-coverage.html
+*coverage.html
+
+# Test logs
+*-test.log

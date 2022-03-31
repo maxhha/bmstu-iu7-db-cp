@@ -9,6 +9,7 @@ import (
 	"auction-back/ports/role"
 	"auction-back/ports/token"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -67,16 +68,20 @@ func playgroundHandler() gin.HandlerFunc {
 }
 
 func init() {
-	err := godotenv.Load(".server.env")
+	filename, ok := os.LookupEnv("SERVER_DOTENV")
 
-	if err != nil {
-		panic("error loading .server.env file")
+	if !ok {
+		panic("SERVER_DOTENV does not exist in environment variables!")
+	}
+
+	if err := godotenv.Load(filename); err != nil {
+		panic(err)
 	}
 
 	jwt.Init()
 }
 
-func main() {
+func Init() *gin.Engine {
 	DB := db.ConnectDatabase()
 	tokenPort := token.New(DB)
 	bankPort := bank.New(DB)
@@ -92,5 +97,10 @@ func main() {
 	r.Use(auth.New(DB))
 	r.Any("/graphql", graphqlHandler(DB, &tokenPort, &bankPort, &rolePort))
 	r.GET("/graphiql", playgroundHandler())
-	r.Run()
+
+	return r
+}
+
+func main() {
+	Init().Run()
 }

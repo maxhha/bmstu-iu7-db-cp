@@ -70,7 +70,9 @@ extend type Mutation {
   approveModerateUserForm(input: TokenInput!): UserResult!
 
   """Approve user form"""
-  approveUserForm(input: ApproveUserFormInput!): UserFormResult! @hasRole(role: MANAGER)
+  approveUserForm(input: ApproveUserFormInput!): 
+    UserFormResult! @hasRole(role: MANAGER)
   """Decline user form"""
-  declineUserForm(input: DeclineUserFormInput!): UserFormResult! @hasRole(role: MANAGER)
+  declineUserForm(input: DeclineUserFormInput!):
+    UserFormResult! @hasRole(role: MANAGER)
 }

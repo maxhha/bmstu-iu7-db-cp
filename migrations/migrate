@@ -47,7 +47,7 @@ docker_process_sql() {
 		-v AUTOCOMMIT=off \
 		-v MIGRATION_ID=$MIGRATION_ID \
 		--no-psqlrc \
-		"host=db dbname=$POSTGRES_DB user=$POSTGRES_USER password=$POSTGRES_PASSWORD" \
+		"host=$DATABASE_HOST dbname=$POSTGRES_DB user=$POSTGRES_USER password=$POSTGRES_PASSWORD" \
 	)
 
 	PGHOST= PGHOSTADDR= "${query_runner[@]}" "$@"

@@ -10,7 +10,7 @@ import (
 )
 
 func FindAccountPagination(query *gorm.DB, first *int, after *string) ([]db.Account, error) {
-	query, err := PaginationByCreatedAtDesc(query, first, after)
+	query, err := PaginationQueryByCreatedAtDesc(query, first, after)
 
 	if err != nil {
 		return nil, fmt.Errorf("pagination: %w", err)
