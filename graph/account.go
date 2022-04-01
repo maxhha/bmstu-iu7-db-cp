@@ -3,6 +3,7 @@ package graph
 import (
 	"auction-back/db"
 	"auction-back/graph/model"
+	"context"
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
@@ -121,3 +122,23 @@ func UserAccountPagination(query *gorm.DB, first *int, after *string) (*model.Us
 		Edges: edges,
 	}, errors
 }
+
+func (r *accountResolver) Bank(ctx context.Context, obj *db.Account) (*db.Bank, error) {
+	if obj == nil {
+		return nil, fmt.Errorf("account is nil")
+	}
+
+	if err := obj.EnsureFillBank(r.DB); err != nil {
+		return nil, err
+	}
+
+	return &obj.Bank, nil
+}
+
+func (r *accountResolver) Transactions(ctx context.Context, obj *db.Account, first *int, after *string) (*model.TransactionsConnection, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *Resolver) Account() *accountResolver { return &accountResolver{r} }
+
+type accountResolver struct{ *Resolver }

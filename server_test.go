@@ -48,7 +48,7 @@ func RunTest() <-chan error {
 }
 
 func TestIntegration(t *testing.T) {
-	port, ok := os.LookupEnv("POSTGRES_CONNECTION")
+	port, ok := os.LookupEnv("PORT")
 	if !ok {
 		port = "8080"
 	}

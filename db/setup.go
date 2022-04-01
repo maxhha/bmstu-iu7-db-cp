@@ -1,6 +1,7 @@
 package db
 
 import (
+	"log"
 	"os"
 
 	"gorm.io/driver/postgres"
@@ -12,15 +13,13 @@ var DB *gorm.DB
 
 func ConnectDatabase() *gorm.DB {
 	dsn, ok := os.LookupEnv("POSTGRES_CONNECTION")
-
 	if !ok {
-		panic("POSTGRES_CONNECTION does not exist in environment variables!")
+		log.Fatalln("POSTGRES_CONNECTION does not exist in environment variables!")
 	}
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-
 	if err != nil {
-		panic("Failed to connect to database!")
+		log.Fatalln("Failed to connect to database!")
 	}
 
 	// TODO remove me

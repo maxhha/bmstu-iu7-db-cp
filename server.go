@@ -1,6 +1,7 @@
 package main
 
 import (
+	"auction-back/adapters/notifier"
 	"auction-back/auth"
 	"auction-back/graph"
 	"auction-back/graph/generated"
@@ -8,6 +9,7 @@ import (
 	"auction-back/ports/bank"
 	"auction-back/ports/role"
 	"auction-back/ports/token"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -71,11 +73,11 @@ func init() {
 	filename, ok := os.LookupEnv("SERVER_DOTENV")
 
 	if !ok {
-		panic("SERVER_DOTENV does not exist in environment variables!")
+		log.Fatalln("SERVER_DOTENV does not exist in environment variables!")
 	}
 
 	if err := godotenv.Load(filename); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
 	jwt.Init()
@@ -83,7 +85,9 @@ func init() {
 
 func Init() *gin.Engine {
 	DB := db.ConnectDatabase()
-	tokenPort := token.New(DB)
+	notifier := notifier.New("EMAIL_NOTIFIER_ADDRESS")
+
+	tokenPort := token.New(DB, notifier)
 	bankPort := bank.New(DB)
 	rolePort := role.New(DB)
 

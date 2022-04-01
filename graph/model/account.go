@@ -11,11 +11,27 @@ type BankAccount struct {
 
 func (BankAccount) IsAccount() {}
 
+func (a *BankAccount) AccountPtr() *db.Account {
+	if a == nil {
+		return nil
+	}
+
+	return &a.Account
+}
+
 type UserAccount struct {
 	db.Account
 }
 
 func (UserAccount) IsAccount() {}
+
+func (a *UserAccount) AccountPtr() *db.Account {
+	if a == nil {
+		return nil
+	}
+
+	return &a.Account
+}
 
 func AccountFromDBAccount(obj db.Account) (Account, error) {
 	switch {

@@ -8,39 +8,22 @@ import (
 	"auction-back/graph/generated"
 	"auction-back/graph/model"
 	"context"
-	"fmt"
 )
 
 func (r *bankAccountResolver) Bank(ctx context.Context, obj *model.BankAccount) (*db.Bank, error) {
-	if obj == nil {
-		return nil, fmt.Errorf("bank account is nil")
-	}
-
-	if err := obj.EnsureFillBank(r.DB); err != nil {
-		return nil, err
-	}
-
-	return &obj.Bank, nil
+	return r.Account().Bank(ctx, obj.AccountPtr())
 }
 
 func (r *bankAccountResolver) Transactions(ctx context.Context, obj *model.BankAccount, first *int, after *string) (*model.TransactionsConnection, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.Account().Transactions(ctx, obj.AccountPtr(), first, after)
 }
 
 func (r *userAccountResolver) Bank(ctx context.Context, obj *model.UserAccount) (*db.Bank, error) {
-	if obj == nil {
-		return nil, fmt.Errorf("user account is nil")
-	}
-
-	if err := obj.EnsureFillBank(r.DB); err != nil {
-		return nil, err
-	}
-
-	return &obj.Bank, nil
+	return r.Account().Bank(ctx, obj.AccountPtr())
 }
 
 func (r *userAccountResolver) Transactions(ctx context.Context, obj *model.UserAccount, first *int, after *string) (*model.TransactionsConnection, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.Account().Transactions(ctx, obj.AccountPtr(), first, after)
 }
 
 // BankAccount returns generated.BankAccountResolver implementation.

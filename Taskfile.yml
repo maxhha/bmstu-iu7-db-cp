@@ -16,13 +16,33 @@ tasks:
       - graph/generated/generated.go
       - graph/model/models_gen.go
 
+  grpcgen:
+    desc: Generate code for grpc
+    cmds:
+      - PATH=$PATH:$(go env GOPATH)/bin protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative grpc/**/*.proto
+    sources:
+      - grpc/**/*.proto
+    generates:
+      - grpc/**/*.pb.go
+
+  build:mock_notifier:
+    desc: Builds image of mock_notifier service
+    sources:
+      - grpc/notifier/*.go
+      - services/mock_notifier/*
+    cmds:
+      - docker-compose build mock-notifier
+
   dev:
     desc: Start dev server
+    deps:
+      - build:mock_notifier
     env:
       SERVER_DOTENV: .server-dev.env
     cmds: 
       - docker-compose --profile dev up -d
       - defer: docker-compose --profile dev stop
+      - docker logs -f auction-mock-notifier-dev-1 &
       - air
   
   dir:out:
@@ -31,30 +51,49 @@ tasks:
       - mkdir -p out
     status:
       - test -d out
+  
+  filter-cover:
+    desc: Filters generated files from coverage output
+    cmds:
+      - cat {{.IN}} | grep -v "_gen.go\|_suite.go\|generated.go\|.pb.go" > {{.OUT}}
 
   test:unit:
     desc: Get code coverage by unit tests
     deps:
       - dir:out
+    vars:
+      TMPOUT: ./out/unit-coverage.tmp.out
+      OUT: ./out/unit-coverage.out
+      HTML: ./out/unit-coverage.html
     cmds:
-      - go test -coverprofile=out/unit-coverage.tmp.out ./...
-      # remove generated code from coverage 
-      - cat out/unit-coverage.tmp.out | grep -v "_gen.go\|_suite.go" > out/unit-coverage.out
-      - go tool cover -func=out/unit-coverage.out
-      - go tool cover -html=out/unit-coverage.out -o out/unit-coverage.html
+      - go test -coverprofile={{.TMPOUT}} ./...
+      # remove generated code from coverage
+      - task: filter-cover
+        vars:
+          IN: "{{.TMPOUT}}"
+          OUT: "{{.OUT}}"
+      - go tool cover -func={{.OUT}}
+      - go tool cover -html={{.OUT}} -o {{.HTML}}
 
   test:it:
     desc: Get code coverage by integration tests
     deps:
       - dir:out
+      - build:mock_notifier
     env:
       SERVER_DOTENV: .server-test.env
       GIN_MODE: debug
+    vars:
+      TMPOUT: ./out/it-coverage.tmp.out
+      OUT: ./out/it-coverage.out
+      HTML: ./out/it-coverage.html
     cmds:
       - docker-compose --profile test up --force-recreate -d
       - defer: docker-compose --profile test down
-      - go test -tags=integration -coverprofile=out/it-coverage.tmp.out -coverpkg="auction-back/..."
-      # remove generated code from coverage 
-      - cat out/it-coverage.tmp.out | grep -v "_gen.go\|_suite.go\|generated.go" > out/it-coverage.out
-      - go tool cover -func=out/it-coverage.out
-      - go tool cover -html=out/it-coverage.out -o out/it-coverage.html
+      - go test -tags=integration -coverprofile={{.TMPOUT}} -coverpkg="auction-back/..." 
+      - task: filter-cover
+        vars:
+          IN: "{{.TMPOUT}}"
+          OUT: "{{.OUT}}"
+      - go tool cover -func={{.OUT}}
+      - go tool cover -html={{.OUT}} -o {{.HTML}}
