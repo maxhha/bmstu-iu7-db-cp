@@ -93,12 +93,45 @@ services:
     profiles:
       - test
 
+  mock-redis:
+    image: redis:6.2.6-alpine3.15
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./mock-redis.conf:/usr/local/etc/redis/redis.conf:ro
+
+  mock-redis-dev:
+    extends:
+      service: mock-redis
+    ports:
+      - 6379:6379
+    networks:
+      - backend-dev
+    profiles:
+      - dev
+
+  mock-redis-test:
+    extends:
+      service: mock-redis
+    ports:
+      - 6379:6379
+    networks:
+      - backend-test
+    profiles:
+      - test
+
+  mock-redis-prod:
+    extends:
+      service: mock-redis
+    ports:
+      - 6379:6379
+    networks:
+      - backend-prod
+    profiles:
+      - prod
+
   mock-notifier:
     build:
       dockerfile: services/mock_notifier/Dockerfile
-    environment:
-      - PORT=3000
-      - HOST=0.0.0.0
     ports:
       - 3000:3000
     profiles:
@@ -107,6 +140,8 @@ services:
   mock-notifier-prod:
     extends:
       service: mock-notifier
+    depends_on:
+      - mock-redis-prod
     networks:
       - backend-prod
     profiles:
@@ -115,6 +150,9 @@ services:
   mock-notifier-dev:
     extends:
       service: mock-notifier
+    depends_on:
+      - mock-redis-dev
+    env_file: .mock-notifier-dev.env
     networks:
       - backend-dev
     profiles:
@@ -123,6 +161,9 @@ services:
   mock-notifier-test:
     extends:
       service: mock-notifier
+    depends_on:
+      - mock-redis-test
+    env_file: .mock-notifier-test.env
     networks:
       - backend-test
     profiles:

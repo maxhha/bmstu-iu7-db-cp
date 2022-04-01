@@ -30,13 +30,17 @@ tasks:
     sources:
       - grpc/notifier/*.go
       - services/mock_notifier/*
+    vars:
+      ENV: prod
     cmds:
-      - docker-compose build mock-notifier
+      - docker-compose build mock-notifier-{{.ENV}}
 
   dev:
     desc: Start dev server
     deps:
-      - build:mock_notifier
+      - task: build:mock_notifier
+        vars:
+          ENV: dev
     env:
       SERVER_DOTENV: .server-dev.env
     cmds: 
@@ -72,14 +76,16 @@ tasks:
         vars:
           IN: "{{.TMPOUT}}"
           OUT: "{{.OUT}}"
-      - go tool cover -func={{.OUT}}
       - go tool cover -html={{.OUT}} -o {{.HTML}}
+      - go tool cover -func={{.OUT}}
 
   test:it:
     desc: Get code coverage by integration tests
     deps:
       - dir:out
-      - build:mock_notifier
+      - task: build:mock_notifier
+        vars:
+          ENV: test
     env:
       SERVER_DOTENV: .server-test.env
       GIN_MODE: debug
@@ -95,5 +101,23 @@ tasks:
         vars:
           IN: "{{.TMPOUT}}"
           OUT: "{{.OUT}}"
-      - go tool cover -func={{.OUT}}
       - go tool cover -html={{.OUT}} -o {{.HTML}}
+      - go tool cover -func={{.OUT}}
+  
+  test:all:
+    desc: Get total code coverage by all tests
+    deps:
+      - test:unit
+      - test:it
+    vars:
+      OUT: ./out/total-coverage.out
+      HTML: ./out/total-coverage.html
+    cmds:
+      - >
+        echo "mode: set" > {{.OUT}} &&
+        cat ./out/*-coverage.out |
+        grep -v mode: |
+        sort -r |
+        awk '{if($1 != last) {print $0;last=$1}}' >> {{.OUT}}
+      - go tool cover -html={{.OUT}} -o {{.HTML}}
+      - go tool cover -func={{.OUT}}

@@ -29,6 +29,9 @@ tmp
 # PostgreSQL config
 postgresql.conf
 
+# Redis config
+*redis.conf
+
 # Taskfile cache
 .task
 
