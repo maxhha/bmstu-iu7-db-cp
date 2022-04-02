@@ -2,8 +2,6 @@ package token
 
 import (
 	"auction-back/db"
-	"auction-back/grpc/notifier"
-	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -17,102 +15,42 @@ type Interface interface {
 	Activate(action db.TokenAction, token_code string, viewer *db.User) (db.Token, error)
 }
 
+type SenderInterface interface {
+	Name() string
+	Send(db.Token) (bool, error)
+}
+
 type TokenPort struct {
-	db            *gorm.DB
-	emailNotifier notifier.NotifierClient
+	db      *gorm.DB
+	senders []SenderInterface
 }
 
-// TODO: make array of senders with interface{ Send(db.Token) error }
-// they would decide to send or not to send token
-func New(db *gorm.DB, email notifier.NotifierClient) TokenPort {
-	return TokenPort{db, email}
-}
-
-var actionsForEmailNotification = map[db.TokenAction]struct{}{
-	db.TokenActionSetUserEmail: {},
-}
-
-var actionToDataGetter = map[db.TokenAction]func(db *gorm.DB, token db.Token) (map[string]string, error){
-	db.TokenActionSetUserEmail: func(_ *gorm.DB, token db.Token) (map[string]string, error) {
-		return map[string]string{
-			"token": fmt.Sprintf("%06d", token.ID),
-		}, nil
-	},
-}
-
-var actionToEmailReceiverGetter = map[db.TokenAction]func(db *gorm.DB, token db.Token) (string, error){
-	db.TokenActionSetUserEmail: func(_ *gorm.DB, token db.Token) (string, error) {
-		email, ok := token.Data["email"]
-		if !ok {
-			return "", fmt.Errorf("no email in token data")
-		}
-
-		str, ok := email.(string)
-		if !ok {
-			return "", fmt.Errorf("fail convert to string of %v", email)
-		}
-
-		return str, nil
-	},
-}
-
-func (t *TokenPort) sendEmail(token db.Token) error {
-	var receiver string
-	var data map[string]string
-
-	if getData, has := actionToDataGetter[token.Action]; has {
-		var err error
-		if data, err = getData(t.db, token); err != nil {
-			return fmt.Errorf("get data for %s: %w", token.Action, err)
-		}
-	}
-
-	if getReceiver, has := actionToEmailReceiverGetter[token.Action]; has {
-		var err error
-		if receiver, err = getReceiver(t.db, token); err != nil {
-			return fmt.Errorf("get receiver for %s: %w", token.Action, err)
-		}
-	} else {
-		return fmt.Errorf("no receiver getter for %s", token.Action)
-	}
-
-	input := notifier.SendInput{
-		Receivers: []string{receiver},
-		Action:    string(token.Action),
-		Data:      data,
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	result, err := t.emailNotifier.Send(ctx, &input)
-	if err != nil {
-		return fmt.Errorf("email notifier: %w", err)
-	}
-
-	if result.Status != "OK" {
-		return fmt.Errorf("email notifier status: %v", result.Status)
-	}
-
-	return nil
+func New(db *gorm.DB, senders []SenderInterface) TokenPort {
+	return TokenPort{db, senders}
 }
 
 func (t *TokenPort) send(token db.Token) error {
-	action := token.Action
 	var errors error
 	hasNotifier := false
 
-	if _, shouldSendEmail := actionsForEmailNotification[action]; shouldSendEmail {
-		hasNotifier = true
-		if err := t.sendEmail(token); err != nil {
-			errors = multierror.Append(errors, err)
+	for _, n := range t.senders {
+		sent, err := n.Send(token)
+
+		if err != nil {
+			hasNotifier = true
+			errors = multierror.Append(
+				errors,
+				fmt.Errorf("%s send: %w", n.Name(), err),
+			)
+		} else if sent {
+			hasNotifier = true
 		}
 	}
 
 	if !hasNotifier {
 		errors = multierror.Append(
 			errors,
-			fmt.Errorf("acton %s does not have any notifier", action),
+			fmt.Errorf("acton %s does not have any notifier", token.Action),
 		)
 	}
 
