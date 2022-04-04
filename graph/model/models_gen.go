@@ -39,12 +39,8 @@ type CreateOfferResult struct {
 }
 
 type CreateProductInput struct {
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-}
-
-type CreateProductResult struct {
-	Product *Product `json:"product"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }
 
 type DateTimeRange struct {
@@ -73,7 +69,7 @@ type OfferProductInput struct {
 }
 
 type OfferProductResult struct {
-	Product *Product `json:"product"`
+	Product *db.Product `json:"product"`
 }
 
 type OffersConnection struct {
@@ -100,14 +96,18 @@ type ProductImage struct {
 	Path     string `json:"path"`
 }
 
+type ProductResult struct {
+	Product *db.Product `json:"product"`
+}
+
 type ProductsConnection struct {
 	PageInfo *PageInfo                 `json:"pageInfo"`
 	Edges    []*ProductsConnectionEdge `json:"edges"`
 }
 
 type ProductsConnectionEdge struct {
-	Cursor string   `json:"cursor"`
-	Node   *Product `json:"node"`
+	Cursor string      `json:"cursor"`
+	Node   *db.Product `json:"node"`
 }
 
 type RemoveOfferInput struct {
@@ -131,7 +131,7 @@ type SellProductInput struct {
 }
 
 type SellProductResult struct {
-	Product *Product `json:"product"`
+	Product *db.Product `json:"product"`
 }
 
 type TakeOffProductInput struct {
@@ -139,7 +139,7 @@ type TakeOffProductInput struct {
 }
 
 type TakeOffProductResult struct {
-	Product *Product `json:"product"`
+	Product *db.Product `json:"product"`
 }
 
 // Used for actions activation

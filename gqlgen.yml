@@ -77,3 +77,6 @@ models:
     fields:
       bank:
         resolver: true
+  Product:
+    model:
+      - auction-back/db.Product

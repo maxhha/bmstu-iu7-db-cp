@@ -130,19 +130,20 @@ func (r *offerResolver) User(ctx context.Context, obj *model.Offer) (*db.User, e
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *offerResolver) Product(ctx context.Context, obj *model.Offer) (*model.Product, error) {
-	if obj.DB.Product.ID == obj.DB.ProductID {
-		return (&model.Product{}).From(&obj.DB.Product)
-	}
+func (r *offerResolver) Product(ctx context.Context, obj *model.Offer) (*db.Product, error) {
+	panic(fmt.Errorf("not implemented"))
+	// if obj.DB.Product.ID == obj.DB.ProductID {
+	// 	return (&model.Product{}).From(&obj.DB.Product)
+	// }
 
-	product := db.Product{}
-	result := db.DB.Take(&product, "id = ?", obj.DB.ProductID)
+	// product := db.Product{}
+	// result := db.DB.Take(&product, "id = ?", obj.DB.ProductID)
 
-	if result.Error != nil {
-		return nil, fmt.Errorf("db take: %w", result.Error)
-	}
+	// if result.Error != nil {
+	// 	return nil, fmt.Errorf("db take: %w", result.Error)
+	// }
 
-	return (&model.Product{}).From(&product)
+	// return (&model.Product{}).From(&product)
 }
 
 func (r *offerResolver) Moneys(ctx context.Context, obj *model.Offer) ([]*model.Money, error) {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type TokenAction string
@@ -24,4 +25,12 @@ type Token struct {
 	ExpiresAt   time.Time
 	Action      TokenAction
 	Data        datatypes.JSONMap
+}
+
+func (t *Token) EnsureFillUser(db *gorm.DB) error {
+	if t.UserID == t.User.ID {
+		return nil
+	}
+
+	return db.Take(&t.User, "id = ?", t.UserID).Error
 }

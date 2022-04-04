@@ -4,6 +4,7 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
+	"auction-back/auth"
 	"auction-back/db"
 	"auction-back/graph/generated"
 	"auction-back/graph/model"
@@ -14,43 +15,32 @@ import (
 	"gorm.io/gorm"
 )
 
-func (r *mutationResolver) CreateProduct(ctx context.Context, input model.CreateProductInput) (*model.CreateProductResult, error) {
-	panic(fmt.Errorf("not implemented"))
-	// viewer := auth.ForViewer(ctx)
+func (r *mutationResolver) CreateProduct(ctx context.Context, input model.CreateProductInput) (*model.ProductResult, error) {
+	viewer := auth.ForViewer(ctx)
 
-	// if viewer == nil {
-	// 	return nil, fmt.Errorf("unauthorized")
-	// }
+	if viewer == nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
 
-	// id, err := shortid.Generate()
+	if _, err := viewer.LastApprovedUserForm(r.DB); err != nil {
+		return nil, fmt.Errorf("last approved user form: %w", err)
+	}
 
-	// if err != nil {
-	// 	return nil, fmt.Errorf("shortid: %w", err)
-	// }
+	product := db.Product{
+		Title:       input.Title,
+		Description: input.Description,
+		CreatorID:   viewer.ID,
+	}
 
-	// product := db.Product{
-	// 	ID:          id,
-	// 	Name:        input.Name,
-	// 	Description: input.Description,
-	// 	OwnerID:     viewer.ID,
-	// 	Owner:       *viewer,
-	// }
+	if err := db.DB.Create(&product).Error; err != nil {
+		return nil, fmt.Errorf("create: %w", err)
+	}
 
-	// result := db.DB.Create(&product)
+	product.Creator = *viewer
 
-	// if result.Error != nil {
-	// 	return nil, fmt.Errorf("db create: %w", result.Error)
-	// }
-
-	// p, err := (&model.Product{}).From(&product)
-
-	// if err != nil {
-	// 	return nil, fmt.Errorf("convert: %w", result.Error)
-	// }
-
-	// return &model.CreateProductResult{
-	// 	Product: p,
-	// }, nil
+	return &model.ProductResult{
+		Product: &product,
+	}, nil
 }
 
 func (r *mutationResolver) OfferProduct(ctx context.Context, input model.OfferProductInput) (*model.OfferProductResult, error) {
@@ -233,11 +223,7 @@ func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProd
 	// }, nil
 }
 
-func (r *productResolver) Title(ctx context.Context, obj *model.Product) (string, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *productResolver) Owner(ctx context.Context, obj *model.Product) (*db.User, error) {
+func (r *productResolver) Owner(ctx context.Context, obj *db.Product) (*db.User, error) {
 	panic(fmt.Errorf("not implemented"))
 	// if obj.DB.Owner.ID == obj.DB.OwnerID {
 	// 	return (&model.User{}).From(&obj.DB.Owner)
@@ -253,11 +239,7 @@ func (r *productResolver) Owner(ctx context.Context, obj *model.Product) (*db.Us
 	// return (&model.User{}).From(&owner)
 }
 
-func (r *productResolver) Creator(ctx context.Context, obj *model.Product) (*db.User, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *productResolver) TopOffer(ctx context.Context, obj *model.Product) (*model.Offer, error) {
+func (r *productResolver) TopOffer(ctx context.Context, obj *db.Product) (*model.Offer, error) {
 	offer := db.Offer{}
 
 	maxAmount := db.DB.Model(&db.Offer{}).Select("max(amount)").Where("product_id = ?", obj.ID)
@@ -273,11 +255,11 @@ func (r *productResolver) TopOffer(ctx context.Context, obj *model.Product) (*mo
 	return (&model.Offer{}).From(&offer)
 }
 
-func (r *productResolver) Images(ctx context.Context, obj *model.Product) ([]*model.ProductImage, error) {
+func (r *productResolver) Images(ctx context.Context, obj *db.Product) ([]*model.ProductImage, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *productResolver) Offers(ctx context.Context, obj *model.Product, first *int, after *string) (*model.OffersConnection, error) {
+func (r *productResolver) Offers(ctx context.Context, obj *db.Product, first *int, after *string) (*model.OffersConnection, error) {
 	query := db.DB.Where("product_id = ?", obj.ID).Order("id")
 
 	return OfferPagination(query, first, after)
@@ -289,8 +271,8 @@ func (r *queryResolver) MarketProducts(ctx context.Context, first *int, after *s
 	return ProductPagination(query, first, after)
 }
 
-func (r *subscriptionResolver) ProductOffered(ctx context.Context) (<-chan *model.Product, error) {
-	ch := make(chan *model.Product, 1)
+func (r *subscriptionResolver) ProductOffered(ctx context.Context) (<-chan *db.Product, error) {
+	ch := make(chan *db.Product, 1)
 
 	r.MarketLock.Lock()
 	chan_id := randString(6)

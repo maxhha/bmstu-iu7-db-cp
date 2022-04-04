@@ -3,6 +3,7 @@
 package main
 
 import (
+	"auction-back/server"
 	"context"
 	"fmt"
 	"net/http"
@@ -38,7 +39,7 @@ func TestIntegration(t *testing.T) {
 
 	server := &http.Server{
 		Addr:    ":" + port,
-		Handler: Init(),
+		Handler: server.Init(),
 	}
 	done := false
 

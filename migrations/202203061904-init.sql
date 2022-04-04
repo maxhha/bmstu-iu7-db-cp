@@ -96,6 +96,13 @@ SELECT EXISTS (
         blocked_until TIMESTAMP
     );
 
+    -- generate shortkey for each insert
+    CREATE TRIGGER trgr_users_genid 
+        BEFORE INSERT ON users FOR EACH ROW
+        EXECUTE PROCEDURE shortkey_generate();
+
+    CREATE INDEX idx_user_indices_deleted_at ON users(deleted_at);
+
     CREATE TYPE role_type AS ENUM (
         'MANAGER',
         'ADMIN'
@@ -112,13 +119,6 @@ SELECT EXISTS (
     );
 
     CREATE INDEX indx_role_indices_pk ON roles(type, user_id, deleted_at);
-
-    -- generate shortkey for each insert
-    CREATE TRIGGER trgr_users_genid 
-        BEFORE INSERT ON users FOR EACH ROW 
-        EXECUTE PROCEDURE shortkey_generate();
-
-    CREATE INDEX idx_user_indices_deleted_at ON users(deleted_at);
 
     CREATE TYPE user_form_state AS ENUM (
         'CREATED',
@@ -255,19 +255,19 @@ SELECT EXISTS (
 
     CREATE INDEX idx_account_indices_deleted_at ON accounts(deleted_at);
 
-    -- CREATE TABLE products (
-    --     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    --     title VARCHAR NOT NULL,
-    --     description VARCHAR NOT NULL,
-    --     is_on_market BOOLEAN NOT NULL DEFAULT FALSE,
-    --     creator_id UUID NOT NULL,
-    --     created_at TIMESTAMP NOT NULL,
-    --     updated_at TIMESTAMP NOT NULL,
-    --     deleted_at TIMESTAMP,
-    --     CONSTRAINT fk_creator FOREIGN KEY (creator_id) REFERENCES users(id)
-    -- );
+    CREATE TABLE products (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        title VARCHAR NOT NULL,
+        description VARCHAR NOT NULL,
+        is_on_market BOOLEAN NOT NULL DEFAULT FALSE,
+        creator_id SHORTKEY NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
+        CONSTRAINT fk_creator FOREIGN KEY (creator_id) REFERENCES users(id)
+    );
 
-    -- CREATE INDEX idx_product_indices_deleted_at ON products(deleted_at);
+    CREATE INDEX idx_product_indices_deleted_at ON products(deleted_at);
 
     -- CREATE TABLE product_images (
     --     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

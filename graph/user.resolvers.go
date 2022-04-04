@@ -38,11 +38,7 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.TokenResult, er
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.TokenResult, error) {
 	form := db.UserForm{}
 
-	err := r.DB.
-		Where(`(
-			state = 'APPROVED' 
-			OR (SELECT COUNT(1) FROM user_forms u WHERE "user_forms"."user_id" = u.user_id) = 1
-		)`).
+	err := form.MostRelevantFilter(r.DB).
 		Where(
 			"name = @username OR email = @username OR phone = @username",
 			sql.Named("username", input.Username),
@@ -254,8 +250,7 @@ func (r *userResolver) Form(ctx context.Context, obj *db.User) (*model.UserFormF
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 
-	form := db.UserForm{}
-	err := r.DB.Order("created_at desc").Take(&form, "user_id = ? AND state = 'APPROVED'", obj.ID).Error
+	form, err := viewer.LastApprovedUserForm(r.DB)
 
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
@@ -356,15 +351,11 @@ func (r *userResolver) Offers(ctx context.Context, obj *db.User, first *int, aft
 func (r *userResolver) Products(ctx context.Context, obj *db.User, first *int, after *string) (*model.ProductsConnection, error) {
 	viewer := auth.ForViewer(ctx)
 
-	if viewer == nil {
-		return nil, fmt.Errorf("unauthorized")
+	if err := r.isOwnerOrManager(viewer, obj); err != nil {
+		return nil, err
 	}
 
-	if viewer.ID != obj.ID {
-		return nil, fmt.Errorf("denied")
-	}
-
-	query := db.DB.Where("owner_id = ?", obj.ID).Order("id")
+	query := db.DB.Where("owner_id = ?", obj.ID)
 
 	return ProductPagination(query, first, after)
 }

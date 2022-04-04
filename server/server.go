@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"auction-back/auth"
@@ -35,7 +35,7 @@ func Init() *gin.Engine {
 
 	senders := []token.SenderInterface{
 		emailTokenSender(),
-		phoneTokenSender(),
+		phoneTokenSender(DB),
 	}
 
 	tokenPort := token.New(DB, senders)
@@ -54,8 +54,4 @@ func Init() *gin.Engine {
 	r.GET("/graphiql", playgroundHandler())
 
 	return r
-}
-
-func main() {
-	Init().Run()
 }

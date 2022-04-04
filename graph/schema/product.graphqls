@@ -1,24 +1,42 @@
 type Product {
   id: ID!
-  """Title of product"""
+  """
+  Title of product
+  """
   title: String!
-  """Product description"""
+  """
+  Product description
+  """
   description: String!
-  """Current owner of product"""
+  """
+  Current owner of product
+  """
   owner: User!
-  """Creator of product"""
+  """
+  Creator of product
+  """
   creator: User!
-  """Product visibility on market"""
+  """
+  Product visibility on market
+  """
   isOnMarket: Boolean!
-  """The greatest offer"""
+  """
+  The greatest offer
+  """
   topOffer: Offer
-  """Product images"""
+  """
+  Product images
+  """
   images: [ProductImage!]!
-  """Offers for this product"""
+  """
+  Offers for this product
+  """
   offers(first: Int, after: String): OffersConnection!
 }
 
-"""Product image"""
+"""
+Product image
+"""
 type ProductImage {
   id: ID!
   filename: String!
@@ -40,11 +58,11 @@ extend type Query {
 }
 
 input CreateProductInput {
-  name: String!
-  description: String
+  title: String!
+  description: String!
 }
 
-type CreateProductResult {
+type ProductResult {
   product: Product!
 }
 
@@ -73,7 +91,10 @@ type SellProductResult {
 }
 
 extend type Mutation {
-  createProduct(input: CreateProductInput!): CreateProductResult!
+  """
+  Creates product with creator of current viewer
+  """
+  createProduct(input: CreateProductInput!): ProductResult!
   offerProduct(input: OfferProductInput!): OfferProductResult!
   takeOffProduct(input: TakeOffProductInput!): TakeOffProductResult!
   sellProduct(input: SellProductInput!): SellProductResult!

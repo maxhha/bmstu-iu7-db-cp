@@ -69,6 +69,8 @@ func (t *TokenPort) Create(action db.TokenAction, viewer *db.User, data map[stri
 		return fmt.Errorf("create: %w", err)
 	}
 
+	token.User = *viewer
+
 	if err := t.send(token); err != nil {
 		return fmt.Errorf("send: %w", err)
 	}

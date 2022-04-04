@@ -9,16 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type Product struct {
-	gorm.Model
-	ID          string `gorm:"type:varchar(16);"`
-	Title       string
-	Description string
-	IsOnMarket  bool   `gorm:"default:false;"`
-	CreatorID   string `gorm:"type:varchar(16);"`
-	Creator     User
-}
-
 type ProductImage struct {
 	gorm.Model
 	ID        string `gorm:"type:varchar(16);"`

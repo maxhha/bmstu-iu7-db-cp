@@ -1,9 +1,11 @@
-package main
+package server
 
 import (
 	"auction-back/adapters/token_sender"
 	"auction-back/db"
 	"fmt"
+
+	"gorm.io/gorm"
 )
 
 func dataWithTokenId(token db.Token) (map[string]string, error) {
@@ -41,7 +43,7 @@ func emailTokenSender() *token_sender.TokenSender {
 	return token_sender.New(config)
 }
 
-func phoneTokenSender() *token_sender.TokenSender {
+func phoneTokenSender(DB *gorm.DB) *token_sender.TokenSender {
 	config := token_sender.Config{
 		Name:              "phone",
 		AddressEnvVarName: "PHONE_NOTIFIER_ADDRESS",
@@ -61,10 +63,28 @@ func phoneTokenSender() *token_sender.TokenSender {
 
 			return str, nil
 		},
+		db.TokenActionModerateUserForm: func(token db.Token) (string, error) {
+			if err := token.EnsureFillUser(DB); err != nil {
+				return "", err
+			}
+
+			form, err := token.User.MostRelevantUserForm(DB)
+
+			if err != nil {
+				return "", fmt.Errorf("last relevant user form: %w", err)
+			}
+
+			if form.Phone == nil {
+				return "", fmt.Errorf("user form phone is nil")
+			}
+
+			return *form.Phone, nil
+		},
 	}
 
 	config.DataGetters = map[db.TokenAction]token_sender.DataGetter{
-		db.TokenActionSetUserEmail: dataWithTokenId,
+		db.TokenActionSetUserPhone:     dataWithTokenId,
+		db.TokenActionModerateUserForm: dataWithTokenId,
 	}
 
 	return token_sender.New(config)
