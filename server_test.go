@@ -12,39 +12,22 @@ import (
 	"time"
 )
 
-func RunTest() <-chan error {
-	done := make(chan error, 1)
+func RunTest() error {
+	fmt.Println("Start test")
+	cmd := exec.Command("./integration_test/run.sh")
 
-	go func() {
-		fmt.Println("Start test")
-		// TODO: run integration test script
-		cmd := exec.Command("sleep", "3")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
-		outfile, err := os.Create("./integration-test.log")
-		if err != nil {
-			done <- fmt.Errorf("create log file: %w", err)
-			return
-		}
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("cmd start: %w", err)
+	}
 
-		defer outfile.Close()
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("cmd wait: %w", err)
+	}
 
-		cmd.Stdout = outfile
-		cmd.Stderr = outfile
-
-		if err := cmd.Start(); err != nil {
-			done <- fmt.Errorf("cmd start: %w", err)
-			return
-		}
-
-		if err := cmd.Wait(); err != nil {
-			done <- fmt.Errorf("cmd wait: %w", err)
-			return
-		}
-
-		done <- nil
-	}()
-
-	return done
+	return nil
 }
 
 func TestIntegration(t *testing.T) {
@@ -66,7 +49,7 @@ func TestIntegration(t *testing.T) {
 		}
 	}()
 
-	if err := <-RunTest(); err != nil {
+	if err := RunTest(); err != nil {
 		t.Error(err)
 	}
 

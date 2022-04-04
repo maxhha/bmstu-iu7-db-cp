@@ -1,0 +1,15 @@
+schema: "../graph/schema"
+documents: "./src/query/**/*.graphql"
+generates:
+    src/query/index.ts:
+        plugins:
+            - typescript
+            - typescript-operations
+            - typescript-graphql-request
+        config:
+            rawRequest: true
+
+hooks:
+    afterOneFileWrite:
+        - prettier --write
+        - node scripts/export-document-strings.js

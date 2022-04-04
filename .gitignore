@@ -40,3 +40,6 @@ postgresql.conf
 
 # Test logs
 *-test.log
+
+# JS projects wormhole
+node_modules

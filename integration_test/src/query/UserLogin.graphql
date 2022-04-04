@@ -1,0 +1,39 @@
+mutation Register {
+  register {
+    token
+  }
+}
+
+query Viewer {
+  viewer {
+    id
+  }
+}
+
+mutation UpdateUserPassword($input: UpdateUserPasswordInput!) {
+  updateUserPassword(input: $input) {
+    user {
+      id
+    }
+  }
+}
+
+mutation RequestSetUserEmail($input: RequestSetUserEmailInput!) {
+  requestSetUserEmail(input: $input)
+}
+
+mutation ApproveSetUserEmail($input: TokenInput!) {
+  approveSetUserEmail(input: $input) {
+    user {
+      draftForm {
+        email
+      }
+    }
+  }
+}
+
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
+    token
+  }
+}

@@ -98,6 +98,8 @@ services:
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
       - ./mock-redis.conf:/usr/local/etc/redis/redis.conf:ro
+    profiles:
+      - never
 
   mock-redis-dev:
     extends:

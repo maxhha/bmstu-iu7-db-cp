@@ -1,0 +1,1 @@
+../../front/scripts/export-document-strings.js

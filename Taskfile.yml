@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 # https://taskfile.dev/#/installation
 
 tasks:
@@ -15,6 +15,16 @@ tasks:
     generates:
       - graph/generated/generated.go
       - graph/model/models_gen.go
+
+  gqlgen:it:
+    desc: Generate code for GraphQL schema in integration test
+    dir: integration_test
+    cmds:
+      - npm run gql:gen
+    sources:
+      - src/**/*.graphql
+    generates:
+      - src/query/index.ts
 
   grpcgen:
     desc: Generate code for grpc
@@ -35,6 +45,11 @@ tasks:
     cmds:
       - docker-compose build mock-notifier-{{.ENV}}
 
+  log:mock_notifier:
+    desc: Follow logs of mock_notifier container
+    cmds:
+      - (docker logs -f auction-mock-notifier-{{.ENV}}-1 | sed 's/^/[NOTIFIER] /') &
+
   dev:
     desc: Start dev server
     deps:
@@ -43,19 +58,21 @@ tasks:
           ENV: dev
     env:
       SERVER_DOTENV: .server-dev.env
-    cmds: 
+    cmds:
       - docker-compose --profile dev up -d
       - defer: docker-compose --profile dev stop
-      - docker logs -f auction-mock-notifier-dev-1 &
+      - task: log:mock_notifier
+        vars:
+          ENV: dev
       - air
-  
+
   dir:out:
     desc: Creates out directiory
     cmds:
       - mkdir -p out
     status:
       - test -d out
-  
+
   filter-cover:
     desc: Filters generated files from coverage output
     cmds:
@@ -88,7 +105,7 @@ tasks:
           ENV: test
     env:
       SERVER_DOTENV: .server-test.env
-      GIN_MODE: debug
+      GIN_MODE: test
     vars:
       TMPOUT: ./out/it-coverage.tmp.out
       OUT: ./out/it-coverage.out
@@ -96,14 +113,17 @@ tasks:
     cmds:
       - docker-compose --profile test up --force-recreate -d
       - defer: docker-compose --profile test down
-      - go test -tags=integration -coverprofile={{.TMPOUT}} -coverpkg="auction-back/..." 
+      - task: log:mock_notifier
+        vars:
+          ENV: test
+      - go test -tags=integration -coverprofile={{.TMPOUT}} -coverpkg="auction-back/..."
       - task: filter-cover
         vars:
           IN: "{{.TMPOUT}}"
           OUT: "{{.OUT}}"
       - go tool cover -html={{.OUT}} -o {{.HTML}}
       - go tool cover -func={{.OUT}}
-  
+
   test:all:
     desc: Get total code coverage by all tests
     deps:

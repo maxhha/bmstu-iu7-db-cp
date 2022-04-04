@@ -1,0 +1,26 @@
+{
+	"compilerOptions": {
+        "incremental": true,
+		"target": "es2020",
+		"module": "commonjs",
+		"lib": ["es6"],
+        "outDir": "build",
+        "rootDir": "src",
+        "downlevelIteration": true,
+        "isolatedModules": false,  
+        "strict": true, 
+        "strictNullChecks": true, 
+        "alwaysStrict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"sourceMap": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true
+	},
+	"include": ["src/**/*.d.ts", "src/**/*.ts"]
+}
