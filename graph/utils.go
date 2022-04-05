@@ -12,9 +12,9 @@ func randString(n int) string {
 	return string(b)
 }
 
-// func (r *balanceResolver) Blocked(ctx context.Context, obj *model.Balance) (float64, error) {
+// func (r *balanceResolver) Blocked(ctx context.Context, obj *models.Balance) (float64, error) {
 // 	var blocked *float64
-// 	if err := db.DB.Model(&db.Offer{}).Select("sum(amount)").Where("consumer_id = ?", obj.DB.ID).Scan(&blocked).Error; err != nil {
+// 	if err := r.DBModel(&db.Offer{}).Select("sum(amount)").Where("consumer_id = ?", obj.DB.ID).Scan(&blocked).Error; err != nil {
 // 		return 0, err
 // 	}
 
@@ -24,7 +24,7 @@ func randString(n int) string {
 
 // 	return *blocked, nil
 // }
-// func (r *userResolver) Balance(ctx context.Context, obj *model.User) (*model.Balance, error) {
+// func (r *userResolver) Balance(ctx context.Context, obj *models.User) (*models.Balance, error) {
 // 	viewer := auth.ForViewer(ctx)
 
 // 	if viewer == nil {
@@ -35,7 +35,7 @@ func randString(n int) string {
 // 		return nil, fmt.Errorf("denied")
 // 	}
 
-// 	return (&model.Balance{}).From(obj.DB)
+// 	return (&models.Balance{}).From(obj.DB)
 // }
 // func (r *Resolver) Balance() generated.BalanceResolver { return &balanceResolver{r} }
 

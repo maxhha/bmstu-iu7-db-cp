@@ -1,30 +1,29 @@
 package graph
 
 import (
-	"auction-back/db"
-	"auction-back/graph/model"
+	"auction-back/models"
 	"fmt"
 
 	"gorm.io/gorm"
 )
 
 // Creates pagination for user forms
-func UserFormPagination(query *gorm.DB, first *int, after *string) (*model.UserFormsConnection, error) {
+func UserFormPagination(query *gorm.DB, first *int, after *string) (*models.UserFormsConnection, error) {
 	query, err := PaginationQueryByCreatedAtDesc(query, first, after)
 
 	if err != nil {
 		return nil, fmt.Errorf("pagination: %w", err)
 	}
 
-	var objs []db.UserForm
+	var objs []models.UserForm
 	if err := query.Find(&objs).Error; err != nil {
 		return nil, fmt.Errorf("find: %w", err)
 	}
 
 	if len(objs) == 0 {
-		return &model.UserFormsConnection{
-			PageInfo: &model.PageInfo{},
-			Edges:    make([]*model.UserFormsConnectionEdge, 0),
+		return &models.UserFormsConnection{
+			PageInfo: &models.PageInfo{},
+			Edges:    make([]*models.UserFormsConnectionEdge, 0),
 		}, nil
 	}
 
@@ -35,19 +34,19 @@ func UserFormPagination(query *gorm.DB, first *int, after *string) (*model.UserF
 		objs = objs[:len(objs)-1]
 	}
 
-	edges := make([]*model.UserFormsConnectionEdge, 0, len(objs))
+	edges := make([]*models.UserFormsConnectionEdge, 0, len(objs))
 
 	for _, obj := range objs {
 		node := obj
 
-		edges = append(edges, &model.UserFormsConnectionEdge{
+		edges = append(edges, &models.UserFormsConnectionEdge{
 			Cursor: obj.ID,
 			Node:   &node,
 		})
 	}
 
-	return &model.UserFormsConnection{
-		PageInfo: &model.PageInfo{
+	return &models.UserFormsConnection{
+		PageInfo: &models.PageInfo{
 			HasNextPage: hasNextPage,
 			StartCursor: &objs[0].ID,
 			EndCursor:   &objs[len(objs)-1].ID,

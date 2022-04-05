@@ -1,8 +1,8 @@
 package token_sender
 
 import (
-	"auction-back/db"
 	"auction-back/grpc/notifier"
+	"auction-back/models"
 	"context"
 	"fmt"
 	"log"
@@ -13,14 +13,14 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type ReceiverGetter func(token db.Token) (string, error)
-type DataGetter func(token db.Token) (map[string]string, error)
+type ReceiverGetter func(token models.Token) (string, error)
+type DataGetter func(token models.Token) (map[string]string, error)
 
 type Config struct {
 	Name              string
 	AddressEnvVarName string
-	ReceiverGetters   map[db.TokenAction]ReceiverGetter
-	DataGetters       map[db.TokenAction]DataGetter
+	ReceiverGetters   map[models.TokenAction]ReceiverGetter
+	DataGetters       map[models.TokenAction]DataGetter
 }
 
 type TokenSender struct {
@@ -52,7 +52,7 @@ func (n *TokenSender) Name() string {
 	return n.config.Name
 }
 
-func (n *TokenSender) Send(token db.Token) (bool, error) {
+func (n *TokenSender) Send(token models.Token) (bool, error) {
 	action := token.Action
 
 	getReceiver, shouldSend := n.config.ReceiverGetters[action]

@@ -2,8 +2,7 @@ package role
 
 import (
 	"auction-back/auth"
-	"auction-back/db"
-	"auction-back/graph/model"
+	"auction-back/models"
 	"context"
 	"fmt"
 
@@ -12,7 +11,7 @@ import (
 )
 
 type Interface interface {
-	HasRole(roleType db.RoleType, viewer *db.User) error
+	HasRole(roleType models.RoleType, viewer *models.User) error
 }
 
 type RolePort struct {
@@ -23,9 +22,9 @@ func New(db *gorm.DB) RolePort {
 	return RolePort{db}
 }
 
-func (r *RolePort) Handler() func(ctx context.Context, obj interface{}, next graphql.Resolver, role model.Role) (res interface{}, err error) {
-	return func(ctx context.Context, obj interface{}, next graphql.Resolver, role model.Role) (res interface{}, err error) {
-		if err := r.HasRole(db.RoleType(role), auth.ForViewer(ctx)); err != nil {
+func (r *RolePort) Handler() func(ctx context.Context, obj interface{}, next graphql.Resolver, role models.RoleType) (res interface{}, err error) {
+	return func(ctx context.Context, obj interface{}, next graphql.Resolver, role models.RoleType) (res interface{}, err error) {
+		if err := r.HasRole(role, auth.ForViewer(ctx)); err != nil {
 			return nil, err
 		}
 
@@ -33,12 +32,12 @@ func (r *RolePort) Handler() func(ctx context.Context, obj interface{}, next gra
 	}
 }
 
-func (r *RolePort) HasRole(roleType db.RoleType, viewer *db.User) error {
+func (r *RolePort) HasRole(roleType models.RoleType, viewer *models.User) error {
 	if viewer == nil {
 		return fmt.Errorf("unauthorized")
 	}
 
-	role := make([]db.Role, 1)
+	role := make([]models.Role, 1)
 
 	err := r.db.Limit(1).Find(&role, "user_id = ? AND type = ?", viewer.ID, roleType).Error
 	if err != nil {

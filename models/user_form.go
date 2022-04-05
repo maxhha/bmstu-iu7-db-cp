@@ -1,14 +1,10 @@
-package db
+package models
 
-import "gorm.io/gorm"
+import (
+	"fmt"
 
-type UserFormState string
-
-const (
-	UserFormStateCreated    UserFormState = "CREATED"
-	UserFormStateModerating UserFormState = "MODERATING"
-	UserFormStateDeclained  UserFormState = "DECLAINED"
-	UserFormStateApproved   UserFormState = "APPROVED"
+	"github.com/hashicorp/go-multierror"
+	"gorm.io/gorm"
 )
 
 type UserForm struct {
@@ -30,4 +26,28 @@ func (f *UserForm) MostRelevantFilter(db *gorm.DB) *gorm.DB {
 			state = 'APPROVED' 
 			OR (SELECT COUNT(1) FROM user_forms u WHERE "user_forms"."user_id" = u.user_id) = 1
 		)`)
+}
+
+func (f *UserFormFilled) From(form *UserForm) (*UserFormFilled, error) {
+	var err error
+
+	if form.Email == nil {
+		err = multierror.Append(err, fmt.Errorf("no email"))
+	} else {
+		f.Email = *form.Email
+	}
+
+	if form.Phone == nil {
+		err = multierror.Append(err, fmt.Errorf("no phone"))
+	} else {
+		f.Phone = *form.Phone
+	}
+
+	if form.Name == nil {
+		err = multierror.Append(err, fmt.Errorf("no name"))
+	} else {
+		f.Name = *form.Name
+	}
+
+	return f, err
 }

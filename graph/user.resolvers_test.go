@@ -2,9 +2,8 @@ package graph
 
 import (
 	"auction-back/auth"
-	"auction-back/db"
-	"auction-back/graph/model"
 	"auction-back/jwt"
+	"auction-back/models"
 	"auction-back/test"
 	"context"
 	"os"
@@ -33,7 +32,7 @@ func (s *RegisterSuite) TestRegister() {
 
 	s.SqlMock.ExpectQuery("INSERT INTO \"users\"").
 		WithArgs(nil, nil).
-		WillReturnRows(test.MockRows(db.User{ID: id, CreatedAt: time.Now()}))
+		WillReturnRows(test.MockRows(models.User{ID: id, CreatedAt: time.Now()}))
 
 	result, err := s.resolver.Mutation().Register(context.Background())
 	require.NoError(s.T(), err)
@@ -57,13 +56,13 @@ type ApproveSetUserEmailSuite struct {
 func (s *ApproveSetUserEmailSuite) TestApproveSetUserEmail() {
 	token := "123456"
 	email := "email-test"
-	viewer := db.User{ID: "user-test"}
-	user_form := db.UserForm{ID: "test"}
+	viewer := models.User{ID: "user-test"}
+	user_form := models.UserForm{ID: "test"}
 
 	s.TokenMock.
-		On("Activate", db.TokenActionSetUserEmail, token, &viewer).
+		On("Activate", models.TokenActionSetUserEmail, token, &viewer).
 		Return(
-			db.Token{Data: map[string]interface{}{"email": email}},
+			models.Token{Data: map[string]interface{}{"email": email}},
 			nil,
 		)
 
@@ -79,7 +78,7 @@ func (s *ApproveSetUserEmailSuite) TestApproveSetUserEmail() {
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	ctx := auth.WithViewer(context.Background(), &viewer)
-	result, err := s.resolver.Mutation().ApproveSetUserEmail(ctx, model.TokenInput{Token: token})
+	result, err := s.resolver.Mutation().ApproveSetUserEmail(ctx, models.TokenInput{Token: token})
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), result)
 	require.Equal(s.T(), result.User, &viewer)
@@ -95,10 +94,10 @@ type UpdateUserPasswordSuite struct {
 
 func (s *UpdateUserPasswordSuite) TestUpdatePassword() {
 	password := "test-password"
-	viewer := db.User{ID: "user-test"}
-	user_form := db.UserForm{
+	viewer := models.User{ID: "user-test"}
+	user_form := models.UserForm{
 		ID:    "test",
-		State: db.UserFormStateCreated,
+		State: models.UserFormStateCreated,
 	}
 
 	ctx := auth.WithViewer(context.Background(), &viewer)
@@ -114,7 +113,7 @@ func (s *UpdateUserPasswordSuite) TestUpdatePassword() {
 		WithArgs(hash, sqlmock.AnyArg(), user_form.ID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	result, err := s.resolver.Mutation().UpdateUserPassword(ctx, model.UpdateUserPasswordInput{Password: password})
+	result, err := s.resolver.Mutation().UpdateUserPassword(ctx, models.UpdateUserPasswordInput{Password: password})
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), result)
 	require.Equal(s.T(), result.User, &viewer)
@@ -129,7 +128,7 @@ type ViewerSuite struct {
 }
 
 func (s *ViewerSuite) TestViewer() {
-	viewer := db.User{ID: "user-test"}
+	viewer := models.User{ID: "user-test"}
 	ctx := auth.WithViewer(context.Background(), &viewer)
 
 	result, err := s.resolver.Query().Viewer(ctx)

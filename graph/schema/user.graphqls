@@ -1,31 +1,51 @@
 input UserFormHistoryFilter {
-  state: [UserFormStateEnum!] = []
+  state: [UserFormState!] = []
   id: [ID!] = []
 }
 
 type User {
   id: ID!
-  """User current personal information"""
+  """
+  User current personal information
+  """
   form: UserFormFilled
-  """User new personal information"""
+  """
+  User new personal information
+  """
   draftForm: UserForm
-  """User history of personal information (only for managers)"""
-  formHistory(first: Int, after: Cursor, filter: UserFormHistoryFilter = {}): 
-    UserFormsConnection! @hasRole(role: MANAGER)
-  """End date of blocking this user"""
+  """
+  User history of personal information (only for managers)
+  """
+  formHistory(
+    first: Int
+    after: Cursor
+    filter: UserFormHistoryFilter = {}
+  ): UserFormsConnection! @hasRole(role: MANAGER)
+  """
+  End date of blocking this user
+  """
   blockedUntil: DateTime
-  """Available moneys"""
+  """
+  Available moneys
+  """
   available: [Money!]!
-  """Money that is blocked in some offers"""
+  """
+  Money that is blocked in some offers
+  """
   blocked: [Money!]!
-  """User accounts"""
+  """
+  User accounts
+  """
   accounts(first: Int, after: Cursor): UserAccountsConnection!
-  """User offers"""
+  """
+  User offers
+  """
   offers(first: Int, after: Cursor): OffersConnection!
-  """User products in which he is owner"""
+  """
+  User products in which he is owner
+  """
   products(first: Int, after: Cursor): ProductsConnection!
 }
-
 
 type UsersConnectionEdge {
   cursor: Cursor!
@@ -42,11 +62,15 @@ input UsersFilter {
 }
 
 extend type Query {
-  """Authorized user"""
+  """
+  Authorized user
+  """
   viewer: User
-  """List of all users"""
-  users(first: Int, after: Cursor, filter: UsersFilter = {}):
-    UsersConnection @hasRole(role: MANAGER)
+  """
+  List of all users
+  """
+  users(first: Int, after: Cursor, filter: UsersFilter = {}): UsersConnection
+    @hasRole(role: MANAGER)
 }
 
 type UserResult {
@@ -76,21 +100,37 @@ input UpdateUserDraftFormInput {
 }
 
 extend type Mutation {
-  """Registrates empty user"""
+  """
+  Registrates empty user
+  """
   register: TokenResult!
-  """User login"""
+  """
+  User login
+  """
   login(input: LoginInput!): TokenResult!
 
-  """Request set user email"""
+  """
+  Request set user email
+  """
   requestSetUserEmail(input: RequestSetUserEmailInput!): Boolean!
-  """Request set user email"""
+  """
+  Request set user email
+  """
   requestSetUserPhone(input: RequestSetUserPhoneInput!): Boolean!
-  """First input of users email"""
+  """
+  First input of users email
+  """
   approveSetUserEmail(input: TokenInput!): UserResult!
-  """First input of users"""
+  """
+  First input of users
+  """
   approveSetUserPhone(input: TokenInput!): UserResult!
-  """Update user password using old password"""
+  """
+  Update user password using old password
+  """
   updateUserPassword(input: UpdateUserPasswordInput!): UserResult!
-  """Update user draft form fields"""
+  """
+  Update user draft form fields
+  """
   updateUserDraftForm(input: UpdateUserDraftFormInput!): UserResult!
 }

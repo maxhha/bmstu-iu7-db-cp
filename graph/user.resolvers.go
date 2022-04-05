@@ -5,10 +5,9 @@ package graph
 
 import (
 	"auction-back/auth"
-	"auction-back/db"
 	"auction-back/graph/generated"
-	"auction-back/graph/model"
 	"auction-back/jwt"
+	"auction-back/models"
 	"context"
 	"database/sql"
 	"fmt"
@@ -17,8 +16,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func (r *mutationResolver) Register(ctx context.Context) (*model.TokenResult, error) {
-	user := db.User{}
+func (r *mutationResolver) Register(ctx context.Context) (*models.TokenResult, error) {
+	user := models.User{}
 
 	if err := r.DB.Create(&user).Error; err != nil {
 		return nil, fmt.Errorf("create: %w", err)
@@ -30,13 +29,13 @@ func (r *mutationResolver) Register(ctx context.Context) (*model.TokenResult, er
 		return nil, err
 	}
 
-	return &model.TokenResult{
+	return &models.TokenResult{
 		Token: token,
 	}, nil
 }
 
-func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.TokenResult, error) {
-	form := db.UserForm{}
+func (r *mutationResolver) Login(ctx context.Context, input models.LoginInput) (*models.TokenResult, error) {
+	form := models.UserForm{}
 
 	err := form.MostRelevantFilter(r.DB).
 		Where(
@@ -68,12 +67,12 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 		return nil, err
 	}
 
-	return &model.TokenResult{
+	return &models.TokenResult{
 		Token: token,
 	}, nil
 }
 
-func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input model.RequestSetUserEmailInput) (bool, error) {
+func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input models.RequestSetUserEmailInput) (bool, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
@@ -81,14 +80,14 @@ func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input model.
 	}
 
 	data := map[string]interface{}{"email": input.Email}
-	if err := r.TokenPort.Create(db.TokenActionSetUserEmail, viewer, data); err != nil {
+	if err := r.TokenPort.Create(models.TokenActionSetUserEmail, viewer, data); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input model.RequestSetUserPhoneInput) (bool, error) {
+func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input models.RequestSetUserPhoneInput) (bool, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
@@ -96,16 +95,16 @@ func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input model.
 	}
 
 	data := map[string]interface{}{"phone": input.Phone}
-	if err := r.TokenPort.Create(db.TokenActionSetUserPhone, viewer, data); err != nil {
+	if err := r.TokenPort.Create(models.TokenActionSetUserPhone, viewer, data); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input model.TokenInput) (*model.UserResult, error) {
+func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input models.TokenInput) (*models.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
-	token, err := r.TokenPort.Activate(db.TokenActionSetUserEmail, input.Token, viewer)
+	token, err := r.TokenPort.Activate(models.TokenActionSetUserEmail, input.Token, viewer)
 
 	if err != nil {
 		return nil, fmt.Errorf("token activate: %w", err)
@@ -127,14 +126,14 @@ func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input model.
 		return nil, err
 	}
 
-	return &model.UserResult{
+	return &models.UserResult{
 		User: viewer,
 	}, nil
 }
 
-func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input model.TokenInput) (*model.UserResult, error) {
+func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input models.TokenInput) (*models.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
-	token, err := r.TokenPort.Activate(db.TokenActionSetUserPhone, input.Token, viewer)
+	token, err := r.TokenPort.Activate(models.TokenActionSetUserPhone, input.Token, viewer)
 
 	if err != nil {
 		return nil, fmt.Errorf("token activate: %w", err)
@@ -156,12 +155,12 @@ func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input model.
 		return nil, fmt.Errorf("update: %w", err)
 	}
 
-	return &model.UserResult{
+	return &models.UserResult{
 		User: viewer,
 	}, nil
 }
 
-func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input model.UpdateUserPasswordInput) (*model.UserResult, error) {
+func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input models.UpdateUserPasswordInput) (*models.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
@@ -197,12 +196,12 @@ func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input model.U
 		return nil, fmt.Errorf("update: %w", err)
 	}
 
-	return &model.UserResult{
+	return &models.UserResult{
 		User: viewer,
 	}, nil
 }
 
-func (r *mutationResolver) UpdateUserDraftForm(ctx context.Context, input model.UpdateUserDraftFormInput) (*model.UserResult, error) {
+func (r *mutationResolver) UpdateUserDraftForm(ctx context.Context, input models.UpdateUserDraftFormInput) (*models.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
@@ -221,18 +220,18 @@ func (r *mutationResolver) UpdateUserDraftForm(ctx context.Context, input model.
 		return nil, fmt.Errorf("save: %w", err)
 	}
 
-	return &model.UserResult{
+	return &models.UserResult{
 		User: viewer,
 	}, nil
 }
 
-func (r *queryResolver) Viewer(ctx context.Context) (*db.User, error) {
+func (r *queryResolver) Viewer(ctx context.Context) (*models.User, error) {
 	viewer := auth.ForViewer(ctx)
 	return viewer, nil
 }
 
-func (r *queryResolver) Users(ctx context.Context, first *int, after *string, filter *model.UsersFilter) (*model.UsersConnection, error) {
-	query := r.DB.Model(&db.User{})
+func (r *queryResolver) Users(ctx context.Context, first *int, after *string, filter *models.UsersFilter) (*models.UsersConnection, error) {
+	query := r.DB.Model(&models.User{})
 
 	if filter != nil {
 		if len(filter.ID) > 0 {
@@ -243,7 +242,7 @@ func (r *queryResolver) Users(ctx context.Context, first *int, after *string, fi
 	return UserPagination(query, first, after)
 }
 
-func (r *userResolver) Form(ctx context.Context, obj *db.User) (*model.UserFormFilled, error) {
+func (r *userResolver) Form(ctx context.Context, obj *models.User) (*models.UserFormFilled, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if err := r.isOwnerOrManager(viewer, obj); err != nil {
@@ -260,17 +259,17 @@ func (r *userResolver) Form(ctx context.Context, obj *db.User) (*model.UserFormF
 		return nil, err
 	}
 
-	return (&model.UserFormFilled{}).From(&form)
+	return (&models.UserFormFilled{}).From(&form)
 }
 
-func (r *userResolver) DraftForm(ctx context.Context, obj *db.User) (*db.UserForm, error) {
+func (r *userResolver) DraftForm(ctx context.Context, obj *models.User) (*models.UserForm, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if err := r.isOwnerOrManager(viewer, obj); err != nil {
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 
-	form := db.UserForm{}
+	form := models.UserForm{}
 	err := r.DB.Order("created_at desc").Take(&form, "user_id = ?", obj.ID).Error
 
 	if err == gorm.ErrRecordNotFound {
@@ -288,12 +287,12 @@ func (r *userResolver) DraftForm(ctx context.Context, obj *db.User) (*db.UserFor
 	return nil, nil
 }
 
-func (r *userResolver) FormHistory(ctx context.Context, obj *db.User, first *int, after *string, filter *model.UserFormHistoryFilter) (*model.UserFormsConnection, error) {
+func (r *userResolver) FormHistory(ctx context.Context, obj *models.User, first *int, after *string, filter *models.UserFormHistoryFilter) (*models.UserFormsConnection, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("user is nil")
 	}
 
-	query := r.DB.Model(&db.UserForm{}).Where("user_id = ?", obj.ID)
+	query := r.DB.Model(&models.UserForm{}).Where("user_id = ?", obj.ID)
 
 	if filter != nil {
 		if len(filter.ID) > 0 {
@@ -308,31 +307,31 @@ func (r *userResolver) FormHistory(ctx context.Context, obj *db.User, first *int
 	return UserFormPagination(query, first, after)
 }
 
-func (r *userResolver) BlockedUntil(ctx context.Context, obj *db.User) (*time.Time, error) {
+func (r *userResolver) BlockedUntil(ctx context.Context, obj *models.User) (*time.Time, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) Available(ctx context.Context, obj *db.User) ([]*model.Money, error) {
+func (r *userResolver) Available(ctx context.Context, obj *models.User) ([]*models.Money, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) Blocked(ctx context.Context, obj *db.User) ([]*model.Money, error) {
+func (r *userResolver) Blocked(ctx context.Context, obj *models.User) ([]*models.Money, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) Accounts(ctx context.Context, obj *db.User, first *int, after *string) (*model.UserAccountsConnection, error) {
+func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *int, after *string) (*models.UserAccountsConnection, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if err := r.isOwnerOrManager(viewer, obj); err != nil {
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 
-	query := r.DB.Model(&db.Account{}).Where("user_id = ?", obj.ID)
+	query := r.DB.Model(&models.Account{}).Where("user_id = ?", obj.ID)
 
 	return UserAccountPagination(query, first, after)
 }
 
-func (r *userResolver) Offers(ctx context.Context, obj *db.User, first *int, after *string) (*model.OffersConnection, error) {
+func (r *userResolver) Offers(ctx context.Context, obj *models.User, first *int, after *string) (*models.OffersConnection, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
@@ -343,19 +342,19 @@ func (r *userResolver) Offers(ctx context.Context, obj *db.User, first *int, aft
 		return nil, fmt.Errorf("denied")
 	}
 
-	query := db.DB.Where("consumer_id = ?", obj.ID).Order("id")
+	query := r.DB.Where("consumer_id = ?", obj.ID).Order("id")
 
 	return OfferPagination(query, first, after)
 }
 
-func (r *userResolver) Products(ctx context.Context, obj *db.User, first *int, after *string) (*model.ProductsConnection, error) {
+func (r *userResolver) Products(ctx context.Context, obj *models.User, first *int, after *string) (*models.ProductsConnection, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if err := r.isOwnerOrManager(viewer, obj); err != nil {
 		return nil, err
 	}
 
-	query := db.DB.Where("owner_id = ?", obj.ID)
+	query := r.DB.Where("owner_id = ?", obj.ID)
 
 	return ProductPagination(query, first, after)
 }

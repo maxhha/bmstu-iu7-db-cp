@@ -5,9 +5,8 @@ package graph
 
 import (
 	"auction-back/auth"
-	"auction-back/db"
 	"auction-back/graph/generated"
-	"auction-back/graph/model"
+	"auction-back/models"
 	"context"
 	"errors"
 	"fmt"
@@ -15,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func (r *mutationResolver) CreateProduct(ctx context.Context, input model.CreateProductInput) (*model.ProductResult, error) {
+func (r *mutationResolver) CreateProduct(ctx context.Context, input models.CreateProductInput) (*models.ProductResult, error) {
 	viewer := auth.ForViewer(ctx)
 
 	if viewer == nil {
@@ -26,24 +25,24 @@ func (r *mutationResolver) CreateProduct(ctx context.Context, input model.Create
 		return nil, fmt.Errorf("last approved user form: %w", err)
 	}
 
-	product := db.Product{
+	product := models.Product{
 		Title:       input.Title,
 		Description: input.Description,
 		CreatorID:   viewer.ID,
 	}
 
-	if err := db.DB.Create(&product).Error; err != nil {
+	if err := r.DB.Create(&product).Error; err != nil {
 		return nil, fmt.Errorf("create: %w", err)
 	}
 
 	product.Creator = *viewer
 
-	return &model.ProductResult{
+	return &models.ProductResult{
 		Product: &product,
 	}, nil
 }
 
-func (r *mutationResolver) OfferProduct(ctx context.Context, input model.OfferProductInput) (*model.OfferProductResult, error) {
+func (r *mutationResolver) OfferProduct(ctx context.Context, input models.OfferProductInput) (*models.OfferProductResult, error) {
 	panic(fmt.Errorf("not implemented"))
 	// viewer := auth.ForViewer(ctx)
 
@@ -51,9 +50,9 @@ func (r *mutationResolver) OfferProduct(ctx context.Context, input model.OfferPr
 	// 	return nil, fmt.Errorf("unauthorized")
 	// }
 
-	// product := db.Product{}
+	// product := models.Product{}
 
-	// result := db.DB.Take(&product, "id = ?", input.ProductID)
+	// result := r.DBTake(&product, "id = ?", input.ProductID)
 
 	// if result.Error != nil {
 	// 	return nil, fmt.Errorf("db take: %w", result.Error)
@@ -65,13 +64,13 @@ func (r *mutationResolver) OfferProduct(ctx context.Context, input model.OfferPr
 
 	// product.IsOnMarket = true
 
-	// result = db.DB.Save(&product)
+	// result = r.DBSave(&product)
 
 	// if result.Error != nil {
 	// 	return nil, fmt.Errorf("db save: %w", result.Error)
 	// }
 
-	// p, err := (&model.Product{}).From(&product)
+	// p, err := (&models.Product{}).From(&product)
 
 	// if err != nil {
 	// 	return nil, fmt.Errorf("convert: %w", err)
@@ -87,10 +86,10 @@ func (r *mutationResolver) OfferProduct(ctx context.Context, input model.OfferPr
 	// 	r.MarketLock.Unlock()
 	// }()
 
-	// return &model.OfferProductResult{Product: p}, nil
+	// return &models.OfferProductResult{Product: p}, nil
 }
 
-func (r *mutationResolver) TakeOffProduct(ctx context.Context, input model.TakeOffProductInput) (*model.TakeOffProductResult, error) {
+func (r *mutationResolver) TakeOffProduct(ctx context.Context, input models.TakeOffProductInput) (*models.TakeOffProductResult, error) {
 	panic(fmt.Errorf("not implemented"))
 	// viewer := auth.ForViewer(ctx)
 
@@ -98,9 +97,9 @@ func (r *mutationResolver) TakeOffProduct(ctx context.Context, input model.TakeO
 	// 	return nil, fmt.Errorf("unauthorized")
 	// }
 
-	// product := db.Product{}
+	// product := models.Product{}
 
-	// result := db.DB.Take(&product, "id = ?", input.ProductID)
+	// result := r.DBTake(&product, "id = ?", input.ProductID)
 
 	// if result.Error != nil {
 	// 	return nil, fmt.Errorf("db take: %w", result.Error)
@@ -112,22 +111,22 @@ func (r *mutationResolver) TakeOffProduct(ctx context.Context, input model.TakeO
 
 	// product.IsOnMarket = false
 
-	// result = db.DB.Save(&product)
+	// result = r.DBSave(&product)
 
 	// if result.Error != nil {
 	// 	return nil, fmt.Errorf("db save: %w", result.Error)
 	// }
 
-	// p, err := (&model.Product{}).From(&product)
+	// p, err := (&models.Product{}).From(&product)
 
 	// if err != nil {
 	// 	return nil, fmt.Errorf("convert: %w", err)
 	// }
 
-	// return &model.TakeOffProductResult{Product: p}, nil
+	// return &models.TakeOffProductResult{Product: p}, nil
 }
 
-func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProductInput) (*model.SellProductResult, error) {
+func (r *mutationResolver) SellProduct(ctx context.Context, input models.SellProductInput) (*models.SellProductResult, error) {
 	panic(fmt.Errorf("not implemented"))
 
 	// viewer := auth.ForViewer(ctx)
@@ -136,9 +135,9 @@ func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProd
 	// 	return nil, fmt.Errorf("unauthorized")
 	// }
 
-	// product := db.Product{}
+	// product := models.Product{}
 
-	// if err := db.DB.Take(&product, "id = ?", input.ProductID).Error; err != nil {
+	// if err := r.DBTake(&product, "id = ?", input.ProductID).Error; err != nil {
 	// 	return nil, fmt.Errorf("db take: %w", err)
 	// }
 
@@ -146,15 +145,15 @@ func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProd
 	// 	return nil, fmt.Errorf("viewer is not owner")
 	// }
 
-	// offer := db.Offer{}
+	// offer := models.Offer{}
 
-	// maxAmount := db.DB.Model(&db.Offer{}).Select("max(amount)").Where("product_id = ?", product.ID)
+	// maxAmount := r.DBModel(&models.Offer{}).Select("max(amount)").Where("product_id = ?", product.ID)
 
-	// if err := db.DB.Where("amount = (?)", maxAmount).First(&offer, "product_id = ?", product.ID).Error; err != nil {
+	// if err := r.DB.Where("amount = (?)", maxAmount).First(&offer, "product_id = ?", product.ID).Error; err != nil {
 	// 	return nil, fmt.Errorf("cant find max offer: %w", err)
 	// }
 
-	// err := db.DB.Transaction(func(tx *gorm.DB) error {
+	// err := r.DBTransaction(func(tx *gorm.DB) error {
 	// 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(viewer, "id = ?", viewer.ID).Error; err != nil {
 	// 		return fmt.Errorf("lock viewer: %w", err)
 	// 	}
@@ -191,14 +190,14 @@ func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProd
 	// }
 
 	// go func(id string) {
-	// 	var offers []db.Offer
-	// 	if err := db.DB.Find(&offers, "product_id = ?", id).Error; err != nil {
+	// 	var offers []models.Offer
+	// 	if err := r.DBFind(&offers, "product_id = ?", id).Error; err != nil {
 	// 		fmt.Fprintf(gin.DefaultErrorWriter, "sell sideffect: db take: %v", err)
 	// 		return
 	// 	}
 
 	// 	for _, offer := range offers {
-	// 		o, err := (&model.Offer{}).From(&offer)
+	// 		o, err := (&models.Offer{}).From(&offer)
 
 	// 		if err != nil {
 	// 			fmt.Fprintf(gin.DefaultErrorWriter, "sell sideffect: convert: %v", err)
@@ -212,39 +211,39 @@ func (r *mutationResolver) SellProduct(ctx context.Context, input model.SellProd
 	// 	}
 	// }(product.ID)
 
-	// p, err := (&model.Product{}).From(&product)
+	// p, err := (&models.Product{}).From(&product)
 
 	// if err != nil {
 	// 	return nil, err
 	// }
 
-	// return &model.SellProductResult{
+	// return &models.SellProductResult{
 	// 	Product: p,
 	// }, nil
 }
 
-func (r *productResolver) Owner(ctx context.Context, obj *db.Product) (*db.User, error) {
+func (r *productResolver) Owner(ctx context.Context, obj *models.Product) (*models.User, error) {
 	panic(fmt.Errorf("not implemented"))
 	// if obj.DB.Owner.ID == obj.DB.OwnerID {
-	// 	return (&model.User{}).From(&obj.DB.Owner)
+	// 	return (&models.User{}).From(&obj.DB.Owner)
 	// }
 
-	// owner := db.User{}
-	// result := db.DB.Take(&owner, "id = ?", obj.DB.OwnerID)
+	// owner := models.User{}
+	// result := r.DBTake(&owner, "id = ?", obj.DB.OwnerID)
 
 	// if result.Error != nil {
 	// 	return nil, fmt.Errorf("db take: %w", result.Error)
 	// }
 
-	// return (&model.User{}).From(&owner)
+	// return (&models.User{}).From(&owner)
 }
 
-func (r *productResolver) TopOffer(ctx context.Context, obj *db.Product) (*model.Offer, error) {
-	offer := db.Offer{}
+func (r *productResolver) TopOffer(ctx context.Context, obj *models.Product) (*models.Offer, error) {
+	offer := models.Offer{}
 
-	maxAmount := db.DB.Model(&db.Offer{}).Select("max(amount)").Where("product_id = ?", obj.ID)
+	maxAmount := r.DB.Model(&models.Offer{}).Select("max(amount)").Where("product_id = ?", obj.ID)
 
-	if err := db.DB.Where("amount = (?)", maxAmount).First(&offer, "product_id = ?", obj.ID).Error; err != nil {
+	if err := r.DB.Where("amount = (?)", maxAmount).First(&offer, "product_id = ?", obj.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -252,27 +251,27 @@ func (r *productResolver) TopOffer(ctx context.Context, obj *db.Product) (*model
 		return nil, fmt.Errorf("cant find max offer: %w", err)
 	}
 
-	return (&model.Offer{}).From(&offer)
+	return &offer, nil
 }
 
-func (r *productResolver) Images(ctx context.Context, obj *db.Product) ([]*model.ProductImage, error) {
+func (r *productResolver) Images(ctx context.Context, obj *models.Product) ([]*models.ProductImage, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *productResolver) Offers(ctx context.Context, obj *db.Product, first *int, after *string) (*model.OffersConnection, error) {
-	query := db.DB.Where("product_id = ?", obj.ID).Order("id")
+func (r *productResolver) Offers(ctx context.Context, obj *models.Product, first *int, after *string) (*models.OffersConnection, error) {
+	query := r.DB.Where("product_id = ?", obj.ID).Order("id")
 
 	return OfferPagination(query, first, after)
 }
 
-func (r *queryResolver) MarketProducts(ctx context.Context, first *int, after *string) (*model.ProductsConnection, error) {
-	query := db.DB.Where("is_on_market = true").Order("id")
+func (r *queryResolver) MarketProducts(ctx context.Context, first *int, after *string) (*models.ProductsConnection, error) {
+	query := r.DB.Where("is_on_market = true").Order("id")
 
 	return ProductPagination(query, first, after)
 }
 
-func (r *subscriptionResolver) ProductOffered(ctx context.Context) (<-chan *db.Product, error) {
-	ch := make(chan *db.Product, 1)
+func (r *subscriptionResolver) ProductOffered(ctx context.Context) (<-chan *models.Product, error) {
+	ch := make(chan *models.Product, 1)
 
 	r.MarketLock.Lock()
 	chan_id := randString(6)

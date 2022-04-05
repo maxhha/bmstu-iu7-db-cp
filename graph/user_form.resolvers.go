@@ -5,9 +5,7 @@ package graph
 
 import (
 	"auction-back/auth"
-	"auction-back/db"
-	"auction-back/graph/generated"
-	"auction-back/graph/model"
+	"auction-back/models"
 	"context"
 	"fmt"
 
@@ -27,7 +25,7 @@ func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, e
 		return false, fmt.Errorf("draft form: %w", err)
 	}
 
-	_, err = (&model.UserFormFilled{}).From(form)
+	_, err = (&models.UserFormFilled{}).From(form)
 
 	if form.Password == nil {
 		err = multierror.Append(err, fmt.Errorf("no password"))
@@ -38,29 +36,29 @@ func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, e
 	}
 
 	data := map[string]interface{}{}
-	if err := r.TokenPort.Create(db.TokenActionModerateUserForm, viewer, data); err != nil {
+	if err := r.TokenPort.Create(models.TokenActionModerateUserForm, viewer, data); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input model.TokenInput) (*model.UserResult, error) {
+func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input models.TokenInput) (*models.UserResult, error) {
 	viewer := auth.ForViewer(ctx)
-	token, err := r.TokenPort.Activate(db.TokenActionModerateUserForm, input.Token, viewer)
+	token, err := r.TokenPort.Activate(models.TokenActionModerateUserForm, input.Token, viewer)
 
 	if err != nil {
 		return nil, fmt.Errorf("token activate: %w", err)
 	}
 
-	form := db.UserForm{}
+	form := models.UserForm{}
 	err = r.DB.
 		Order("created_at desc").
 		Take(
 			&form,
 			"user_id = ? AND state IN ?",
 			token.UserID,
-			[]db.UserFormState{db.UserFormStateCreated, db.UserFormStateDeclained},
+			[]models.UserFormState{models.UserFormStateCreated, models.UserFormStateDeclained},
 		).
 		Error
 
@@ -68,28 +66,28 @@ func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input mo
 		return nil, fmt.Errorf("take: %w", err)
 	}
 
-	err = r.DB.Model(&form).Update("state", db.UserFormStateModerating).Error
+	err = r.DB.Model(&form).Update("state", models.UserFormStateModerating).Error
 	if err != nil {
 		return nil, fmt.Errorf("update: %w", err)
 	}
 
-	return &model.UserResult{
+	return &models.UserResult{
 		User: viewer,
 	}, nil
 }
 
-func (r *mutationResolver) ApproveUserForm(ctx context.Context, input model.ApproveUserFormInput) (*model.UserFormResult, error) {
-	form := db.UserForm{}
+func (r *mutationResolver) ApproveUserForm(ctx context.Context, input models.ApproveUserFormInput) (*models.UserFormResult, error) {
+	form := models.UserForm{}
 
 	if err := r.DB.Take(&form, "id = ?", input.UserFormID).Error; err != nil {
 		return nil, fmt.Errorf("take: %w", err)
 	}
 
-	if form.State != db.UserFormStateModerating {
-		return nil, fmt.Errorf("state is not %s", db.UserFormStateModerating)
+	if form.State != models.UserFormStateModerating {
+		return nil, fmt.Errorf("state is not %s", models.UserFormStateModerating)
 	}
 
-	form.State = db.UserFormStateApproved
+	form.State = models.UserFormStateApproved
 
 	if err := r.BankPort.UserFormApproved(form); err != nil {
 		return nil, fmt.Errorf("bank: %w", err)
@@ -99,36 +97,36 @@ func (r *mutationResolver) ApproveUserForm(ctx context.Context, input model.Appr
 		return nil, fmt.Errorf("save: %w", err)
 	}
 
-	return &model.UserFormResult{
+	return &models.UserFormResult{
 		UserForm: &form,
 	}, nil
 }
 
-func (r *mutationResolver) DeclineUserForm(ctx context.Context, input model.DeclineUserFormInput) (*model.UserFormResult, error) {
-	form := db.UserForm{}
+func (r *mutationResolver) DeclineUserForm(ctx context.Context, input models.DeclineUserFormInput) (*models.UserFormResult, error) {
+	form := models.UserForm{}
 
 	if err := r.DB.Take(&form, "id = ?", input.UserFormID).Error; err != nil {
 		return nil, fmt.Errorf("take: %w", err)
 	}
 
-	if form.State != db.UserFormStateModerating {
-		return nil, fmt.Errorf("state is not %s", db.UserFormStateModerating)
+	if form.State != models.UserFormStateModerating {
+		return nil, fmt.Errorf("state is not %s", models.UserFormStateModerating)
 	}
 
-	form.State = db.UserFormStateDeclained
+	form.State = models.UserFormStateDeclained
 	form.DeclainReason = input.DeclainReason
 
 	if err := r.DB.Save(&form).Error; err != nil {
 		return nil, fmt.Errorf("save: %w", err)
 	}
 
-	return &model.UserFormResult{
+	return &models.UserFormResult{
 		UserForm: &form,
 	}, nil
 }
 
-func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string, filter *model.UserFormsFilter) (*model.UserFormsConnection, error) {
-	query := r.DB.Model(&db.UserForm{})
+func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string, filter *models.UserFormsFilter) (*models.UserFormsConnection, error) {
+	query := r.DB.Model(&models.UserForm{})
 
 	if filter != nil {
 		if len(filter.ID) > 0 {
@@ -146,12 +144,3 @@ func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string
 
 	return UserFormPagination(query, first, after)
 }
-
-func (r *userFormResolver) State(ctx context.Context, obj *db.UserForm) (model.UserFormStateEnum, error) {
-	return model.UserFormStateEnum(obj.State), nil
-}
-
-// UserForm returns generated.UserFormResolver implementation.
-func (r *Resolver) UserForm() generated.UserFormResolver { return &userFormResolver{r} }
-
-type userFormResolver struct{ *Resolver }

@@ -1,14 +1,14 @@
 package bank
 
 import (
-	"auction-back/db"
+	"auction-back/models"
 	"fmt"
 
 	"gorm.io/gorm"
 )
 
 type Interface interface {
-	UserFormApproved(form db.UserForm) error
+	UserFormApproved(form models.UserForm) error
 }
 
 type BankPort struct {
@@ -20,14 +20,14 @@ func New(db *gorm.DB) BankPort {
 }
 
 func (b *BankPort) createAccount(userID string) error {
-	bank := db.Bank{}
+	bank := models.Bank{}
 
 	if err := b.db.Take(&bank, "name = 'fake'").Error; err != nil {
 		return fmt.Errorf("take bank: %w", err)
 	}
 
-	account := db.Account{
-		Type:   db.AccountTypeUser,
+	account := models.Account{
+		Type:   models.AccountTypeUser,
 		UserID: userID,
 		BankID: bank.ID,
 	}
@@ -39,7 +39,7 @@ func (b *BankPort) createAccount(userID string) error {
 	return nil
 }
 
-func (b *BankPort) UserFormApproved(form db.UserForm) error {
+func (b *BankPort) UserFormApproved(form models.UserForm) error {
 	// TODO: send request to bank for create account or update account and
 	// if account is succefully created create account in our database and inform client
 	// if account cration is rejected decline user form and inform managers
@@ -48,7 +48,7 @@ func (b *BankPort) UserFormApproved(form db.UserForm) error {
 	// select bank services to call.
 
 	// FIXME: this code should be in bank service
-	account := db.Account{}
+	account := models.Account{}
 
 	err := b.db.Take(&account, "user_id = ?", form.UserID).Error
 

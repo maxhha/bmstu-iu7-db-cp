@@ -8,13 +8,13 @@ tasks:
       - go run github.com/99designs/gqlgen generate
     sources:
       - gqlgen.yml
-      - db/**/*.resolvers.go
-      - graph/*.go
-      - graph/model/**/*.go
+      - models/*.go
+      - graph/**/*.resolvers.go
       - graph/schema/**/*.graphqls
     generates:
+      - models/models_gen.go
+      - graph/**/*.resolvers.go
       - graph/generated/generated.go
-      - graph/model/models_gen.go
 
   gqlgen:it:
     desc: Generate code for GraphQL schema in integration test
@@ -23,6 +23,7 @@ tasks:
       - npm run gql:gen
     sources:
       - src/**/*.graphql
+      - ../graph/schema/**/*.graphqls
     generates:
       - src/query/index.ts
 

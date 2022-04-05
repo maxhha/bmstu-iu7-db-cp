@@ -1,8 +1,7 @@
 package graph
 
 import (
-	"auction-back/db"
-	"auction-back/graph/model"
+	"auction-back/models"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -25,21 +24,21 @@ func InitPasswordHashSalt() {
 	passwordHashSalt = []byte(key)
 }
 
-func getOrCreateUserDraftForm(DB *gorm.DB, viewer *db.User) (db.UserForm, error) {
-	form := db.UserForm{}
+func getOrCreateUserDraftForm(DB *gorm.DB, viewer *models.User) (models.UserForm, error) {
+	form := models.UserForm{}
 
 	err := DB.Order("created_at desc").Take(&form, "user_id = ?", viewer.ID).Error
 
 	if err == nil {
-		if form.State == db.UserFormStateCreated || form.State == db.UserFormStateDeclained {
+		if form.State == models.UserFormStateCreated || form.State == models.UserFormStateDeclained {
 			return form, nil
-		} else if form.State == db.UserFormStateApproved {
+		} else if form.State == models.UserFormStateApproved {
 			// clone form
 			form.ID = ""
-			form.State = db.UserFormStateCreated
+			form.State = models.UserFormStateCreated
 			form.CreatedAt = time.Time{}
 			form.UpdatedAt = time.Time{}
-		} else if form.State == db.UserFormStateModerating {
+		} else if form.State == models.UserFormStateModerating {
 			return form, fmt.Errorf("moderating")
 		} else {
 			return form, fmt.Errorf("unknown form state: %s", form.State)
@@ -77,7 +76,7 @@ func checkHashAndPassword(hash string, password string) bool {
 	return hash == hash2
 }
 
-func (r *userResolver) isOwnerOrManager(viewer *db.User, obj *db.User) error {
+func (r *userResolver) isOwnerOrManager(viewer *models.User, obj *models.User) error {
 	if viewer == nil {
 		return fmt.Errorf("unauthorized")
 	}
@@ -94,7 +93,7 @@ func (r *userResolver) isOwnerOrManager(viewer *db.User, obj *db.User) error {
 		return nil
 	}
 
-	if err := r.RolePort.HasRole(db.RoleTypeManager, viewer); err != nil {
+	if err := r.RolePort.HasRole(models.RoleTypeManager, viewer); err != nil {
 		errors = multierror.Append(errors, err)
 	} else {
 		return nil
@@ -104,22 +103,22 @@ func (r *userResolver) isOwnerOrManager(viewer *db.User, obj *db.User) error {
 }
 
 // Creates pagination for users
-func UserPagination(query *gorm.DB, first *int, after *string) (*model.UsersConnection, error) {
+func UserPagination(query *gorm.DB, first *int, after *string) (*models.UsersConnection, error) {
 	query, err := PaginationQueryByCreatedAtDesc(query, first, after)
 
 	if err != nil {
 		return nil, fmt.Errorf("pagination: %w", err)
 	}
 
-	var objs []db.User
+	var objs []models.User
 	if err := query.Find(&objs).Error; err != nil {
 		return nil, fmt.Errorf("find: %w", err)
 	}
 
 	if len(objs) == 0 {
-		return &model.UsersConnection{
-			PageInfo: &model.PageInfo{},
-			Edges:    make([]*model.UsersConnectionEdge, 0),
+		return &models.UsersConnection{
+			PageInfo: &models.PageInfo{},
+			Edges:    make([]*models.UsersConnectionEdge, 0),
 		}, nil
 	}
 
@@ -130,19 +129,19 @@ func UserPagination(query *gorm.DB, first *int, after *string) (*model.UsersConn
 		objs = objs[:len(objs)-1]
 	}
 
-	edges := make([]*model.UsersConnectionEdge, 0, len(objs))
+	edges := make([]*models.UsersConnectionEdge, 0, len(objs))
 
 	for _, obj := range objs {
 		node := obj
 
-		edges = append(edges, &model.UsersConnectionEdge{
+		edges = append(edges, &models.UsersConnectionEdge{
 			Cursor: obj.ID,
 			Node:   &node,
 		})
 	}
 
-	return &model.UsersConnection{
-		PageInfo: &model.PageInfo{
+	return &models.UsersConnection{
+		PageInfo: &models.PageInfo{
 			HasNextPage: hasNextPage,
 			StartCursor: &objs[0].ID,
 			EndCursor:   &objs[len(objs)-1].ID,

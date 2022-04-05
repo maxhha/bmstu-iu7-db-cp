@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"auction-back/db"
 	"auction-back/jwt"
+	"auction-back/models"
 	"auction-back/test"
 	"database/sql"
 	"net/http"
@@ -67,7 +67,7 @@ func (s *AuthSuite) TestUser() {
 
 	s.SqlMock.ExpectQuery("SELECT \\* FROM \"users\" WHERE id =").
 		WithArgs(id).
-		WillReturnRows(test.MockRows(db.User{ID: id}))
+		WillReturnRows(test.MockRows(models.User{ID: id}))
 
 	s.handler(&ctx)
 

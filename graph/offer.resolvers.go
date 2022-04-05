@@ -4,15 +4,14 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
-	"auction-back/db"
 	"auction-back/graph/generated"
-	"auction-back/graph/model"
+	"auction-back/models"
 	"context"
 	"fmt"
 	"time"
 )
 
-func (r *mutationResolver) CreateOffer(ctx context.Context, input model.CreateOfferInput) (*model.CreateOfferResult, error) {
+func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateOfferInput) (*models.CreateOfferResult, error) {
 	panic(fmt.Errorf("not implemented"))
 	// viewer := auth.ForViewer(ctx)
 
@@ -20,9 +19,9 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input model.CreateOf
 	// 	return nil, fmt.Errorf("unauthorized")
 	// }
 
-	// var product db.Product
+	// var product models.Product
 
-	// result := db.DB.Take(&product, "id = ?", input.ProductID)
+	// result := r.DBTake(&product, "id = ?", input.ProductID)
 
 	// if result.Error != nil {
 	// 	return nil, fmt.Errorf("db take product: %w", result.Error)
@@ -47,7 +46,7 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input model.CreateOf
 	// 	Consumer:   *viewer,
 	// }
 
-	// err = db.DB.Transaction(func(tx *gorm.DB) error {
+	// err = r.DBTransaction(func(tx *gorm.DB) error {
 	// 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(viewer, "id = ?", viewer.ID).Error; err != nil {
 	// 		return err
 	// 	}
@@ -74,18 +73,18 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input model.CreateOf
 	// 	return nil, fmt.Errorf("db save: %w", err)
 	// }
 
-	// o, err := (&model.Offer{}).From(&offer)
+	// o, err := (&models.Offer{}).From(&offer)
 
 	// if err != nil {
 	// 	return nil, err
 	// }
 
-	// return &model.CreateOfferResult{
+	// return &models.CreateOfferResult{
 	// 	Offer: o,
 	// }, nil
 }
 
-func (r *mutationResolver) RemoveOffer(ctx context.Context, input model.RemoveOfferInput) (*model.RemoveOfferResult, error) {
+func (r *mutationResolver) RemoveOffer(ctx context.Context, input models.RemoveOfferInput) (*models.RemoveOfferResult, error) {
 	panic(fmt.Errorf("not implemented"))
 	// viewer := auth.ForViewer(ctx)
 
@@ -95,7 +94,7 @@ func (r *mutationResolver) RemoveOffer(ctx context.Context, input model.RemoveOf
 
 	// offer := db.Offer{}
 
-	// if err := db.DB.Take(&offer, "id = ?", input.OfferID).Error; err != nil {
+	// if err := r.DBTake(&offer, "id = ?", input.OfferID).Error; err != nil {
 	// 	return nil, fmt.Errorf("db take: %w", err)
 	// }
 
@@ -103,7 +102,7 @@ func (r *mutationResolver) RemoveOffer(ctx context.Context, input model.RemoveOf
 	// 	return nil, fmt.Errorf("denied")
 	// }
 
-	// o, err := (&model.Offer{}).From(&offer)
+	// o, err := (&models.Offer{}).From(&offer)
 
 	// if err != nil {
 	// 	return nil, fmt.Errorf("convert: %w", err)
@@ -113,52 +112,24 @@ func (r *mutationResolver) RemoveOffer(ctx context.Context, input model.RemoveOf
 	// 	return nil, fmt.Errorf("offer remove: %w", err)
 	// }
 
-	// return &model.RemoveOfferResult{
+	// return &models.RemoveOfferResult{
 	// 	Status: "success",
 	// }, nil
 }
 
-func (r *offerResolver) State(ctx context.Context, obj *model.Offer) (model.OfferStateEnum, error) {
+func (r *offerResolver) State(ctx context.Context, obj *models.Offer) (models.OfferStateEnum, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *offerResolver) FailReason(ctx context.Context, obj *model.Offer) (*string, error) {
+func (r *offerResolver) FailReason(ctx context.Context, obj *models.Offer) (*string, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *offerResolver) User(ctx context.Context, obj *model.Offer) (*db.User, error) {
+func (r *offerResolver) Moneys(ctx context.Context, obj *models.Offer) ([]*models.Money, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *offerResolver) Product(ctx context.Context, obj *model.Offer) (*db.Product, error) {
-	panic(fmt.Errorf("not implemented"))
-	// if obj.DB.Product.ID == obj.DB.ProductID {
-	// 	return (&model.Product{}).From(&obj.DB.Product)
-	// }
-
-	// product := db.Product{}
-	// result := db.DB.Take(&product, "id = ?", obj.DB.ProductID)
-
-	// if result.Error != nil {
-	// 	return nil, fmt.Errorf("db take: %w", result.Error)
-	// }
-
-	// return (&model.Product{}).From(&product)
-}
-
-func (r *offerResolver) Moneys(ctx context.Context, obj *model.Offer) ([]*model.Money, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *offerResolver) CreatedAt(ctx context.Context, obj *model.Offer) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *offerResolver) DeleteOnSell(ctx context.Context, obj *model.Offer) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *offerResolver) Transactions(ctx context.Context, obj *model.Offer) ([]*model.Transaction, error) {
+func (r *offerResolver) Transactions(ctx context.Context, obj *models.Offer) ([]*models.Transaction, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -170,3 +141,34 @@ func (r *Resolver) Offer() generated.OfferResolver { return &offerResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *offerResolver) User(ctx context.Context, obj *models.Offer) (*models.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+func (r *offerResolver) Product(ctx context.Context, obj *models.Offer) (*models.Product, error) {
+	panic(fmt.Errorf("not implemented"))
+	// if obj.DB.Product.ID == obj.DB.ProductID {
+	// 	return (&models.Product{}).From(&obj.DB.Product)
+	// }
+
+	// product := models.Product{}
+	// result := r.DBTake(&product, "id = ?", obj.DB.ProductID)
+
+	// if result.Error != nil {
+	// 	return nil, fmt.Errorf("db take: %w", result.Error)
+	// }
+
+	// return (&models.Product{}).From(&product)
+}
+func (r *offerResolver) CreatedAt(ctx context.Context, obj *models.Offer) (*time.Time, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+func (r *offerResolver) DeleteOnSell(ctx context.Context, obj *models.Offer) (bool, error) {
+	panic(fmt.Errorf("not implemented"))
+}

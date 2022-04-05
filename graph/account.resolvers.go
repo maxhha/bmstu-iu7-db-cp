@@ -4,25 +4,24 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
-	"auction-back/db"
 	"auction-back/graph/generated"
-	"auction-back/graph/model"
+	"auction-back/models"
 	"context"
 )
 
-func (r *bankAccountResolver) Bank(ctx context.Context, obj *model.BankAccount) (*db.Bank, error) {
+func (r *bankAccountResolver) Bank(ctx context.Context, obj *models.BankAccount) (*models.Bank, error) {
 	return r.Account().Bank(ctx, obj.AccountPtr())
 }
 
-func (r *bankAccountResolver) Transactions(ctx context.Context, obj *model.BankAccount, first *int, after *string) (*model.TransactionsConnection, error) {
+func (r *bankAccountResolver) Transactions(ctx context.Context, obj *models.BankAccount, first *int, after *string) (*models.TransactionsConnection, error) {
 	return r.Account().Transactions(ctx, obj.AccountPtr(), first, after)
 }
 
-func (r *userAccountResolver) Bank(ctx context.Context, obj *model.UserAccount) (*db.Bank, error) {
+func (r *userAccountResolver) Bank(ctx context.Context, obj *models.UserAccount) (*models.Bank, error) {
 	return r.Account().Bank(ctx, obj.AccountPtr())
 }
 
-func (r *userAccountResolver) Transactions(ctx context.Context, obj *model.UserAccount, first *int, after *string) (*model.TransactionsConnection, error) {
+func (r *userAccountResolver) Transactions(ctx context.Context, obj *models.UserAccount, first *int, after *string) (*models.TransactionsConnection, error) {
 	return r.Account().Transactions(ctx, obj.AccountPtr(), first, after)
 }
 

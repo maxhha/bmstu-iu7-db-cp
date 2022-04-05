@@ -14,8 +14,8 @@ exec:
 
 # Where should any generated models go?
 model:
-  filename: graph/model/models_gen.go
-  package: model
+  filename: models/models_gen.go
+  package: models
 
 # Where should the resolver implementations go?
 resolver:
@@ -35,7 +35,7 @@ resolver:
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-  - auction-back/graph/model
+  - auction-back/models
 
 # This section declares type mapping between the GraphQL and go type systems
 #
@@ -56,19 +56,19 @@ models:
       - github.com/99designs/gqlgen/graphql.Int32
   DateTime:
     model:
-      - auction-back/graph/model.DateTime
+      - auction-back/models.DateTime
   Cursor:
     model:
       - github.com/99designs/gqlgen/graphql.String
   User:
     model:
-      - auction-back/db.User
+      - auction-back/models.User
   UserForm:
     model:
-      - auction-back/db.UserForm
+      - auction-back/models.UserForm
   Bank:
     model:
-      - auction-back/db.Bank
+      - auction-back/models.Bank
   UserAccount:
     fields:
       bank:
@@ -79,4 +79,7 @@ models:
         resolver: true
   Product:
     model:
-      - auction-back/db.Product
+      - auction-back/models.Product
+  Account:
+    model:
+      - auction-back/models.AccountInterface

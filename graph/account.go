@@ -1,8 +1,7 @@
 package graph
 
 import (
-	"auction-back/db"
-	"auction-back/graph/model"
+	"auction-back/models"
 	"context"
 	"fmt"
 
@@ -10,14 +9,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func FindAccountPagination(query *gorm.DB, first *int, after *string) ([]db.Account, error) {
+func FindAccountPagination(query *gorm.DB, first *int, after *string) ([]models.Account, error) {
 	query, err := PaginationQueryByCreatedAtDesc(query, first, after)
 
 	if err != nil {
 		return nil, fmt.Errorf("pagination: %w", err)
 	}
 
-	var objs []db.Account
+	var objs []models.Account
 	if err := query.Find(&objs).Error; err != nil {
 		return nil, fmt.Errorf("find: %w", err)
 	}
@@ -26,7 +25,7 @@ func FindAccountPagination(query *gorm.DB, first *int, after *string) ([]db.Acco
 }
 
 // Creates pagination for accounts
-func AccountPagination(query *gorm.DB, first *int, after *string) (*model.AccountsConnection, error) {
+func AccountPagination(query *gorm.DB, first *int, after *string) (*models.AccountsConnection, error) {
 	objs, err := FindAccountPagination(query, first, after)
 
 	if err != nil {
@@ -34,9 +33,9 @@ func AccountPagination(query *gorm.DB, first *int, after *string) (*model.Accoun
 	}
 
 	if len(objs) == 0 {
-		return &model.AccountsConnection{
-			PageInfo: &model.PageInfo{},
-			Edges:    make([]*model.AccountsConnectionEdge, 0),
+		return &models.AccountsConnection{
+			PageInfo: &models.PageInfo{},
+			Edges:    make([]*models.AccountsConnectionEdge, 0),
 		}, nil
 	}
 
@@ -47,14 +46,14 @@ func AccountPagination(query *gorm.DB, first *int, after *string) (*model.Accoun
 		objs = objs[:len(objs)-1]
 	}
 
-	edges := make([]*model.AccountsConnectionEdge, 0, len(objs))
+	edges := make([]*models.AccountsConnectionEdge, 0, len(objs))
 	var errors error
 
 	for _, obj := range objs {
-		node, err := model.AccountFromDBAccount(obj)
+		node, err := obj.ConcreteType()
 
 		if err == nil {
-			edges = append(edges, &model.AccountsConnectionEdge{
+			edges = append(edges, &models.AccountsConnectionEdge{
 				Cursor: obj.ID,
 				Node:   node,
 			})
@@ -63,8 +62,8 @@ func AccountPagination(query *gorm.DB, first *int, after *string) (*model.Accoun
 		}
 	}
 
-	return &model.AccountsConnection{
-		PageInfo: &model.PageInfo{
+	return &models.AccountsConnection{
+		PageInfo: &models.PageInfo{
 			HasNextPage:     hasNextPage,
 			HasPreviousPage: false,
 			StartCursor:     &objs[0].ID,
@@ -75,7 +74,7 @@ func AccountPagination(query *gorm.DB, first *int, after *string) (*model.Accoun
 }
 
 // Creates pagination for accounts
-func UserAccountPagination(query *gorm.DB, first *int, after *string) (*model.UserAccountsConnection, error) {
+func UserAccountPagination(query *gorm.DB, first *int, after *string) (*models.UserAccountsConnection, error) {
 	objs, err := FindAccountPagination(query, first, after)
 
 	if err != nil {
@@ -83,9 +82,9 @@ func UserAccountPagination(query *gorm.DB, first *int, after *string) (*model.Us
 	}
 
 	if len(objs) == 0 {
-		return &model.UserAccountsConnection{
-			PageInfo: &model.PageInfo{},
-			Edges:    make([]*model.UserAccountsConnectionEdge, 0),
+		return &models.UserAccountsConnection{
+			PageInfo: &models.PageInfo{},
+			Edges:    make([]*models.UserAccountsConnectionEdge, 0),
 		}, nil
 	}
 
@@ -96,15 +95,15 @@ func UserAccountPagination(query *gorm.DB, first *int, after *string) (*model.Us
 		objs = objs[:len(objs)-1]
 	}
 
-	edges := make([]*model.UserAccountsConnectionEdge, 0, len(objs))
+	edges := make([]*models.UserAccountsConnectionEdge, 0, len(objs))
 	var errors error
 
 	for _, obj := range objs {
 
-		if obj.Type == db.AccountTypeUser {
-			edges = append(edges, &model.UserAccountsConnectionEdge{
+		if obj.Type == models.AccountTypeUser {
+			edges = append(edges, &models.UserAccountsConnectionEdge{
 				Cursor: obj.ID,
-				Node:   &model.UserAccount{Account: obj},
+				Node:   &models.UserAccount{Account: obj},
 			})
 		} else {
 			errors = multierror.Append(
@@ -113,8 +112,8 @@ func UserAccountPagination(query *gorm.DB, first *int, after *string) (*model.Us
 		}
 	}
 
-	return &model.UserAccountsConnection{
-		PageInfo: &model.PageInfo{
+	return &models.UserAccountsConnection{
+		PageInfo: &models.PageInfo{
 			HasNextPage: hasNextPage,
 			StartCursor: &objs[0].ID,
 			EndCursor:   &objs[len(objs)-1].ID,
@@ -123,7 +122,7 @@ func UserAccountPagination(query *gorm.DB, first *int, after *string) (*model.Us
 	}, errors
 }
 
-func (r *accountResolver) Bank(ctx context.Context, obj *db.Account) (*db.Bank, error) {
+func (r *accountResolver) Bank(ctx context.Context, obj *models.Account) (*models.Bank, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("account is nil")
 	}
@@ -135,7 +134,7 @@ func (r *accountResolver) Bank(ctx context.Context, obj *db.Account) (*db.Bank, 
 	return &obj.Bank, nil
 }
 
-func (r *accountResolver) Transactions(ctx context.Context, obj *db.Account, first *int, after *string) (*model.TransactionsConnection, error) {
+func (r *accountResolver) Transactions(ctx context.Context, obj *models.Account, first *int, after *string) (*models.TransactionsConnection, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

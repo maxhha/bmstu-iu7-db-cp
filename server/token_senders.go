@@ -2,13 +2,13 @@ package server
 
 import (
 	"auction-back/adapters/token_sender"
-	"auction-back/db"
+	"auction-back/models"
 	"fmt"
 
 	"gorm.io/gorm"
 )
 
-func dataWithTokenId(token db.Token) (map[string]string, error) {
+func dataWithTokenId(token models.Token) (map[string]string, error) {
 	return map[string]string{
 		"token": fmt.Sprintf("%06d", token.ID),
 	}, nil
@@ -20,8 +20,8 @@ func emailTokenSender() *token_sender.TokenSender {
 		AddressEnvVarName: "EMAIL_NOTIFIER_ADDRESS",
 	}
 
-	config.ReceiverGetters = map[db.TokenAction]token_sender.ReceiverGetter{
-		db.TokenActionSetUserEmail: func(token db.Token) (string, error) {
+	config.ReceiverGetters = map[models.TokenAction]token_sender.ReceiverGetter{
+		models.TokenActionSetUserEmail: func(token models.Token) (string, error) {
 			email, ok := token.Data["email"]
 			if !ok {
 				return "", fmt.Errorf("no email in token data")
@@ -36,8 +36,8 @@ func emailTokenSender() *token_sender.TokenSender {
 		},
 	}
 
-	config.DataGetters = map[db.TokenAction]token_sender.DataGetter{
-		db.TokenActionSetUserEmail: dataWithTokenId,
+	config.DataGetters = map[models.TokenAction]token_sender.DataGetter{
+		models.TokenActionSetUserEmail: dataWithTokenId,
 	}
 
 	return token_sender.New(config)
@@ -49,8 +49,8 @@ func phoneTokenSender(DB *gorm.DB) *token_sender.TokenSender {
 		AddressEnvVarName: "PHONE_NOTIFIER_ADDRESS",
 	}
 
-	config.ReceiverGetters = map[db.TokenAction]token_sender.ReceiverGetter{
-		db.TokenActionSetUserPhone: func(token db.Token) (string, error) {
+	config.ReceiverGetters = map[models.TokenAction]token_sender.ReceiverGetter{
+		models.TokenActionSetUserPhone: func(token models.Token) (string, error) {
 			phone, ok := token.Data["phone"]
 			if !ok {
 				return "", fmt.Errorf("no phone in token data")
@@ -63,7 +63,7 @@ func phoneTokenSender(DB *gorm.DB) *token_sender.TokenSender {
 
 			return str, nil
 		},
-		db.TokenActionModerateUserForm: func(token db.Token) (string, error) {
+		models.TokenActionModerateUserForm: func(token models.Token) (string, error) {
 			if err := token.EnsureFillUser(DB); err != nil {
 				return "", err
 			}
@@ -82,9 +82,9 @@ func phoneTokenSender(DB *gorm.DB) *token_sender.TokenSender {
 		},
 	}
 
-	config.DataGetters = map[db.TokenAction]token_sender.DataGetter{
-		db.TokenActionSetUserPhone:     dataWithTokenId,
-		db.TokenActionModerateUserForm: dataWithTokenId,
+	config.DataGetters = map[models.TokenAction]token_sender.DataGetter{
+		models.TokenActionSetUserPhone:     dataWithTokenId,
+		models.TokenActionModerateUserForm: dataWithTokenId,
 	}
 
 	return token_sender.New(config)

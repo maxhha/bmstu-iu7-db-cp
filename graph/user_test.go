@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"auction-back/db"
+	"auction-back/models"
 	"auction-back/test"
 	"testing"
 	"time"
@@ -16,10 +16,10 @@ type GetOrCreateUserDraftFormSuite struct {
 }
 
 func (s *GetOrCreateUserDraftFormSuite) TestClone() {
-	viewer := db.User{ID: "test-user"}
-	approved_form := db.UserForm{
+	viewer := models.User{ID: "test-user"}
+	approved_form := models.UserForm{
 		ID:     "approved-form",
-		State:  db.UserFormStateApproved,
+		State:  models.UserFormStateApproved,
 		UserID: viewer.ID,
 		Model: gorm.Model{
 			CreatedAt: time.Now(),
@@ -37,14 +37,14 @@ func (s *GetOrCreateUserDraftFormSuite) TestClone() {
 			test.AfterTime{Time: approved_form.UpdatedAt},
 			nil,
 			approved_form.UserID,
-			db.UserFormStateCreated,
+			models.UserFormStateCreated,
 			nil,
 			nil,
 			nil,
 			nil,
 			nil,
 		).
-		WillReturnRows(test.MockRows(db.UserForm{ID: "created-form"}))
+		WillReturnRows(test.MockRows(models.UserForm{ID: "created-form"}))
 
 	_, err := getOrCreateUserDraftForm(s.DB, &viewer)
 	require.NoError(s.T(), err)

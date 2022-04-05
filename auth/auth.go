@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"auction-back/db"
 	"auction-back/jwt"
+	"auction-back/models"
 	"context"
 	"fmt"
 
@@ -26,7 +26,7 @@ func (a *auth) authUser(token string, c *gin.Context) error {
 		return err
 	}
 
-	viewer := db.User{}
+	viewer := models.User{}
 	if err := a.db.Take(&viewer, "id = ?", id).Error; err != nil {
 		return err
 	}
@@ -61,11 +61,11 @@ func New(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-func ForViewer(ctx context.Context) *db.User {
-	viewer, _ := ctx.Value(viewerContextKey).(*db.User)
+func ForViewer(ctx context.Context) *models.User {
+	viewer, _ := ctx.Value(viewerContextKey).(*models.User)
 	return viewer
 }
 
-func WithViewer(c context.Context, viewer *db.User) context.Context {
+func WithViewer(c context.Context, viewer *models.User) context.Context {
 	return context.WithValue(c, viewerContextKey, viewer)
 }

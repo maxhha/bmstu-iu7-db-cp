@@ -93,13 +93,8 @@ export type CreateOfferResult = {
 }
 
 export type CreateProductInput = {
-  description?: InputMaybe<Scalars["String"]>
-  name: Scalars["String"]
-}
-
-export type CreateProductResult = {
-  __typename?: "CreateProductResult"
-  product: Product
+  description: Scalars["String"]
+  title: Scalars["String"]
 }
 
 export enum CurrencyEnum {
@@ -141,7 +136,8 @@ export type Mutation = {
   /** Approve user form */
   approveUserForm: UserFormResult
   createOffer: CreateOfferResult
-  createProduct: CreateProductResult
+  /** Creates product with creator of current viewer */
+  createProduct: ProductResult
   /** Decline user form */
   declineUserForm: UserFormResult
   /** User login */
@@ -325,6 +321,11 @@ export type ProductImage = {
   path: Scalars["String"]
 }
 
+export type ProductResult = {
+  __typename?: "ProductResult"
+  product: Product
+}
+
 export type ProductsConnection = {
   __typename?: "ProductsConnection"
   edges: Array<ProductsConnectionEdge>
@@ -382,7 +383,7 @@ export type RequestSetUserPhoneInput = {
   phone: Scalars["String"]
 }
 
-export enum Role {
+export enum RoleType {
   Admin = "ADMIN",
   Manager = "MANAGER",
 }
@@ -567,7 +568,7 @@ export type UserForm = {
   /** User phone */
   phone?: Maybe<Scalars["String"]>
   /** User form state */
-  state: UserFormStateEnum
+  state: UserFormState
 }
 
 /** UserFrom with all required fields filled in */
@@ -583,7 +584,7 @@ export type UserFormFilled = {
 
 export type UserFormHistoryFilter = {
   id?: InputMaybe<Array<Scalars["ID"]>>
-  state?: InputMaybe<Array<UserFormStateEnum>>
+  state?: InputMaybe<Array<UserFormState>>
 }
 
 export type UserFormResult = {
@@ -591,7 +592,7 @@ export type UserFormResult = {
   userForm: UserForm
 }
 
-export enum UserFormStateEnum {
+export enum UserFormState {
   Approved = "APPROVED",
   Created = "CREATED",
   Declained = "DECLAINED",
@@ -612,7 +613,7 @@ export type UserFormsConnectionEdge = {
 
 export type UserFormsFilter = {
   id?: InputMaybe<Array<Scalars["ID"]>>
-  state?: InputMaybe<Array<UserFormStateEnum>>
+  state?: InputMaybe<Array<UserFormState>>
   userId?: InputMaybe<Array<Scalars["ID"]>>
 }
 

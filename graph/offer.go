@@ -1,14 +1,13 @@
 package graph
 
 import (
-	"auction-back/db"
-	"auction-back/graph/model"
+	"auction-back/models"
 	"fmt"
 
 	"gorm.io/gorm"
 )
 
-func OfferPagination(query *gorm.DB, first *int, after *string) (*model.OffersConnection, error) {
+func OfferPagination(query *gorm.DB, first *int, after *string) (*models.OffersConnection, error) {
 	if first != nil {
 		if *first < 1 {
 			return nil, fmt.Errorf("first must be positive")
@@ -20,7 +19,7 @@ func OfferPagination(query *gorm.DB, first *int, after *string) (*model.OffersCo
 		query.Where("id > ?", after)
 	}
 
-	var offers []db.Offer
+	var offers []models.Offer
 
 	result := query.Find(&offers)
 
@@ -29,14 +28,14 @@ func OfferPagination(query *gorm.DB, first *int, after *string) (*model.OffersCo
 	}
 
 	if len(offers) == 0 {
-		return &model.OffersConnection{
-			PageInfo: &model.PageInfo{
+		return &models.OffersConnection{
+			PageInfo: &models.PageInfo{
 				HasNextPage:     false,
 				HasPreviousPage: false,
 				StartCursor:     nil,
 				EndCursor:       nil,
 			},
-			Edges: make([]*model.OffersConnectionEdge, 0),
+			Edges: make([]*models.OffersConnectionEdge, 0),
 		}, nil
 	}
 
@@ -47,23 +46,17 @@ func OfferPagination(query *gorm.DB, first *int, after *string) (*model.OffersCo
 		offers = offers[:len(offers)-1]
 	}
 
-	edges := make([]*model.OffersConnectionEdge, 0, len(offers))
+	edges := make([]*models.OffersConnectionEdge, 0, len(offers))
 
 	for _, offer := range offers {
-		node, err := (&model.Offer{}).From(&offer)
-
-		if err != nil {
-			return nil, err
-		}
-
-		edges = append(edges, &model.OffersConnectionEdge{
+		edges = append(edges, &models.OffersConnectionEdge{
 			Cursor: offer.ID,
-			Node:   node,
+			Node:   &offer,
 		})
 	}
 
-	return &model.OffersConnection{
-		PageInfo: &model.PageInfo{
+	return &models.OffersConnection{
+		PageInfo: &models.PageInfo{
 			HasNextPage:     hasNextPage,
 			HasPreviousPage: false,
 			StartCursor:     &offers[0].ID,

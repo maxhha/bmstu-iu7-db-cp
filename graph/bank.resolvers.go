@@ -4,25 +4,24 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
-	"auction-back/db"
 	"auction-back/graph/generated"
-	"auction-back/graph/model"
+	"auction-back/models"
 	"context"
 	"fmt"
 )
 
-func (r *bankResolver) Account(ctx context.Context, obj *db.Bank) (*model.BankAccount, error) {
+func (r *bankResolver) Account(ctx context.Context, obj *models.Bank) (*models.BankAccount, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("bank is nil")
 	}
 
-	account := db.Account{}
+	account := models.Account{}
 
-	if err := r.DB.Take(&account, "type = ? AND bank_id = ?", db.AccountTypeBank, obj.ID).Error; err != nil {
+	if err := r.DB.Take(&account, "type = ? AND bank_id = ?", models.AccountTypeBank, obj.ID).Error; err != nil {
 		return nil, fmt.Errorf("take: %w", err)
 	}
 
-	return &model.BankAccount{Account: account}, nil
+	return &models.BankAccount{Account: account}, nil
 }
 
 // Bank returns generated.BankResolver implementation.
