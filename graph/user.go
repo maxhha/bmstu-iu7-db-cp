@@ -2,7 +2,10 @@ package graph
 
 import (
 	"auction-back/models"
+	"auction-back/ports"
+	"database/sql"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -10,7 +13,6 @@ import (
 	"crypto/sha256"
 
 	"github.com/hashicorp/go-multierror"
-	"gorm.io/gorm"
 )
 
 var passwordHashSalt []byte
@@ -24,10 +26,14 @@ func InitPasswordHashSalt() {
 	passwordHashSalt = []byte(key)
 }
 
-func getOrCreateUserDraftForm(DB *gorm.DB, viewer *models.User) (models.UserForm, error) {
-	form := models.UserForm{}
-
-	err := DB.Order("created_at desc").Take(&form, "user_id = ?", viewer.ID).Error
+func getOrCreateUserDraftForm(DB ports.DB, viewer models.User) (models.UserForm, error) {
+	form, err := DB.UserForm().Take(ports.UserFormTakeConfig{
+		OrderBy:   ports.UserFormFieldCreatedAt,
+		OrderDesc: true,
+		UserFormsFilter: models.UserFormsFilter{
+			UserID: []string{viewer.ID},
+		},
+	})
 
 	if err == nil {
 		if form.State == models.UserFormStateCreated || form.State == models.UserFormStateDeclained {
@@ -43,14 +49,14 @@ func getOrCreateUserDraftForm(DB *gorm.DB, viewer *models.User) (models.UserForm
 		} else {
 			return form, fmt.Errorf("unknown form state: %s", form.State)
 		}
-	} else if err != gorm.ErrRecordNotFound {
+	} else if !errors.Is(err, sql.ErrNoRows) {
 		return form, fmt.Errorf("take: %w", err)
 	}
 
 	// Create new form only if no form exists
 	// or there is approved form for copy
 	form.UserID = viewer.ID
-	if err = DB.Create(&form).Error; err != nil {
+	if err = DB.UserForm().Create(&form); err != nil {
 		return form, fmt.Errorf("create: %w", err)
 	}
 
@@ -76,11 +82,7 @@ func checkHashAndPassword(hash string, password string) bool {
 	return hash == hash2
 }
 
-func (r *userResolver) isOwnerOrManager(viewer *models.User, obj *models.User) error {
-	if viewer == nil {
-		return fmt.Errorf("unauthorized")
-	}
-
+func (r *userResolver) isOwnerOrManager(viewer models.User, obj *models.User) error {
 	if obj == nil {
 		return fmt.Errorf("user is nil")
 	}
@@ -100,52 +102,4 @@ func (r *userResolver) isOwnerOrManager(viewer *models.User, obj *models.User) e
 	}
 
 	return errors
-}
-
-// Creates pagination for users
-func UserPagination(query *gorm.DB, first *int, after *string) (*models.UsersConnection, error) {
-	query, err := PaginationQueryByCreatedAtDesc(query, first, after)
-
-	if err != nil {
-		return nil, fmt.Errorf("pagination: %w", err)
-	}
-
-	var objs []models.User
-	if err := query.Find(&objs).Error; err != nil {
-		return nil, fmt.Errorf("find: %w", err)
-	}
-
-	if len(objs) == 0 {
-		return &models.UsersConnection{
-			PageInfo: &models.PageInfo{},
-			Edges:    make([]*models.UsersConnectionEdge, 0),
-		}, nil
-	}
-
-	hasNextPage := false
-
-	if first != nil {
-		hasNextPage = len(objs) > *first
-		objs = objs[:len(objs)-1]
-	}
-
-	edges := make([]*models.UsersConnectionEdge, 0, len(objs))
-
-	for _, obj := range objs {
-		node := obj
-
-		edges = append(edges, &models.UsersConnectionEdge{
-			Cursor: obj.ID,
-			Node:   &node,
-		})
-	}
-
-	return &models.UsersConnection{
-		PageInfo: &models.PageInfo{
-			HasNextPage: hasNextPage,
-			StartCursor: &objs[0].ID,
-			EndCursor:   &objs[len(objs)-1].ID,
-		},
-		Edges: edges,
-	}, nil
 }

@@ -9,9 +9,7 @@ import (
 type Role struct {
 	Type      RoleType
 	UserID    string
-	User      User
 	IssuerID  string
-	Issuer    User
-	CreatedAt time.Time `gorm:"default:now()"`
+	CreatedAt time.Time
 	DeletedAt sql.NullTime
 }

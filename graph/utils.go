@@ -28,7 +28,7 @@ func randString(n int) string {
 // 	viewer := auth.ForViewer(ctx)
 
 // 	if viewer == nil {
-// 		return nil, fmt.Errorf("unauthorized")
+// 		return nil, ErrUnauthorized
 // 	}
 
 // 	if viewer.ID != obj.ID {

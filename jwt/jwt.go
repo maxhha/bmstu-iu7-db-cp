@@ -58,28 +58,28 @@ func parse(tokenString string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-func ParseUser(tokenString string) (*string, error) {
+func ParseUser(tokenString string) (string, error) {
 	claims, err := parse(tokenString)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	subject, ok := claims["sub"].(string)
 
 	if !ok {
-		return nil, fmt.Errorf("failed to convert sub")
+		return "", fmt.Errorf("failed to convert sub")
 	}
 
 	if subject != "user" {
-		return nil, fmt.Errorf("subject is not user")
+		return "", fmt.Errorf("subject is not user")
 	}
 
 	id, ok := claims["jti"].(string)
 
 	if !ok {
-		return nil, fmt.Errorf("failed to convert jti")
+		return "", fmt.Errorf("failed to convert jti")
 	}
 
-	return &id, nil
+	return id, nil
 }

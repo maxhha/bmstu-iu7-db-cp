@@ -2,6 +2,8 @@ package server
 
 import (
 	"auction-back/auth"
+	"auction-back/graph"
+	"auction-back/graph/generated"
 	"auction-back/jwt"
 	"auction-back/ports/bank"
 	"auction-back/ports/role"
@@ -13,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
-	"auction-back/db"
+	"auction-back/ports/database"
 )
 
 func init() {
@@ -31,16 +33,20 @@ func init() {
 }
 
 func Init() *gin.Engine {
-	DB := db.ConnectDatabase()
+	db := database.Connect()
 
 	senders := []token.SenderInterface{
 		emailTokenSender(),
-		phoneTokenSender(DB),
+		phoneTokenSender(&db),
 	}
 
-	tokenPort := token.New(DB, senders)
-	bankPort := bank.New(DB)
-	rolePort := role.New(DB)
+	tokenPort := token.New(&db, senders)
+	bankPort := bank.New(&db)
+	rolePort := role.New(&db)
+
+	resolver := graph.New(&db, &tokenPort, &bankPort, &rolePort)
+	config := generated.Config{Resolvers: resolver}
+	config.Directives.HasRole = rolePort.Handler()
 
 	r := gin.Default()
 
@@ -49,8 +55,8 @@ func Init() *gin.Engine {
 	corsConfig.AllowMethods = []string{"POST, GET, OPTIONS"}
 	r.Use(cors.New(corsConfig))
 
-	r.Use(auth.New(DB))
-	r.Any("/graphql", graphqlHandler(DB, &tokenPort, &bankPort, &rolePort))
+	r.Use(auth.New(&db))
+	r.Any("/graphql", graphqlHandler(config))
 	r.GET("/graphiql", playgroundHandler())
 
 	return r

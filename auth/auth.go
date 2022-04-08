@@ -3,15 +3,18 @@ package auth
 import (
 	"auction-back/jwt"
 	"auction-back/models"
+	"auction-back/ports"
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
+var ErrUnauthorized = errors.New("unauthorized")
+
 type auth struct {
-	db *gorm.DB
+	db ports.DB
 }
 
 type contextKey struct {
@@ -26,12 +29,12 @@ func (a *auth) authUser(token string, c *gin.Context) error {
 		return err
 	}
 
-	viewer := models.User{}
-	if err := a.db.Take(&viewer, "id = ?", id).Error; err != nil {
-		return err
+	viewer, err := a.db.User().Get(id)
+	if err != nil {
+		return fmt.Errorf("get user: %w", err)
 	}
 
-	ctx := WithViewer(c.Request.Context(), &viewer)
+	ctx := WithViewer(c.Request.Context(), viewer)
 	c.Request = c.Request.WithContext(ctx)
 
 	return nil
@@ -54,18 +57,21 @@ func (a *auth) apply(c *gin.Context) {
 	}
 }
 
-func New(db *gorm.DB) gin.HandlerFunc {
+func New(db ports.DB) gin.HandlerFunc {
 	a := auth{db}
 	return func(c *gin.Context) {
 		a.apply(c)
 	}
 }
 
-func ForViewer(ctx context.Context) *models.User {
-	viewer, _ := ctx.Value(viewerContextKey).(*models.User)
-	return viewer
+func ForViewer(ctx context.Context) (models.User, error) {
+	viewer, ok := ctx.Value(viewerContextKey).(models.User)
+	if !ok {
+		return models.User{}, ErrUnauthorized
+	}
+	return viewer, nil
 }
 
-func WithViewer(c context.Context, viewer *models.User) context.Context {
+func WithViewer(c context.Context, viewer models.User) context.Context {
 	return context.WithValue(c, viewerContextKey, viewer)
 }

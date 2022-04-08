@@ -1,4 +1,4 @@
-package test
+package database
 
 import (
 	"database/sql/driver"
@@ -49,14 +49,15 @@ func MockRows(objs ...interface{}) *sqlmock.Rows {
 	return rows
 }
 
-type DBSuite struct {
+type DatabaseSuite struct {
 	suite.Suite
-	SqlDB   *sql.DB
-	DB      *gorm.DB
-	SqlMock sqlmock.Sqlmock
+	SqlDB    *sql.DB
+	DB       *gorm.DB
+	SqlMock  sqlmock.Sqlmock
+	database *Database
 }
 
-func (s *DBSuite) SetupTest() {
+func (s *DatabaseSuite) SetupTest() {
 	var err error
 	s.SqlDB, s.SqlMock, err = sqlmock.New()
 	require.NoError(s.T(), err)
@@ -74,8 +75,10 @@ func (s *DBSuite) SetupTest() {
 		SkipDefaultTransaction: true,
 	})
 	require.NoError(s.T(), err)
+	database := New(s.DB)
+	s.database = &database
 }
 
-func (s *DBSuite) TearDownTest() {
+func (s *DatabaseSuite) TearDownTest() {
 	s.SqlDB.Close()
 }

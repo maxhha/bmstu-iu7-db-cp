@@ -6,6 +6,7 @@ package graph
 import (
 	"auction-back/auth"
 	"auction-back/models"
+	"auction-back/ports"
 	"context"
 	"fmt"
 
@@ -13,13 +14,13 @@ import (
 )
 
 func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, error) {
-	viewer := auth.ForViewer(ctx)
+	viewer, err := auth.ForViewer(ctx)
 
-	if viewer == nil {
-		return false, fmt.Errorf("unauthorized")
+	if err != nil {
+		return false, err
 	}
 
-	form, err := r.User().DraftForm(ctx, viewer)
+	form, err := r.User().DraftForm(ctx, &viewer)
 
 	if err != nil {
 		return false, fmt.Errorf("draft form: %w", err)
@@ -44,43 +45,47 @@ func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, e
 }
 
 func (r *mutationResolver) ApproveModerateUserForm(ctx context.Context, input models.TokenInput) (*models.UserResult, error) {
-	viewer := auth.ForViewer(ctx)
-	token, err := r.TokenPort.Activate(models.TokenActionModerateUserForm, input.Token, viewer)
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
 
+	token, err := r.TokenPort.Activate(models.TokenActionModerateUserForm, input.Token, viewer)
 	if err != nil {
 		return nil, fmt.Errorf("token activate: %w", err)
 	}
 
-	form := models.UserForm{}
-	err = r.DB.
-		Order("created_at desc").
-		Take(
-			&form,
-			"user_id = ? AND state IN ?",
-			token.UserID,
-			[]models.UserFormState{models.UserFormStateCreated, models.UserFormStateDeclained},
-		).
-		Error
-
+	form, err := r.DB.UserForm().Take(ports.UserFormTakeConfig{
+		OrderBy:   ports.UserFormFieldCreatedAt,
+		OrderDesc: true,
+		UserFormsFilter: models.UserFormsFilter{
+			UserID: []string{token.UserID},
+			State: []models.UserFormState{
+				models.UserFormStateCreated,
+				models.UserFormStateDeclained,
+			},
+		},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("take: %w", err)
 	}
 
-	err = r.DB.Model(&form).Update("state", models.UserFormStateModerating).Error
+	form.State = models.UserFormStateModerating
+	err = r.DB.UserForm().Update(&form)
 	if err != nil {
 		return nil, fmt.Errorf("update: %w", err)
 	}
 
 	return &models.UserResult{
-		User: viewer,
+		User: &viewer,
 	}, nil
 }
 
 func (r *mutationResolver) ApproveUserForm(ctx context.Context, input models.ApproveUserFormInput) (*models.UserFormResult, error) {
-	form := models.UserForm{}
+	form, err := r.DB.UserForm().Get(input.UserFormID)
 
-	if err := r.DB.Take(&form, "id = ?", input.UserFormID).Error; err != nil {
-		return nil, fmt.Errorf("take: %w", err)
+	if err != nil {
+		return nil, fmt.Errorf("get: %w", err)
 	}
 
 	if form.State != models.UserFormStateModerating {
@@ -88,13 +93,12 @@ func (r *mutationResolver) ApproveUserForm(ctx context.Context, input models.App
 	}
 
 	form.State = models.UserFormStateApproved
-
 	if err := r.BankPort.UserFormApproved(form); err != nil {
 		return nil, fmt.Errorf("bank: %w", err)
 	}
 
-	if err := r.DB.Save(&form).Error; err != nil {
-		return nil, fmt.Errorf("save: %w", err)
+	if err := r.DB.UserForm().Update(&form); err != nil {
+		return nil, fmt.Errorf("db update: %w", err)
 	}
 
 	return &models.UserFormResult{
@@ -103,10 +107,10 @@ func (r *mutationResolver) ApproveUserForm(ctx context.Context, input models.App
 }
 
 func (r *mutationResolver) DeclineUserForm(ctx context.Context, input models.DeclineUserFormInput) (*models.UserFormResult, error) {
-	form := models.UserForm{}
+	form, err := r.DB.UserForm().Get(input.UserFormID)
 
-	if err := r.DB.Take(&form, "id = ?", input.UserFormID).Error; err != nil {
-		return nil, fmt.Errorf("take: %w", err)
+	if err != nil {
+		return nil, fmt.Errorf("get: %w", err)
 	}
 
 	if form.State != models.UserFormStateModerating {
@@ -115,9 +119,8 @@ func (r *mutationResolver) DeclineUserForm(ctx context.Context, input models.Dec
 
 	form.State = models.UserFormStateDeclained
 	form.DeclainReason = input.DeclainReason
-
-	if err := r.DB.Save(&form).Error; err != nil {
-		return nil, fmt.Errorf("save: %w", err)
+	if err := r.DB.UserForm().Update(&form); err != nil {
+		return nil, fmt.Errorf("db update: %w", err)
 	}
 
 	return &models.UserFormResult{
@@ -126,21 +129,19 @@ func (r *mutationResolver) DeclineUserForm(ctx context.Context, input models.Dec
 }
 
 func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string, filter *models.UserFormsFilter) (*models.UserFormsConnection, error) {
-	query := r.DB.Model(&models.UserForm{})
-
-	if filter != nil {
-		if len(filter.ID) > 0 {
-			query = query.Where("id in ?", filter.ID)
-		}
-
-		if len(filter.State) > 0 {
-			query = query.Where("state in ?", filter.State)
-		}
-
-		if len(filter.UserID) > 0 {
-			query = query.Where("user_id in ?", filter.UserID)
-		}
+	config := ports.UserFormPaginationConfig{
+		First: first,
+		After: after,
 	}
 
-	return UserFormPagination(query, first, after)
+	if filter != nil {
+		config.UserFormsFilter = *filter
+	}
+
+	connection, err := r.DB.UserForm().Pagination(config)
+	if err != nil {
+		return nil, fmt.Errorf("db pagination: %w", err)
+	}
+
+	return &connection, nil
 }

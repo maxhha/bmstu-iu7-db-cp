@@ -1,13 +1,17 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"database/sql"
+	"time"
+)
 
 type Product struct {
-	gorm.Model
-	ID          string `gorm:"default:generated();" json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	IsOnMarket  bool   `gorm:"default:false;" json:"isOnMarket"`
+	ID          string       `json:"id"`
+	State       ProductState `json:"state"`
+	Title       string       `json:"title"`
+	Description string       `json:"description"`
 	CreatorID   string
-	Creator     User
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   sql.NullTime
 }

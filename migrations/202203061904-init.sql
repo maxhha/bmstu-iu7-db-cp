@@ -255,11 +255,18 @@ SELECT EXISTS (
 
     CREATE INDEX idx_account_indices_deleted_at ON accounts(deleted_at);
 
+    CREATE TYPE product_state AS ENUM (
+      'CREATED',
+      'MODERATING',
+      'APPROVED',
+      'DECLAINED'
+    );
+
     CREATE TABLE products (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        state product_state NOT NULL DEFAULT 'CREATED', 
         title VARCHAR NOT NULL,
         description VARCHAR NOT NULL,
-        is_on_market BOOLEAN NOT NULL DEFAULT FALSE,
         creator_id SHORTKEY NOT NULL,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -268,6 +275,30 @@ SELECT EXISTS (
     );
 
     CREATE INDEX idx_product_indices_deleted_at ON products(deleted_at);
+
+    CREATE TYPE auction_state AS ENUM (
+      'CREATED',
+      'STARTED',
+      'FINISHED',
+      'FAILED',
+      'SUCCEEDED'
+    );
+
+    CREATE TABLE auctions (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        state auction_state NOT NULL DEFAULT 'CREATED', 
+        product_id UUID NOT NULL,
+        seller_id SHORTKEY NOT NULL,
+        buyer_id SHORTKEY NOT NULL,
+        scheduled_for TIMESTAMP NOT NULL,
+        started_at TIMESTAMP,
+        finished_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id),
+        CONSTRAINT fk_seller FOREIGN KEY (seller_id) REFERENCES users(id),
+        CONSTRAINT fk_buyer FOREIGN KEY (buyer_id) REFERENCES users(id)
+    );
 
     -- CREATE TABLE product_images (
     --     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

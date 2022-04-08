@@ -7,6 +7,7 @@ import (
 	"auction-back/graph/generated"
 	"auction-back/models"
 	"context"
+	"fmt"
 )
 
 func (r *bankAccountResolver) Bank(ctx context.Context, obj *models.BankAccount) (*models.Bank, error) {
@@ -23,6 +24,10 @@ func (r *userAccountResolver) Bank(ctx context.Context, obj *models.UserAccount)
 
 func (r *userAccountResolver) Transactions(ctx context.Context, obj *models.UserAccount, first *int, after *string) (*models.TransactionsConnection, error) {
 	return r.Account().Transactions(ctx, obj.AccountPtr(), first, after)
+}
+
+func (r *userAccountResolver) User(ctx context.Context, obj *models.UserAccount) (*models.User, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 // BankAccount returns generated.BankAccountResolver implementation.

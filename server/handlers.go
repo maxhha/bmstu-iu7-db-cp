@@ -1,11 +1,7 @@
 package server
 
 import (
-	"auction-back/graph"
 	"auction-back/graph/generated"
-	"auction-back/ports/bank"
-	"auction-back/ports/role"
-	"auction-back/ports/token"
 	"net/http"
 	"time"
 
@@ -16,14 +12,9 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"gorm.io/gorm"
 )
 
-func graphqlHandler(db *gorm.DB, token *token.TokenPort, bank *bank.BankPort, role *role.RolePort) gin.HandlerFunc {
-	resolver := graph.New(db, token, bank, role)
-	config := generated.Config{Resolvers: resolver}
-	config.Directives.HasRole = role.Handler()
-
+func graphqlHandler(config generated.Config) gin.HandlerFunc {
 	h := handler.New(generated.NewExecutableSchema(config))
 
 	h.AddTransport(transport.Websocket{

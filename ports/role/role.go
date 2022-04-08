@@ -3,28 +3,34 @@ package role
 import (
 	"auction-back/auth"
 	"auction-back/models"
+	"auction-back/ports"
 	"context"
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
-	"gorm.io/gorm"
 )
 
 type Interface interface {
-	HasRole(roleType models.RoleType, viewer *models.User) error
+	HasRole(roleType models.RoleType, viewer models.User) error
 }
 
 type RolePort struct {
-	db *gorm.DB
+	db ports.DB
 }
 
-func New(db *gorm.DB) RolePort {
+func New(db ports.DB) RolePort {
 	return RolePort{db}
 }
 
 func (r *RolePort) Handler() func(ctx context.Context, obj interface{}, next graphql.Resolver, role models.RoleType) (res interface{}, err error) {
 	return func(ctx context.Context, obj interface{}, next graphql.Resolver, role models.RoleType) (res interface{}, err error) {
-		if err := r.HasRole(role, auth.ForViewer(ctx)); err != nil {
+		viewer, err := auth.ForViewer(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if err := r.HasRole(role, viewer); err != nil {
 			return nil, err
 		}
 
@@ -32,19 +38,17 @@ func (r *RolePort) Handler() func(ctx context.Context, obj interface{}, next gra
 	}
 }
 
-func (r *RolePort) HasRole(roleType models.RoleType, viewer *models.User) error {
-	if viewer == nil {
-		return fmt.Errorf("unauthorized")
-	}
-
-	role := make([]models.Role, 1)
-
-	err := r.db.Limit(1).Find(&role, "user_id = ? AND type = ?", viewer.ID, roleType).Error
+func (r *RolePort) HasRole(roleType models.RoleType, viewer models.User) error {
+	roles, err := r.db.Role().Find(ports.RoleFindConfig{
+		Limit:   1,
+		UserIDs: []string{viewer.ID},
+		Types:   []models.RoleType{roleType},
+	})
 	if err != nil {
-		return fmt.Errorf("find: %w", err)
+		return fmt.Errorf("db find: %w", err)
 	}
 
-	if len(role) == 0 {
+	if len(roles) == 0 {
 		return fmt.Errorf("no role %s", roleType)
 	}
 

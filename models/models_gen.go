@@ -32,11 +32,6 @@ type CreateOfferResult struct {
 	Offer *Offer `json:"offer"`
 }
 
-type CreateProductInput struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-}
-
 type DateTimeRange struct {
 	From *time.Time `json:"from"`
 	To   *time.Time `json:"to"`
@@ -105,6 +100,10 @@ type RemoveOfferResult struct {
 	Status string `json:"status"`
 }
 
+type RequestModerateProductInput struct {
+	ProductID string `json:"productId"`
+}
+
 type RequestSetUserEmailInput struct {
 	Email string `json:"email"`
 }
@@ -147,6 +146,12 @@ type TransactionsConnection struct {
 type TransactionsConnectionEdge struct {
 	Cursor string       `json:"cursor"`
 	Node   *Transaction `json:"node"`
+}
+
+type UpdateProductInput struct {
+	ProductID   string `json:"productId"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }
 
 type UpdateUserDraftFormInput struct {
@@ -319,6 +324,51 @@ func (e *OfferStateEnum) UnmarshalGQL(v interface{}) error {
 }
 
 func (e OfferStateEnum) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ProductState string
+
+const (
+	ProductStateCreated    ProductState = "CREATED"
+	ProductStateModerating ProductState = "MODERATING"
+	ProductStateApproved   ProductState = "APPROVED"
+	ProductStateDeclained  ProductState = "DECLAINED"
+)
+
+var AllProductState = []ProductState{
+	ProductStateCreated,
+	ProductStateModerating,
+	ProductStateApproved,
+	ProductStateDeclained,
+}
+
+func (e ProductState) IsValid() bool {
+	switch e {
+	case ProductStateCreated, ProductStateModerating, ProductStateApproved, ProductStateDeclained:
+		return true
+	}
+	return false
+}
+
+func (e ProductState) String() string {
+	return string(e)
+}
+
+func (e *ProductState) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ProductState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ProductState", str)
+	}
+	return nil
+}
+
+func (e ProductState) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

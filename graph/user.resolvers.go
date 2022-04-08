@@ -8,19 +8,19 @@ import (
 	"auction-back/graph/generated"
 	"auction-back/jwt"
 	"auction-back/models"
+	"auction-back/ports"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 func (r *mutationResolver) Register(ctx context.Context) (*models.TokenResult, error) {
 	user := models.User{}
 
-	if err := r.DB.Create(&user).Error; err != nil {
-		return nil, fmt.Errorf("create: %w", err)
+	if err := r.DB.User().Create(&user); err != nil {
+		return nil, fmt.Errorf("db create: %w", err)
 	}
 
 	token, err := jwt.NewUser(user.ID)
@@ -35,22 +35,10 @@ func (r *mutationResolver) Register(ctx context.Context) (*models.TokenResult, e
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input models.LoginInput) (*models.TokenResult, error) {
-	form := models.UserForm{}
-
-	err := form.MostRelevantFilter(r.DB).
-		Where(
-			"name = @username OR email = @username OR phone = @username",
-			sql.Named("username", input.Username),
-		).
-		Where(
-			"password IS NOT NULL",
-		).
-		Take(
-			&form,
-		).Error
+	form, err := r.DB.UserForm().GetLoginForm(input)
 
 	if err != nil {
-		return nil, fmt.Errorf("take: %w", err)
+		return nil, fmt.Errorf("get login form: %w", err)
 	}
 
 	if form.Password == nil {
@@ -73,10 +61,9 @@ func (r *mutationResolver) Login(ctx context.Context, input models.LoginInput) (
 }
 
 func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input models.RequestSetUserEmailInput) (bool, error) {
-	viewer := auth.ForViewer(ctx)
-
-	if viewer == nil {
-		return false, fmt.Errorf("unauthorized")
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return false, err
 	}
 
 	data := map[string]interface{}{"email": input.Email}
@@ -88,10 +75,9 @@ func (r *mutationResolver) RequestSetUserEmail(ctx context.Context, input models
 }
 
 func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input models.RequestSetUserPhoneInput) (bool, error) {
-	viewer := auth.ForViewer(ctx)
-
-	if viewer == nil {
-		return false, fmt.Errorf("unauthorized")
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return false, err
 	}
 
 	data := map[string]interface{}{"phone": input.Phone}
@@ -103,72 +89,74 @@ func (r *mutationResolver) RequestSetUserPhone(ctx context.Context, input models
 }
 
 func (r *mutationResolver) ApproveSetUserEmail(ctx context.Context, input models.TokenInput) (*models.UserResult, error) {
-	viewer := auth.ForViewer(ctx)
-	token, err := r.TokenPort.Activate(models.TokenActionSetUserEmail, input.Token, viewer)
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
 
+	token, err := r.TokenPort.Activate(models.TokenActionSetUserEmail, input.Token, viewer)
 	if err != nil {
 		return nil, fmt.Errorf("token activate: %w", err)
 	}
 
 	email, ok := token.Data["email"].(string)
-
 	if !ok {
 		return nil, fmt.Errorf("no email in token")
 	}
 
 	form, err := getOrCreateUserDraftForm(r.DB, viewer)
-
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.DB.Model(&form).Update("email", email).Error; err != nil {
-		return nil, err
+	form.Email = &email
+	if err = r.DB.UserForm().Update(&form); err != nil {
+		return nil, fmt.Errorf("db update: %w", err)
 	}
 
 	return &models.UserResult{
-		User: viewer,
+		User: &viewer,
 	}, nil
 }
 
 func (r *mutationResolver) ApproveSetUserPhone(ctx context.Context, input models.TokenInput) (*models.UserResult, error) {
-	viewer := auth.ForViewer(ctx)
-	token, err := r.TokenPort.Activate(models.TokenActionSetUserPhone, input.Token, viewer)
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
 
+	token, err := r.TokenPort.Activate(models.TokenActionSetUserPhone, input.Token, viewer)
 	if err != nil {
 		return nil, fmt.Errorf("token activate: %w", err)
 	}
 
 	phone, ok := token.Data["phone"].(string)
-
 	if !ok {
 		return nil, fmt.Errorf("no phone in token")
 	}
 
 	form, err := getOrCreateUserDraftForm(r.DB, viewer)
-
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.DB.Model(&form).Update("phone", phone).Error; err != nil {
-		return nil, fmt.Errorf("update: %w", err)
+	form.Phone = &phone
+	if err = r.DB.UserForm().Update(&form); err != nil {
+		return nil, fmt.Errorf("db update: %w", err)
 	}
 
 	return &models.UserResult{
-		User: viewer,
+		User: &viewer,
 	}, nil
 }
 
 func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input models.UpdateUserPasswordInput) (*models.UserResult, error) {
-	viewer := auth.ForViewer(ctx)
-
-	if viewer == nil {
-		return nil, fmt.Errorf("unauthorized")
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	form, err := getOrCreateUserDraftForm(r.DB, viewer)
-
 	if err != nil {
 		return nil, err
 	}
@@ -192,20 +180,21 @@ func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input models.
 		return nil, fmt.Errorf("hash: %w", err)
 	}
 
-	if err = r.DB.Model(&form).Update("password", password).Error; err != nil {
-		return nil, fmt.Errorf("update: %w", err)
+	form.Password = &password
+	if err = r.DB.UserForm().Update(&form); err != nil {
+		return nil, fmt.Errorf("db update: %w", err)
 	}
 
 	return &models.UserResult{
-		User: viewer,
+		User: &viewer,
 	}, nil
 }
 
 func (r *mutationResolver) UpdateUserDraftForm(ctx context.Context, input models.UpdateUserDraftFormInput) (*models.UserResult, error) {
-	viewer := auth.ForViewer(ctx)
+	viewer, err := auth.ForViewer(ctx)
 
-	if viewer == nil {
-		return nil, fmt.Errorf("unauthorized")
+	if err != nil {
+		return nil, err
 	}
 
 	form, err := getOrCreateUserDraftForm(r.DB, viewer)
@@ -215,43 +204,58 @@ func (r *mutationResolver) UpdateUserDraftForm(ctx context.Context, input models
 	}
 
 	form.Name = input.Name
-
-	if err = r.DB.Save(&form).Error; err != nil {
-		return nil, fmt.Errorf("save: %w", err)
+	if err = r.DB.UserForm().Update(&form); err != nil {
+		return nil, fmt.Errorf("db update: %w", err)
 	}
 
 	return &models.UserResult{
-		User: viewer,
+		User: &viewer,
 	}, nil
 }
 
 func (r *queryResolver) Viewer(ctx context.Context) (*models.User, error) {
-	viewer := auth.ForViewer(ctx)
-	return viewer, nil
+	viewer, err := auth.ForViewer(ctx)
+	if errors.Is(err, auth.ErrUnauthorized) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &viewer, nil
 }
 
 func (r *queryResolver) Users(ctx context.Context, first *int, after *string, filter *models.UsersFilter) (*models.UsersConnection, error) {
-	query := r.DB.Model(&models.User{})
-
+	config := ports.UserPaginationConfig{
+		First: first,
+		After: after,
+	}
 	if filter != nil {
-		if len(filter.ID) > 0 {
-			query = query.Where("id in ?", filter.ID)
-		}
+		config.UsersFilter = *filter
 	}
 
-	return UserPagination(query, first, after)
+	connection, err := r.DB.User().Pagination(config)
+	if err != nil {
+		return nil, fmt.Errorf("db pagination: %w", err)
+	}
+
+	return &connection, nil
 }
 
 func (r *userResolver) Form(ctx context.Context, obj *models.User) (*models.UserFormFilled, error) {
-	viewer := auth.ForViewer(ctx)
+	viewer, err := auth.ForViewer(ctx)
+
+	if err != nil {
+		return nil, err
+	}
 
 	if err := r.isOwnerOrManager(viewer, obj); err != nil {
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 
-	form, err := viewer.LastApprovedUserForm(r.DB)
-
-	if err == gorm.ErrRecordNotFound {
+	form, err := r.DB.User().LastApprovedUserForm(viewer)
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -263,16 +267,24 @@ func (r *userResolver) Form(ctx context.Context, obj *models.User) (*models.User
 }
 
 func (r *userResolver) DraftForm(ctx context.Context, obj *models.User) (*models.UserForm, error) {
-	viewer := auth.ForViewer(ctx)
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := r.isOwnerOrManager(viewer, obj); err != nil {
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 
-	form := models.UserForm{}
-	err := r.DB.Order("created_at desc").Take(&form, "user_id = ?", obj.ID).Error
+	form, err := r.DB.UserForm().Take(ports.UserFormTakeConfig{
+		OrderBy:   ports.UserFormFieldCreatedAt,
+		OrderDesc: true,
+		UserFormsFilter: models.UserFormsFilter{
+			UserID: []string{obj.ID},
+		},
+	})
 
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -288,23 +300,34 @@ func (r *userResolver) DraftForm(ctx context.Context, obj *models.User) (*models
 }
 
 func (r *userResolver) FormHistory(ctx context.Context, obj *models.User, first *int, after *string, filter *models.UserFormHistoryFilter) (*models.UserFormsConnection, error) {
-	if obj == nil {
-		return nil, fmt.Errorf("user is nil")
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	query := r.DB.Model(&models.UserForm{}).Where("user_id = ?", obj.ID)
+	if err := r.isOwnerOrManager(viewer, obj); err != nil {
+		return nil, fmt.Errorf("denied: %w", err)
+	}
+
+	config := ports.UserFormPaginationConfig{
+		First: first,
+		After: after,
+		UserFormsFilter: models.UserFormsFilter{
+			UserID: []string{obj.ID},
+		},
+	}
 
 	if filter != nil {
-		if len(filter.ID) > 0 {
-			query = query.Where("id in ?", filter.ID)
-		}
-
-		if len(filter.State) > 0 {
-			query = query.Where("state in ?", filter.State)
-		}
+		config.UserFormsFilter.ID = filter.ID
+		config.UserFormsFilter.State = filter.State
 	}
 
-	return UserFormPagination(query, first, after)
+	connection, err := r.DB.UserForm().Pagination(config)
+	if err != nil {
+		return nil, fmt.Errorf("db pagination: %w", err)
+	}
+
+	return &connection, nil
 }
 
 func (r *userResolver) BlockedUntil(ctx context.Context, obj *models.User) (*time.Time, error) {
@@ -320,43 +343,59 @@ func (r *userResolver) Blocked(ctx context.Context, obj *models.User) ([]*models
 }
 
 func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *int, after *string) (*models.UserAccountsConnection, error) {
-	viewer := auth.ForViewer(ctx)
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := r.isOwnerOrManager(viewer, obj); err != nil {
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 
-	query := r.DB.Model(&models.Account{}).Where("user_id = ?", obj.ID)
+	config := ports.AccountPaginationConfig{
+		UserIDs: []string{obj.ID},
+		First:   first,
+		After:   after,
+	}
 
-	return UserAccountPagination(query, first, after)
+	connection, err := r.DB.Account().UserPagination(config)
+	if err != nil {
+		return nil, fmt.Errorf("db user pagination: %w", err)
+	}
+
+	return &connection, nil
 }
 
 func (r *userResolver) Offers(ctx context.Context, obj *models.User, first *int, after *string) (*models.OffersConnection, error) {
-	viewer := auth.ForViewer(ctx)
+	panic(fmt.Errorf("not implemented"))
+	// viewer, err := auth.ForViewer(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	if viewer == nil {
-		return nil, fmt.Errorf("unauthorized")
-	}
+	// if viewer.ID != obj.ID {
+	// 	return nil, fmt.Errorf("denied")
+	// }
 
-	if viewer.ID != obj.ID {
-		return nil, fmt.Errorf("denied")
-	}
+	// query := r.DB.Where("consumer_id = ?", obj.ID).Order("id")
 
-	query := r.DB.Where("consumer_id = ?", obj.ID).Order("id")
-
-	return OfferPagination(query, first, after)
+	// return OfferPagination(query, first, after)
 }
 
 func (r *userResolver) Products(ctx context.Context, obj *models.User, first *int, after *string) (*models.ProductsConnection, error) {
-	viewer := auth.ForViewer(ctx)
+	panic(fmt.Errorf("not implemented"))
+	// viewer, err := auth.ForViewer(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	if err := r.isOwnerOrManager(viewer, obj); err != nil {
-		return nil, err
-	}
+	// if err := r.isOwnerOrManager(viewer, obj); err != nil {
+	// 	return nil, fmt.Errorf("denied: %w", err)
+	// }
 
-	query := r.DB.Where("owner_id = ?", obj.ID)
+	// query := r.DB.Where("owner_id = ?", obj.ID)
 
-	return ProductPagination(query, first, after)
+	// return ProductPagination(query, first, after)
 }
 
 // User returns generated.UserResolver implementation.

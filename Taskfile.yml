@@ -74,6 +74,31 @@ tasks:
     status:
       - test -d out
 
+  build:portmocksgen:
+    desc: Build tool for generating mocks of ports interfaces
+    deps:
+      - dir:out
+    cmds:
+      - go build -o out/portmocksgen.out codegen/portmocks/main.go
+    sources:
+      - codegen/portmocks/*.go
+    generates:
+      - out/portmocksgen.out
+
+  portmocksgen:
+    desc: Generates mocks for ports interfaces
+    deps:
+      - build:portmocksgen
+    cmds:
+      - out/portmocksgen.out portmocksgen.yml
+      - gofmt -s -w test/*_gen.go
+    sources:
+      - portmocksgen.yml
+      - ports/database.go
+      - out/portmocksgen.out
+    generates:
+      - test/database.go
+
   filter-cover:
     desc: Filters generated files from coverage output
     cmds:
@@ -83,6 +108,7 @@ tasks:
     desc: Get code coverage by unit tests
     deps:
       - dir:out
+      - portmocksgen
     vars:
       TMPOUT: ./out/unit-coverage.tmp.out
       OUT: ./out/unit-coverage.out

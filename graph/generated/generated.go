@@ -87,22 +87,25 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		ApproveModerateProduct  func(childComplexity int, input models.TokenInput) int
 		ApproveModerateUserForm func(childComplexity int, input models.TokenInput) int
 		ApproveSetUserEmail     func(childComplexity int, input models.TokenInput) int
 		ApproveSetUserPhone     func(childComplexity int, input models.TokenInput) int
 		ApproveUserForm         func(childComplexity int, input models.ApproveUserFormInput) int
 		CreateOffer             func(childComplexity int, input models.CreateOfferInput) int
-		CreateProduct           func(childComplexity int, input models.CreateProductInput) int
+		CreateProduct           func(childComplexity int) int
 		DeclineUserForm         func(childComplexity int, input models.DeclineUserFormInput) int
 		Login                   func(childComplexity int, input models.LoginInput) int
 		OfferProduct            func(childComplexity int, input models.OfferProductInput) int
 		Register                func(childComplexity int) int
 		RemoveOffer             func(childComplexity int, input models.RemoveOfferInput) int
+		RequestModerateProduct  func(childComplexity int, input models.RequestModerateProductInput) int
 		RequestModerateUserForm func(childComplexity int) int
 		RequestSetUserEmail     func(childComplexity int, input models.RequestSetUserEmailInput) int
 		RequestSetUserPhone     func(childComplexity int, input models.RequestSetUserPhoneInput) int
 		SellProduct             func(childComplexity int, input models.SellProductInput) int
 		TakeOffProduct          func(childComplexity int, input models.TakeOffProductInput) int
+		UpdateProduct           func(childComplexity int, input models.UpdateProductInput) int
 		UpdateUserDraftForm     func(childComplexity int, input models.UpdateUserDraftFormInput) int
 		UpdateUserPassword      func(childComplexity int, input models.UpdateUserPasswordInput) int
 	}
@@ -145,9 +148,9 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Images      func(childComplexity int) int
-		IsOnMarket  func(childComplexity int) int
 		Offers      func(childComplexity int, first *int, after *string) int
 		Owner       func(childComplexity int) int
+		State       func(childComplexity int) int
 		Title       func(childComplexity int) int
 		TopOffer    func(childComplexity int) int
 	}
@@ -305,7 +308,10 @@ type BankAccountResolver interface {
 type MutationResolver interface {
 	CreateOffer(ctx context.Context, input models.CreateOfferInput) (*models.CreateOfferResult, error)
 	RemoveOffer(ctx context.Context, input models.RemoveOfferInput) (*models.RemoveOfferResult, error)
-	CreateProduct(ctx context.Context, input models.CreateProductInput) (*models.ProductResult, error)
+	CreateProduct(ctx context.Context) (*models.ProductResult, error)
+	UpdateProduct(ctx context.Context, input models.UpdateProductInput) (*models.ProductResult, error)
+	RequestModerateProduct(ctx context.Context, input models.RequestModerateProductInput) (bool, error)
+	ApproveModerateProduct(ctx context.Context, input models.TokenInput) (bool, error)
 	OfferProduct(ctx context.Context, input models.OfferProductInput) (*models.OfferProductResult, error)
 	TakeOffProduct(ctx context.Context, input models.TakeOffProductInput) (*models.TakeOffProductResult, error)
 	SellProduct(ctx context.Context, input models.SellProductInput) (*models.SellProductResult, error)
@@ -332,7 +338,7 @@ type OfferResolver interface {
 }
 type ProductResolver interface {
 	Owner(ctx context.Context, obj *models.Product) (*models.User, error)
-
+	Creator(ctx context.Context, obj *models.Product) (*models.User, error)
 	TopOffer(ctx context.Context, obj *models.Product) (*models.Offer, error)
 	Images(ctx context.Context, obj *models.Product) ([]*models.ProductImage, error)
 	Offers(ctx context.Context, obj *models.Product, first *int, after *string) (*models.OffersConnection, error)
@@ -371,6 +377,7 @@ type UserResolver interface {
 type UserAccountResolver interface {
 	Bank(ctx context.Context, obj *models.UserAccount) (*models.Bank, error)
 	Transactions(ctx context.Context, obj *models.UserAccount, first *int, after *string) (*models.TransactionsConnection, error)
+	User(ctx context.Context, obj *models.UserAccount) (*models.User, error)
 }
 
 type executableSchema struct {
@@ -484,6 +491,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Money.Currency(childComplexity), true
 
+	case "Mutation.approveModerateProduct":
+		if e.complexity.Mutation.ApproveModerateProduct == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_approveModerateProduct_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ApproveModerateProduct(childComplexity, args["input"].(models.TokenInput)), true
+
 	case "Mutation.approveModerateUserForm":
 		if e.complexity.Mutation.ApproveModerateUserForm == nil {
 			break
@@ -549,12 +568,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_createProduct_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateProduct(childComplexity, args["input"].(models.CreateProductInput)), true
+		return e.complexity.Mutation.CreateProduct(childComplexity), true
 
 	case "Mutation.declineUserForm":
 		if e.complexity.Mutation.DeclineUserForm == nil {
@@ -611,6 +625,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.RemoveOffer(childComplexity, args["input"].(models.RemoveOfferInput)), true
 
+	case "Mutation.requestModerateProduct":
+		if e.complexity.Mutation.RequestModerateProduct == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_requestModerateProduct_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RequestModerateProduct(childComplexity, args["input"].(models.RequestModerateProductInput)), true
+
 	case "Mutation.requestModerateUserForm":
 		if e.complexity.Mutation.RequestModerateUserForm == nil {
 			break
@@ -665,6 +691,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.TakeOffProduct(childComplexity, args["input"].(models.TakeOffProductInput)), true
+
+	case "Mutation.updateProduct":
+		if e.complexity.Mutation.UpdateProduct == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateProduct_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateProduct(childComplexity, args["input"].(models.UpdateProductInput)), true
 
 	case "Mutation.updateUserDraftForm":
 		if e.complexity.Mutation.UpdateUserDraftForm == nil {
@@ -844,13 +882,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Product.Images(childComplexity), true
 
-	case "Product.isOnMarket":
-		if e.complexity.Product.IsOnMarket == nil {
-			break
-		}
-
-		return e.complexity.Product.IsOnMarket(childComplexity), true
-
 	case "Product.offers":
 		if e.complexity.Product.Offers == nil {
 			break
@@ -869,6 +900,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Product.Owner(childComplexity), true
+
+	case "Product.state":
+		if e.complexity.Product.State == nil {
+			break
+		}
+
+		return e.complexity.Product.State(childComplexity), true
 
 	case "Product.title":
 		if e.complexity.Product.Title == nil {
@@ -1644,8 +1682,19 @@ extend type Mutation {
   removeOffer(input: RemoveOfferInput!): RemoveOfferResult!
 }
 `, BuiltIn: false},
-	{Name: "graph/schema/product.graphqls", Input: `type Product {
+	{Name: "graph/schema/product.graphqls", Input: `enum ProductState {
+  CREATED
+  MODERATING
+  APPROVED
+  DECLAINED
+}
+
+type Product {
   id: ID!
+  """
+  Current state of product
+  """
+  state: ProductState!
   """
   Title of product
   """
@@ -1662,10 +1711,6 @@ extend type Mutation {
   Creator of product
   """
   creator: User!
-  """
-  Product visibility on market
-  """
-  isOnMarket: Boolean!
   """
   The greatest offer
   """
@@ -1703,13 +1748,18 @@ extend type Query {
   marketProducts(first: Int, after: String): ProductsConnection!
 }
 
-input CreateProductInput {
+input UpdateProductInput {
+  productId: ID!
   title: String!
   description: String!
 }
 
 type ProductResult {
   product: Product!
+}
+
+input RequestModerateProductInput {
+  productId: ID!
 }
 
 input OfferProductInput {
@@ -1740,7 +1790,20 @@ extend type Mutation {
   """
   Creates product with creator of current viewer
   """
-  createProduct(input: CreateProductInput!): ProductResult!
+  createProduct: ProductResult!
+  """
+  Update product info
+  """
+  updateProduct(input: UpdateProductInput!): ProductResult!
+  """
+  Request token to send product for modetaion
+  """
+  requestModerateProduct(input: RequestModerateProductInput!): Boolean!
+  """
+  Set product state to moderating
+  """
+  approveModerateProduct(input: TokenInput!): Boolean!
+
   offerProduct(input: OfferProductInput!): OfferProductResult!
   takeOffProduct(input: TakeOffProductInput!): TakeOffProductResult!
   sellProduct(input: SellProductInput!): SellProductResult!
@@ -2098,6 +2161,21 @@ func (ec *executionContext) field_BankAccount_transactions_args(ctx context.Cont
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_approveModerateProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.TokenInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNTokenInput2auctionᚑbackᚋmodelsᚐTokenInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_approveModerateUserForm_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2173,21 +2251,6 @@ func (ec *executionContext) field_Mutation_createOffer_args(ctx context.Context,
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_createProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 models.CreateProductInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNCreateProductInput2auctionᚑbackᚋmodelsᚐCreateProductInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_declineUserForm_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2248,6 +2311,21 @@ func (ec *executionContext) field_Mutation_removeOffer_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_requestModerateProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.RequestModerateProductInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNRequestModerateProductInput2auctionᚑbackᚋmodelsᚐRequestModerateProductInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_requestSetUserEmail_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2300,6 +2378,21 @@ func (ec *executionContext) field_Mutation_takeOffProduct_args(ctx context.Conte
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNTakeOffProductInput2auctionᚑbackᚋmodelsᚐTakeOffProductInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.UpdateProductInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdateProductInput2auctionᚑbackᚋmodelsᚐUpdateProductInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3196,16 +3289,9 @@ func (ec *executionContext) _Mutation_createProduct(ctx context.Context, field g
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createProduct_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateProduct(rctx, args["input"].(models.CreateProductInput))
+		return ec.resolvers.Mutation().CreateProduct(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3220,6 +3306,132 @@ func (ec *executionContext) _Mutation_createProduct(ctx context.Context, field g
 	res := resTmp.(*models.ProductResult)
 	fc.Result = res
 	return ec.marshalNProductResult2ᚖauctionᚑbackᚋmodelsᚐProductResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateProduct(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateProduct_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateProduct(rctx, args["input"].(models.UpdateProductInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.ProductResult)
+	fc.Result = res
+	return ec.marshalNProductResult2ᚖauctionᚑbackᚋmodelsᚐProductResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_requestModerateProduct(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_requestModerateProduct_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RequestModerateProduct(rctx, args["input"].(models.RequestModerateProductInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_approveModerateProduct(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_approveModerateProduct_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ApproveModerateProduct(rctx, args["input"].(models.TokenInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_offerProduct(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4542,6 +4754,41 @@ func (ec *executionContext) _Product_id(ctx context.Context, field graphql.Colle
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Product_state(ctx context.Context, field graphql.CollectedField, obj *models.Product) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Product",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.ProductState)
+	fc.Result = res
+	return ec.marshalNProductState2auctionᚑbackᚋmodelsᚐProductState(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Product_title(ctx context.Context, field graphql.CollectedField, obj *models.Product) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4658,14 +4905,14 @@ func (ec *executionContext) _Product_creator(ctx context.Context, field graphql.
 		Object:     "Product",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Creator, nil
+		return ec.resolvers.Product().Creator(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4677,44 +4924,9 @@ func (ec *executionContext) _Product_creator(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(models.User)
+	res := resTmp.(*models.User)
 	fc.Result = res
-	return ec.marshalNUser2auctionᚑbackᚋmodelsᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Product_isOnMarket(ctx context.Context, field graphql.CollectedField, obj *models.Product) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Product",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsOnMarket, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖauctionᚑbackᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Product_topOffer(ctx context.Context, field graphql.CollectedField, obj *models.Product) (ret graphql.Marshaler) {
@@ -6559,14 +6771,14 @@ func (ec *executionContext) _UserAccount_user(ctx context.Context, field graphql
 		Object:     "UserAccount",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		return ec.resolvers.UserAccount().User(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6578,9 +6790,9 @@ func (ec *executionContext) _UserAccount_user(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(models.User)
+	res := resTmp.(*models.User)
 	fc.Result = res
-	return ec.marshalNUser2auctionᚑbackᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖauctionᚑbackᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UserAccountsConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *models.UserAccountsConnection) (ret graphql.Marshaler) {
@@ -8520,37 +8732,6 @@ func (ec *executionContext) unmarshalInputCreateOfferInput(ctx context.Context, 
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputCreateProductInput(ctx context.Context, obj interface{}) (models.CreateProductInput, error) {
-	var it models.CreateProductInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "title":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
-			it.Title, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			it.Description, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputDateTimeRange(ctx context.Context, obj interface{}) (models.DateTimeRange, error) {
 	var it models.DateTimeRange
 	asMap := map[string]interface{}{}
@@ -8690,6 +8871,29 @@ func (ec *executionContext) unmarshalInputRemoveOfferInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRequestModerateProductInput(ctx context.Context, obj interface{}) (models.RequestModerateProductInput, error) {
+	var it models.RequestModerateProductInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "productId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productId"))
+			it.ProductID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRequestSetUserEmailInput(ctx context.Context, obj interface{}) (models.RequestSetUserEmailInput, error) {
 	var it models.RequestSetUserEmailInput
 	asMap := map[string]interface{}{}
@@ -8796,6 +9000,45 @@ func (ec *executionContext) unmarshalInputTokenInput(ctx context.Context, obj in
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
 			it.Token, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateProductInput(ctx context.Context, obj interface{}) (models.UpdateProductInput, error) {
+	var it models.UpdateProductInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "productId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productId"))
+			it.ProductID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "title":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			it.Title, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -9339,6 +9582,36 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "updateProduct":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateProduct(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "requestModerateProduct":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_requestModerateProduct(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "approveModerateProduct":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_approveModerateProduct(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "offerProduct":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_offerProduct(ctx, field)
@@ -9836,6 +10109,16 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "state":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Product_state(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "title":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Product_title(ctx, field, obj)
@@ -9877,25 +10160,25 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 
 			})
 		case "creator":
+			field := field
+
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Product_creator(ctx, field, obj)
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Product_creator(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
 
-			out.Values[i] = innerFunc(ctx)
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
 
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "isOnMarket":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Product_isOnMarket(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			})
 		case "topOffer":
 			field := field
 
@@ -10929,15 +11212,25 @@ func (ec *executionContext) _UserAccount(ctx context.Context, sel ast.SelectionS
 
 			})
 		case "user":
+			field := field
+
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._UserAccount_user(ctx, field, obj)
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UserAccount_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
 
-			out.Values[i] = innerFunc(ctx)
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
 
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11910,11 +12203,6 @@ func (ec *executionContext) marshalNCreateOfferResult2ᚖauctionᚑbackᚋmodels
 	return ec._CreateOfferResult(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNCreateProductInput2auctionᚑbackᚋmodelsᚐCreateProductInput(ctx context.Context, v interface{}) (models.CreateProductInput, error) {
-	res, err := ec.unmarshalInputCreateProductInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNCurrencyEnum2auctionᚑbackᚋmodelsᚐCurrencyEnum(ctx context.Context, v interface{}) (models.CurrencyEnum, error) {
 	var res models.CurrencyEnum
 	err := res.UnmarshalGQL(v)
@@ -12248,6 +12536,16 @@ func (ec *executionContext) marshalNProductResult2ᚖauctionᚑbackᚋmodelsᚐP
 	return ec._ProductResult(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNProductState2auctionᚑbackᚋmodelsᚐProductState(ctx context.Context, v interface{}) (models.ProductState, error) {
+	var res models.ProductState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNProductState2auctionᚑbackᚋmodelsᚐProductState(ctx context.Context, sel ast.SelectionSet, v models.ProductState) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNProductsConnection2auctionᚑbackᚋmodelsᚐProductsConnection(ctx context.Context, sel ast.SelectionSet, v models.ProductsConnection) graphql.Marshaler {
 	return ec._ProductsConnection(ctx, sel, &v)
 }
@@ -12333,6 +12631,11 @@ func (ec *executionContext) marshalNRemoveOfferResult2ᚖauctionᚑbackᚋmodels
 		return graphql.Null
 	}
 	return ec._RemoveOfferResult(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRequestModerateProductInput2auctionᚑbackᚋmodelsᚐRequestModerateProductInput(ctx context.Context, v interface{}) (models.RequestModerateProductInput, error) {
+	res, err := ec.unmarshalInputRequestModerateProductInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNRequestSetUserEmailInput2auctionᚑbackᚋmodelsᚐRequestSetUserEmailInput(ctx context.Context, v interface{}) (models.RequestSetUserEmailInput, error) {
@@ -12567,6 +12870,11 @@ func (ec *executionContext) marshalNTransactionsConnectionEdge2ᚖauctionᚑback
 		return graphql.Null
 	}
 	return ec._TransactionsConnectionEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateProductInput2auctionᚑbackᚋmodelsᚐUpdateProductInput(ctx context.Context, v interface{}) (models.UpdateProductInput, error) {
+	res, err := ec.unmarshalInputUpdateProductInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNUpdateUserDraftFormInput2auctionᚑbackᚋmodelsᚐUpdateUserDraftFormInput(ctx context.Context, v interface{}) (models.UpdateUserDraftFormInput, error) {

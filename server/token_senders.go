@@ -3,9 +3,8 @@ package server
 import (
 	"auction-back/adapters/token_sender"
 	"auction-back/models"
+	"auction-back/ports"
 	"fmt"
-
-	"gorm.io/gorm"
 )
 
 func dataWithTokenId(token models.Token) (map[string]string, error) {
@@ -43,7 +42,7 @@ func emailTokenSender() *token_sender.TokenSender {
 	return token_sender.New(config)
 }
 
-func phoneTokenSender(DB *gorm.DB) *token_sender.TokenSender {
+func phoneTokenSender(DB ports.DB) *token_sender.TokenSender {
 	config := token_sender.Config{
 		Name:              "phone",
 		AddressEnvVarName: "PHONE_NOTIFIER_ADDRESS",
@@ -64,11 +63,12 @@ func phoneTokenSender(DB *gorm.DB) *token_sender.TokenSender {
 			return str, nil
 		},
 		models.TokenActionModerateUserForm: func(token models.Token) (string, error) {
-			if err := token.EnsureFillUser(DB); err != nil {
-				return "", err
+			user, err := DB.Token().GetUser(token)
+			if err != nil {
+				return "", fmt.Errorf("db token get user: %w", err)
 			}
 
-			form, err := token.User.MostRelevantUserForm(DB)
+			form, err := DB.User().MostRelevantUserForm(user)
 
 			if err != nil {
 				return "", fmt.Errorf("last relevant user form: %w", err)

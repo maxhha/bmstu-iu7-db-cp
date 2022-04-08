@@ -2,12 +2,11 @@ package graph
 
 import (
 	"auction-back/models"
+	"auction-back/ports"
 	"auction-back/ports/bank"
 	"auction-back/ports/role"
 	"auction-back/ports/token"
 	"sync"
-
-	"gorm.io/gorm"
 )
 
 // This file will not be regenerated automatically.
@@ -15,7 +14,7 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	DB         *gorm.DB
+	DB         ports.DB
 	Market     map[string]chan *models.Product
 	MarketLock sync.Mutex
 	TokenPort  token.Interface
@@ -23,7 +22,7 @@ type Resolver struct {
 	RolePort   role.Interface
 }
 
-func New(DB *gorm.DB, token token.Interface, bank bank.Interface, role role.Interface) *Resolver {
+func New(DB ports.DB, token token.Interface, bank bank.Interface, role role.Interface) *Resolver {
 	r := Resolver{
 		DB:         DB,
 		Market:     make(map[string]chan *models.Product),

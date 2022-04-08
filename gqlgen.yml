@@ -60,15 +60,6 @@ models:
   Cursor:
     model:
       - github.com/99designs/gqlgen/graphql.String
-  User:
-    model:
-      - auction-back/models.User
-  UserForm:
-    model:
-      - auction-back/models.UserForm
-  Bank:
-    model:
-      - auction-back/models.Bank
   UserAccount:
     fields:
       bank:
@@ -77,9 +68,6 @@ models:
     fields:
       bank:
         resolver: true
-  Product:
-    model:
-      - auction-back/models.Product
   Account:
     model:
       - auction-back/models.AccountInterface

@@ -1,5 +1,16 @@
+enum ProductState {
+  CREATED
+  MODERATING
+  APPROVED
+  DECLAINED
+}
+
 type Product {
   id: ID!
+  """
+  Current state of product
+  """
+  state: ProductState!
   """
   Title of product
   """
@@ -16,10 +27,6 @@ type Product {
   Creator of product
   """
   creator: User!
-  """
-  Product visibility on market
-  """
-  isOnMarket: Boolean!
   """
   The greatest offer
   """
@@ -57,13 +64,18 @@ extend type Query {
   marketProducts(first: Int, after: String): ProductsConnection!
 }
 
-input CreateProductInput {
+input UpdateProductInput {
+  productId: ID!
   title: String!
   description: String!
 }
 
 type ProductResult {
   product: Product!
+}
+
+input RequestModerateProductInput {
+  productId: ID!
 }
 
 input OfferProductInput {
@@ -94,7 +106,20 @@ extend type Mutation {
   """
   Creates product with creator of current viewer
   """
-  createProduct(input: CreateProductInput!): ProductResult!
+  createProduct: ProductResult!
+  """
+  Update product info
+  """
+  updateProduct(input: UpdateProductInput!): ProductResult!
+  """
+  Request token to send product for modetaion
+  """
+  requestModerateProduct(input: RequestModerateProductInput!): Boolean!
+  """
+  Set product state to moderating
+  """
+  approveModerateProduct(input: TokenInput!): Boolean!
+
   offerProduct(input: OfferProductInput!): OfferProductResult!
   takeOffProduct(input: TakeOffProductInput!): TakeOffProductResult!
   sellProduct(input: SellProductInput!): SellProductResult!

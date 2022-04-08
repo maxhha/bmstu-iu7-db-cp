@@ -1,9 +1,9 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
-
-	"gorm.io/gorm"
+	"time"
 )
 
 type AccountInterface interface {
@@ -18,21 +18,17 @@ const (
 )
 
 type Account struct {
-	gorm.Model
-	ID     string `gorm:"default:generated();" json:"id"`
-	Type   AccountType
-	UserID string
-	User   User
-	BankID string
-	Bank   Bank
+	ID        string `json:"id"`
+	Type      AccountType
+	UserID    string
+	BankID    string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt sql.NullTime
 }
 
-func (a *Account) EnsureFillBank(db *gorm.DB) error {
-	if a.BankID == a.Bank.ID {
-		return nil
-	}
-
-	return db.Take(&a.Bank, "id = ?", a.BankID).Error
+func (a *Account) String() string {
+	return fmt.Sprintf("Account[id=%s]", a.ID)
 }
 
 func (obj *Account) ConcreteType() (AccountInterface, error) {

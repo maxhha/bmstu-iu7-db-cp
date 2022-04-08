@@ -2,9 +2,10 @@ package bank
 
 import (
 	"auction-back/models"
+	"auction-back/ports"
+	"database/sql"
+	"errors"
 	"fmt"
-
-	"gorm.io/gorm"
 )
 
 type Interface interface {
@@ -12,18 +13,19 @@ type Interface interface {
 }
 
 type BankPort struct {
-	db *gorm.DB
+	db ports.DB
 }
 
-func New(db *gorm.DB) BankPort {
+func New(db ports.DB) BankPort {
 	return BankPort{db}
 }
 
 func (b *BankPort) createAccount(userID string) error {
-	bank := models.Bank{}
-
-	if err := b.db.Take(&bank, "name = 'fake'").Error; err != nil {
-		return fmt.Errorf("take bank: %w", err)
+	bank, err := b.db.Bank().Take(ports.BankTakeConfig{
+		Names: []string{"fake"},
+	})
+	if err != nil {
+		return fmt.Errorf("db take: %w", err)
 	}
 
 	account := models.Account{
@@ -32,7 +34,7 @@ func (b *BankPort) createAccount(userID string) error {
 		BankID: bank.ID,
 	}
 
-	if err := b.db.Create(&account).Error; err != nil {
+	if err := b.db.Account().Create(&account); err != nil {
 		return fmt.Errorf("create: %w", err)
 	}
 
@@ -48,18 +50,18 @@ func (b *BankPort) UserFormApproved(form models.UserForm) error {
 	// select bank services to call.
 
 	// FIXME: this code should be in bank service
-	account := models.Account{}
-
-	err := b.db.Take(&account, "user_id = ?", form.UserID).Error
+	_, err := b.db.Account().Take(ports.AccountTakeConfig{
+		UserIDs: []string{form.UserID},
+	})
 
 	if err == nil {
 		// TODO: update data in bank
 		return nil
 	}
 
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, sql.ErrNoRows) {
 		return b.createAccount(form.UserID)
 	}
 
-	return fmt.Errorf("take: %w", err)
+	return fmt.Errorf("db take: %w", err)
 }

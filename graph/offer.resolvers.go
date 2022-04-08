@@ -16,7 +16,7 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateO
 	// viewer := auth.ForViewer(ctx)
 
 	// if viewer == nil {
-	// 	return nil, fmt.Errorf("unauthorized")
+	// 	return nil, ErrUnauthorized
 	// }
 
 	// var product models.Product
@@ -89,7 +89,7 @@ func (r *mutationResolver) RemoveOffer(ctx context.Context, input models.RemoveO
 	// viewer := auth.ForViewer(ctx)
 
 	// if viewer == nil {
-	// 	return nil, fmt.Errorf("unauthorized")
+	// 	return nil, ErrUnauthorized
 	// }
 
 	// offer := db.Offer{}

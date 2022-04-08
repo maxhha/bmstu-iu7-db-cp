@@ -2,17 +2,17 @@ package token
 
 import (
 	"auction-back/models"
+	"auction-back/ports"
 	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	"gorm.io/gorm"
 )
 
 type Interface interface {
-	Create(action models.TokenAction, viewer *models.User, data map[string]interface{}) error
-	Activate(action models.TokenAction, token_code string, viewer *models.User) (models.Token, error)
+	Create(action models.TokenAction, viewer models.User, data map[string]interface{}) error
+	Activate(action models.TokenAction, token_code string, viewer models.User) (models.Token, error)
 }
 
 type SenderInterface interface {
@@ -21,11 +21,11 @@ type SenderInterface interface {
 }
 
 type TokenPort struct {
-	db      *gorm.DB
+	db      ports.DB
 	senders []SenderInterface
 }
 
-func New(db *gorm.DB, senders []SenderInterface) TokenPort {
+func New(db ports.DB, senders []SenderInterface) TokenPort {
 	return TokenPort{db, senders}
 }
 
@@ -57,7 +57,7 @@ func (t *TokenPort) send(token models.Token) error {
 	return errors
 }
 
-func (t *TokenPort) Create(action models.TokenAction, viewer *models.User, data map[string]interface{}) error {
+func (t *TokenPort) Create(action models.TokenAction, viewer models.User, data map[string]interface{}) error {
 	token := models.Token{
 		ExpiresAt: time.Now().Add(time.Hour * time.Duration(1)),
 		Action:    action,
@@ -65,11 +65,11 @@ func (t *TokenPort) Create(action models.TokenAction, viewer *models.User, data 
 		UserID:    viewer.ID,
 	}
 
-	if err := t.db.Create(&token).Error; err != nil {
+	if err := t.db.Token().Create(&token); err != nil {
 		return fmt.Errorf("create: %w", err)
 	}
 
-	token.User = *viewer
+	token.User = viewer
 
 	if err := t.send(token); err != nil {
 		return fmt.Errorf("send: %w", err)
@@ -78,19 +78,17 @@ func (t *TokenPort) Create(action models.TokenAction, viewer *models.User, data 
 	return nil
 }
 
-func (t *TokenPort) Activate(action models.TokenAction, token_code string, viewer *models.User) (models.Token, error) {
-	if viewer == nil {
-		return models.Token{}, fmt.Errorf("unauthorized")
-	}
-
-	token := models.Token{}
-
-	if err := t.db.Take(&token, "id = ? and user_id = ?", token_code, viewer.ID).Error; err != nil {
-		return models.Token{}, fmt.Errorf("take: %w", err)
+func (t *TokenPort) Activate(action models.TokenAction, token_code string, viewer models.User) (models.Token, error) {
+	token, err := t.db.Token().Take(ports.TokenTakeConfig{
+		IDs:     []string{token_code},
+		UserIDs: []string{viewer.ID},
+	})
+	if err != nil {
+		return token, fmt.Errorf("db take: %w", err)
 	}
 
 	if token.Action != action {
-		return models.Token{}, fmt.Errorf("action not match")
+		return token, fmt.Errorf("action not match")
 	}
 
 	if token.ActivatedAt.Valid {
@@ -102,8 +100,8 @@ func (t *TokenPort) Activate(action models.TokenAction, token_code string, viewe
 		Valid: true,
 	}
 
-	if err := t.db.Save(&token).Error; err != nil {
-		return models.Token{}, fmt.Errorf("save: %w", err)
+	if err := t.db.Token().Update(&token); err != nil {
+		return token, fmt.Errorf("save: %w", err)
 	}
 
 	return token, nil

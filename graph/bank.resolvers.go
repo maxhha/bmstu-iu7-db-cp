@@ -15,13 +15,12 @@ func (r *bankResolver) Account(ctx context.Context, obj *models.Bank) (*models.B
 		return nil, fmt.Errorf("bank is nil")
 	}
 
-	account := models.Account{}
-
-	if err := r.DB.Take(&account, "type = ? AND bank_id = ?", models.AccountTypeBank, obj.ID).Error; err != nil {
+	account, err := r.DB.Bank().GetAccount(*obj)
+	if err != nil {
 		return nil, fmt.Errorf("take: %w", err)
 	}
 
-	return &models.BankAccount{Account: account}, nil
+	return &account, nil
 }
 
 // Bank returns generated.BankResolver implementation.

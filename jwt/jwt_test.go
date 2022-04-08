@@ -26,7 +26,7 @@ func TestUserTokens(t *testing.T) {
 		return
 	}
 
-	if *parsed_id != id {
-		t.Errorf("parsed_id not equal id: \"%s\" != \"%s\"", *parsed_id, id)
+	if parsed_id != id {
+		t.Errorf("parsed_id not equal id: \"%s\" != \"%s\"", parsed_id, id)
 	}
 }

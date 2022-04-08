@@ -1,9 +1,14 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"database/sql"
+	"time"
+)
 
 type Bank struct {
-	gorm.Model
-	ID   string `gorm:"default:generated();" json:"id"`
-	Name string `json:"name"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt sql.NullTime
 }

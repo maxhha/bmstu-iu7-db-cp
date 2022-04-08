@@ -9,12 +9,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func init() {
@@ -23,32 +20,13 @@ func init() {
 }
 
 type AuthSuite struct {
-	test.DBSuite
+	suite.Suite
+	db      test.DBMock
 	handler gin.HandlerFunc
 }
 
 func (s *AuthSuite) SetupTest() {
-	var err error
-	s.SqlDB, s.SqlMock, err = sqlmock.New()
-	require.NoError(s.T(), err)
-	require.NotNil(s.T(), s.SqlDB)
-	require.NotNil(s.T(), s.SqlMock)
-
-	dialector := postgres.New(postgres.Config{
-		DSN:                  "sqlmock_db_0",
-		DriverName:           "postgres",
-		Conn:                 s.SqlDB,
-		PreferSimpleProtocol: true,
-	})
-
-	s.DB, err = gorm.Open(dialector, &gorm.Config{})
-	require.NoError(s.T(), err)
-
-	s.handler = New(s.DB)
-}
-
-func (s *AuthSuite) TearDownTest() {
-	s.SqlDB.Close()
+	s.handler = New(&s.db)
 }
 
 // Test User in context if token passed
@@ -65,13 +43,12 @@ func (s *AuthSuite) TestUser() {
 		},
 	}
 
-	s.SqlMock.ExpectQuery("SELECT \\* FROM \"users\" WHERE id =").
-		WithArgs(id).
-		WillReturnRows(test.MockRows(models.User{ID: id}))
+	s.db.UserMock.On("Get", id).Return(models.User{ID: id}, nil)
 
 	s.handler(&ctx)
 
-	user := ForViewer(ctx.Request.Context())
+	user, err := ForViewer(ctx.Request.Context())
+	require.NoError(s.T(), err)
 	require.NotNil(s.T(), user)
 	require.Equal(s.T(), user.ID, id)
 }
@@ -90,14 +67,12 @@ func (s *AuthSuite) TestUnknownUser() {
 		},
 	}
 
-	s.SqlMock.ExpectQuery("SELECT \\* FROM \"users\" WHERE id =").
-		WithArgs(id).
-		WillReturnError(sql.ErrNoRows)
+	s.db.UserMock.On("Get", id).Return(models.User{}, sql.ErrNoRows)
 
 	s.handler(&ctx)
 
-	user := ForViewer(ctx.Request.Context())
-	require.Nil(s.T(), user)
+	_, err = ForViewer(ctx.Request.Context())
+	require.ErrorIs(s.T(), err, ErrUnauthorized)
 }
 
 func TestAuthSuite(t *testing.T) {

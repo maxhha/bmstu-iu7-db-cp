@@ -1,4 +1,4 @@
-package graph
+package database
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func PaginationQueryByCreatedAtDesc(query *gorm.DB, first *int, after *string) (*gorm.DB, error) {
+func paginationQueryByCreatedAtDesc(query *gorm.DB, first *int, after *string) (*gorm.DB, error) {
 	pagination := query.Order("created_at desc")
 
 	if first != nil {
