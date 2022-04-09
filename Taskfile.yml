@@ -104,6 +104,11 @@ tasks:
     cmds:
       - cat {{.IN}} | grep -v "_gen.go\|_suite.go\|generated.go\|.pb.go" > {{.OUT}}
 
+  test:
+    desc: Run test with colorful output
+    cmds:
+      - grc -c grc-test.conf go test {{.CLI_ARGS}}
+
   test:unit:
     desc: Get code coverage by unit tests
     deps:

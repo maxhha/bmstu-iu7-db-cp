@@ -56,7 +56,7 @@ func (d *tokenDB) Create(token *models.Token) error {
 	t := Token{}
 	t.copy(token)
 	if err := d.db.Create(&t).Error; err != nil {
-		return fmt.Errorf("create: %w", err)
+		return fmt.Errorf("create: %w", convertError(err))
 	}
 
 	*token = t.into()

@@ -17,7 +17,12 @@ func paginationQueryByCreatedAtDesc(query *gorm.DB, first *int, after *string) (
 	}
 
 	if after != nil {
-		afterCreatedAt := query.Where("id = ?", after).Select("created_at")
+		afterCreatedAt := query.
+			Session(&gorm.Session{NewDB: true}).
+			Model(query.Statement.Model).
+			Where("id = ?", after).
+			Select("created_at")
+
 		pagination = pagination.Where("created_at < ANY(?)", afterCreatedAt)
 	}
 

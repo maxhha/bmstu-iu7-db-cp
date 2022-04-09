@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -61,34 +60,6 @@ func (f *UserForm) copy(form *models.UserForm) {
 	f.CreatedAt = form.CreatedAt
 	f.UpdatedAt = form.UpdatedAt
 	f.DeletedAt = form.DeletedAt
-}
-
-func (f *UserForm) fill(form *models.UserForm, fields []ports.UserFormField) error {
-	if form == nil {
-		return fmt.Errorf("form is nil")
-	}
-	var errors *multierror.Error
-	for _, field := range fields {
-		switch field {
-		case ports.UserFormFieldState:
-			f.State = form.State
-		case ports.UserFormFieldDeclainReason:
-			f.DeclainReason = form.DeclainReason
-		case ports.UserFormFieldEmail:
-			f.Email = form.Email
-		case ports.UserFormFieldPhone:
-			f.Phone = form.Phone
-		case ports.UserFormFieldPassword:
-			f.Phone = form.Password
-		default:
-			errors = multierror.Append(
-				errors,
-				fmt.Errorf("unknown field '%s'", field),
-			)
-		}
-	}
-
-	return errors.ErrorOrNil()
 }
 
 var userFormFieldToColumn = map[ports.UserFormField]string{

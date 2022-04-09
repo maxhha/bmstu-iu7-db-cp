@@ -41,7 +41,7 @@ func (u *User) copy(user *models.User) {
 func (d *userDB) Get(id string) (models.User, error) {
 	obj := User{}
 	if err := d.db.Take(&obj, "id = ?", id).Error; err != nil {
-		return models.User{}, err
+		return models.User{}, fmt.Errorf("take: %w", convertError(err))
 	}
 
 	return obj.into(), nil
@@ -65,12 +65,12 @@ func (d *userDB) Pagination(config ports.UserPaginationConfig) (models.UsersConn
 	query := d.db.Model(&User{})
 	query, err := paginationQueryByCreatedAtDesc(query, config.First, config.After)
 	if err != nil {
-		return models.UsersConnection{}, fmt.Errorf("pagination: %w", err)
+		return models.UsersConnection{}, fmt.Errorf("pagination: %w", convertError(err))
 	}
 
-	var objs []models.User
+	var objs []User
 	if err := query.Find(&objs).Error; err != nil {
-		return models.UsersConnection{}, fmt.Errorf("find: %w", err)
+		return models.UsersConnection{}, fmt.Errorf("find: %w", convertError(err))
 	}
 
 	if len(objs) == 0 {
@@ -88,7 +88,7 @@ func (d *userDB) Pagination(config ports.UserPaginationConfig) (models.UsersConn
 
 	edges := make([]*models.UsersConnectionEdge, 0, len(objs))
 	for _, obj := range objs {
-		node := obj
+		node := obj.into()
 
 		edges = append(edges, &models.UsersConnectionEdge{
 			Cursor: obj.ID,

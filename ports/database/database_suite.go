@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql/driver"
+	"fmt"
 	"reflect"
 	"sync"
 
@@ -16,6 +17,23 @@ import (
 )
 
 func MockRows(objs ...interface{}) *sqlmock.Rows {
+	if reflect.ValueOf(objs[0]).Kind() == reflect.Slice {
+		if len(objs) > 1 {
+			panic(fmt.Errorf("objs must have one element if first element is slice"))
+		}
+
+		s := reflect.ValueOf(objs[0])
+		if s.IsNil() {
+			return nil
+		}
+
+		objs = make([]interface{}, s.Len())
+
+		for i := 0; i < s.Len(); i++ {
+			objs[i] = s.Index(i).Interface()
+		}
+	}
+
 	s, err := schema.Parse(objs[0], &sync.Map{}, schema.NamingStrategy{})
 	if err != nil {
 		panic("failed to create schema")
