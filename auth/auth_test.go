@@ -3,7 +3,7 @@ package auth
 import (
 	"auction-back/jwt"
 	"auction-back/models"
-	"auction-back/test"
+	"auction-back/ports"
 	"database/sql"
 	"net/http"
 	"os"
@@ -21,7 +21,7 @@ func init() {
 
 type AuthSuite struct {
 	suite.Suite
-	db      test.DBMock
+	db      ports.DBMock
 	handler gin.HandlerFunc
 }
 

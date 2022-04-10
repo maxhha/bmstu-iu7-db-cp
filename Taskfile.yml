@@ -74,35 +74,21 @@ tasks:
     status:
       - test -d out
 
-  build:portmocksgen:
-    desc: Build tool for generating mocks of ports interfaces
-    deps:
-      - dir:out
-    cmds:
-      - go build -o out/portmocksgen.out codegen/portmocks/main.go
-    sources:
-      - codegen/portmocks/*.go
-    generates:
-      - out/portmocksgen.out
-
   portmocksgen:
     desc: Generates mocks for ports interfaces
-    deps:
-      - build:portmocksgen
     cmds:
-      - out/portmocksgen.out portmocksgen.yml
-      - gofmt -s -w test/*_gen.go
+      - go generate -run "/codegen/portmocks/main.go" ./...
     sources:
       - portmocksgen.yml
-      - ports/database.go
-      - out/portmocksgen.out
+      - ports/*.go
+      - codegen/portmocks/*
     generates:
-      - test/database.go
+      - ports/*_mock.go
 
   filter-cover:
     desc: Filters generated files from coverage output
     cmds:
-      - cat {{.IN}} | grep -v "_gen.go\|_suite.go\|generated.go\|.pb.go" > {{.OUT}}
+      - cat {{.IN}} | grep -v "_gen.go\|_suite.go\|generated.go\|.pb.go\|_mock.go" > {{.OUT}}
 
   test:
     desc: Run test with colorful output

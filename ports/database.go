@@ -2,6 +2,8 @@ package ports
 
 import "auction-back/models"
 
+//go:generate go run ../codegen/portmocks/main.go --config ../portmocksgen.yml --in database.go --out database_mock.go --outpkg ports
+
 type UserFormField string
 
 const (

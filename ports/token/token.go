@@ -10,22 +10,12 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-type Interface interface {
-	Create(action models.TokenAction, viewer models.User, data map[string]interface{}) error
-	Activate(action models.TokenAction, token_code string, viewer models.User) (models.Token, error)
-}
-
-type SenderInterface interface {
-	Name() string
-	Send(models.Token) (bool, error)
-}
-
 type TokenPort struct {
 	db      ports.DB
-	senders []SenderInterface
+	senders []ports.Sender
 }
 
-func New(db ports.DB, senders []SenderInterface) TokenPort {
+func New(db ports.DB, senders []ports.Sender) TokenPort {
 	return TokenPort{db, senders}
 }
 

@@ -5,6 +5,7 @@ import (
 	"auction-back/graph"
 	"auction-back/graph/generated"
 	"auction-back/jwt"
+	"auction-back/ports"
 	"auction-back/ports/bank"
 	"auction-back/ports/role"
 	"auction-back/ports/token"
@@ -35,7 +36,7 @@ func init() {
 func Init() *gin.Engine {
 	db := database.Connect()
 
-	senders := []token.SenderInterface{
+	senders := []ports.Sender{
 		emailTokenSender(),
 		phoneTokenSender(&db),
 	}

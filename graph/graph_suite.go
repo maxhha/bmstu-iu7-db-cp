@@ -1,17 +1,17 @@
 package graph
 
 import (
-	"auction-back/test"
+	"auction-back/ports"
 
 	"github.com/stretchr/testify/suite"
 )
 
 type GraphSuite struct {
 	suite.Suite
-	DB        test.DBMock
-	TokenMock test.TokenPort
-	BankMock  test.BankPort
-	RoleMock  test.RolePort
+	DB        ports.DBMock
+	TokenMock ports.TokenMock
+	BankMock  ports.BankMock
+	RoleMock  ports.RoleMock
 	resolver  *Resolver
 }
 
