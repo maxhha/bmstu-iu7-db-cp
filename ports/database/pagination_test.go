@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,7 +40,12 @@ func (s *PaginationQueryByCreatedAtDescSuite) TestGetFirstNQuery() {
 
 	assert.Equal(
 		s.T(),
-		fmt.Sprintf(`SELECT * FROM "accounts" WHERE user_id = 'USER_ID' ORDER BY created_at desc LIMIT %d`, first+1),
+		s.SQL(`
+			SELECT *
+			FROM "accounts"
+			WHERE user_id = 'USER_ID'
+			ORDER BY created_at desc LIMIT %d
+		`, first+1),
 		query,
 	)
 }
@@ -58,10 +62,18 @@ func (s *PaginationQueryByCreatedAtDescSuite) TestGetAfterQuery() {
 
 	assert.Equal(
 		s.T(),
-		fmt.Sprintf(
-			"SELECT * FROM \"accounts\" WHERE user_id = 'USER_ID' AND created_at < ANY(SELECT \"created_at\" FROM \"accounts\" WHERE id = '%s') ORDER BY created_at desc",
-			after,
-		),
+		s.SQL(`
+			SELECT *
+			FROM "accounts"
+			WHERE user_id = 'USER_ID' 
+			AND created_at < ANY(
+				SELECT "created_at"
+				FROM "accounts"
+				WHERE user_id = 'USER_ID'
+				AND id = '%s'
+			)
+			ORDER BY created_at desc
+		`, after),
 		query,
 	)
 }

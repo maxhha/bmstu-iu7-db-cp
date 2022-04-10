@@ -4,7 +4,6 @@ import (
 	"auction-back/models"
 	"auction-back/ports"
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -67,9 +66,19 @@ func (d *productDB) Create(product *models.Product) error {
 	return nil
 }
 
-func (d *productDB) Pagination(config ports.ProductPaginationConfig) (models.ProductsConnection, error) {
-	query := d.db.Model(&Product{})
+func (d *productDB) filter(query *gorm.DB, config models.ProductsFilter) *gorm.DB {
+	if len(config.OwnerIDs) > 0 {
+		query = query.Joins(
+			"JOIN ( ? ) ofd ON products.id = ofd.product_id AND ofd.owner_n = 1 AND ofd.owner_id IN (?) ",
+			d.ownersNumberedQuery(query),
+			config.OwnerIDs,
+		)
+	}
+	return query
+}
 
+func (d *productDB) Pagination(config ports.ProductPaginationConfig) (models.ProductsConnection, error) {
+	query := d.filter(d.db.Model(&Product{}), config.Filter)
 	query, err := paginationQueryByCreatedAtDesc(query, config.First, config.After)
 
 	if err != nil {
@@ -120,30 +129,43 @@ func (d *productDB) GetCreator(p models.Product) (models.User, error) {
 	return d.User().Get(p.CreatorID)
 }
 
-func (d *productDB) GetOwner(p models.Product) (models.User, error) {
-	lastAuctionFinishedAtQuery := d.db.Model(&Auction{}).
-		Select("MAX(finished_at)").
-		Where("product_id = ?", p.ID)
+// Query all owners of queried products.
+// Returns select query with fields: product_id, owner_id, from_date
+func (d *productDB) ownersQuery(query *gorm.DB) *gorm.DB {
+	creators := query.Session(&gorm.Session{Initialized: true}).
+		Model(&Product{}).
+		Select("id as product_id, creator_id as owner_id, created_at as from_date")
 
-	lastBuyerQuery := d.db.Model(&Auction{}).
-		Select("buyer_id").
-		Where("finished_at = ?", lastAuctionFinishedAtQuery)
+	buyers := query.Session(&gorm.Session{Initialized: true}).
+		Model(&Product{}).
+		Select("products.id as product_id, auctions.buyer_id as owner_id, auctions.finished_at as from_date").
+		Joins("FULL JOIN auctions ON auctions.product_id = products.id")
+
+	return d.db.Raw("? UNION ALL ?", creators, buyers)
+}
+
+// Query current owner of products
+// Returns select query with fields: product_id, owner_id, from_date, owner_n
+func (d *productDB) ownersNumberedQuery(query *gorm.DB) *gorm.DB {
+	query = d.ownersQuery(query)
+
+	ownersNumbered := d.db.Table("(?) as ofd", query)
+
+	ownersNumbered = ownersNumbered.Select(
+		"*, ROW_NUMBER() OVER(PARTITION BY ofd.product_id ORDER BY ofd.from_date DESC) as owner_n",
+	)
+
+	return ownersNumbered
+}
+
+func (d *productDB) GetOwner(p models.Product) (models.User, error) {
+	query := d.db.Model(&Product{}).Where("id = ?", p.ID)
+	query = d.ownersNumberedQuery(query)
 
 	owner := User{}
-	err := d.db.Take(&owner, "id IN ?", lastBuyerQuery).Error
-	if err == nil {
-		return owner.into(), err
+	if err := query.Joins("JOIN users ON users.id = owner_id AND owner_n = 1").Take(&owner).Error; err != nil {
+		return models.User{}, fmt.Errorf("take owner: %w", convertError(err))
 	}
 
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return models.User{}, fmt.Errorf("take owner: %w", err)
-	}
-
-	creator, err := d.User().Get(p.CreatorID)
-
-	if err != nil {
-		return creator, fmt.Errorf("ensure creator: %w", err)
-	}
-
-	return creator, nil
+	return owner.into(), nil
 }

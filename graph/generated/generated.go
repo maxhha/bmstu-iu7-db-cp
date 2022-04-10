@@ -1744,6 +1744,10 @@ type ProductsConnection {
   edges: [ProductsConnectionEdge!]!
 }
 
+input ProductsFilter {
+  ownerIDs: [String!] = []
+}
+
 extend type Query {
   marketProducts(first: Int, after: String): ProductsConnection!
 }
@@ -8848,6 +8852,33 @@ func (ec *executionContext) unmarshalInputOfferProductInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputProductsFilter(ctx context.Context, obj interface{}) (models.ProductsFilter, error) {
+	var it models.ProductsFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["ownerIDs"]; !present {
+		asMap["ownerIDs"] = []interface{}{}
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "ownerIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerIDs"))
+			it.OwnerIDs, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRemoveOfferInput(ctx context.Context, obj interface{}) (models.RemoveOfferInput, error) {
 	var it models.RemoveOfferInput
 	asMap := map[string]interface{}{}
@@ -13550,6 +13581,44 @@ func (ec *executionContext) unmarshalOString2string(ctx context.Context, v inter
 func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

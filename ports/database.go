@@ -22,8 +22,9 @@ type AccountPaginationConfig struct {
 }
 
 type ProductPaginationConfig struct {
-	First *int
-	After *string
+	Filter models.ProductsFilter
+	First  *int
+	After  *string
 }
 
 type UserFormPaginationConfig struct {

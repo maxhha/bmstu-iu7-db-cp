@@ -92,6 +92,10 @@ type ProductsConnectionEdge struct {
 	Node   *Product `json:"node"`
 }
 
+type ProductsFilter struct {
+	OwnerIDs []string `json:"ownerIDs"`
+}
+
 type RemoveOfferInput struct {
 	OfferID string `json:"offerId"`
 }

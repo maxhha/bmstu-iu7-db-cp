@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	"database/sql"
@@ -99,4 +100,8 @@ func (s *DatabaseSuite) SetupTest() {
 
 func (s *DatabaseSuite) TearDownTest() {
 	s.SqlDB.Close()
+}
+
+func (s *DatabaseSuite) SQL(sql string, a ...interface{}) string {
+	return strings.Join(strings.Fields(fmt.Sprintf(sql, a...)), " ")
 }

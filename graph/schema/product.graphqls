@@ -60,6 +60,10 @@ type ProductsConnection {
   edges: [ProductsConnectionEdge!]!
 }
 
+input ProductsFilter {
+  ownerIDs: [String!] = []
+}
+
 extend type Query {
   marketProducts(first: Int, after: String): ProductsConnection!
 }

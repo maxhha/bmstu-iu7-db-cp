@@ -383,19 +383,28 @@ func (r *userResolver) Offers(ctx context.Context, obj *models.User, first *int,
 }
 
 func (r *userResolver) Products(ctx context.Context, obj *models.User, first *int, after *string) (*models.ProductsConnection, error) {
-	panic(fmt.Errorf("not implemented"))
-	// viewer, err := auth.ForViewer(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	// if err := r.isOwnerOrManager(viewer, obj); err != nil {
-	// 	return nil, fmt.Errorf("denied: %w", err)
-	// }
+	if err := r.isOwnerOrManager(viewer, obj); err != nil {
+		return nil, fmt.Errorf("denied: %w", err)
+	}
 
-	// query := r.DB.Where("owner_id = ?", obj.ID)
+	config := ports.ProductPaginationConfig{
+		Filter: models.ProductsFilter{
+			OwnerIDs: []string{obj.ID},
+		},
+		First: first,
+		After: after,
+	}
 
-	// return ProductPagination(query, first, after)
+	connection, err := r.DB.Product().Pagination(config)
+	if err != nil {
+		return nil, fmt.Errorf("db pagination: %w", err)
+	}
+	return &connection, nil
 }
 
 // User returns generated.UserResolver implementation.
