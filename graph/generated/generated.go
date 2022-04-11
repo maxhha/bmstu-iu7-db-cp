@@ -311,7 +311,7 @@ type MutationResolver interface {
 	CreateProduct(ctx context.Context) (*models.ProductResult, error)
 	UpdateProduct(ctx context.Context, input models.UpdateProductInput) (*models.ProductResult, error)
 	RequestModerateProduct(ctx context.Context, input models.RequestModerateProductInput) (bool, error)
-	ApproveModerateProduct(ctx context.Context, input models.TokenInput) (bool, error)
+	ApproveModerateProduct(ctx context.Context, input models.TokenInput) (*models.ProductResult, error)
 	OfferProduct(ctx context.Context, input models.OfferProductInput) (*models.OfferProductResult, error)
 	TakeOffProduct(ctx context.Context, input models.TakeOffProductInput) (*models.TakeOffProductResult, error)
 	SellProduct(ctx context.Context, input models.SellProductInput) (*models.SellProductResult, error)
@@ -1806,7 +1806,7 @@ extend type Mutation {
   """
   Set product state to moderating
   """
-  approveModerateProduct(input: TokenInput!): Boolean!
+  approveModerateProduct(input: TokenInput!): ProductResult!
 
   offerProduct(input: OfferProductInput!): OfferProductResult!
   takeOffProduct(input: TakeOffProductInput!): TakeOffProductResult!
@@ -3433,9 +3433,9 @@ func (ec *executionContext) _Mutation_approveModerateProduct(ctx context.Context
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*models.ProductResult)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNProductResult2ᚖauctionᚑbackᚋmodelsᚐProductResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_offerProduct(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {

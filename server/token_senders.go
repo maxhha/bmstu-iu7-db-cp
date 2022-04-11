@@ -48,6 +48,25 @@ func phoneTokenSender(DB ports.DB) *token_sender.TokenSender {
 		AddressEnvVarName: "PHONE_NOTIFIER_ADDRESS",
 	}
 
+	getUserPhone := func(token models.Token) (string, error) {
+		user, err := DB.Token().GetUser(token)
+		if err != nil {
+			return "", fmt.Errorf("db token get user: %w", err)
+		}
+
+		form, err := DB.User().MostRelevantUserForm(user)
+
+		if err != nil {
+			return "", fmt.Errorf("last relevant user form: %w", err)
+		}
+
+		if form.Phone == nil {
+			return "", fmt.Errorf("user form phone is nil")
+		}
+
+		return *form.Phone, nil
+	}
+
 	config.ReceiverGetters = map[models.TokenAction]token_sender.ReceiverGetter{
 		models.TokenActionSetUserPhone: func(token models.Token) (string, error) {
 			phone, ok := token.Data["phone"]
@@ -62,29 +81,14 @@ func phoneTokenSender(DB ports.DB) *token_sender.TokenSender {
 
 			return str, nil
 		},
-		models.TokenActionModerateUserForm: func(token models.Token) (string, error) {
-			user, err := DB.Token().GetUser(token)
-			if err != nil {
-				return "", fmt.Errorf("db token get user: %w", err)
-			}
-
-			form, err := DB.User().MostRelevantUserForm(user)
-
-			if err != nil {
-				return "", fmt.Errorf("last relevant user form: %w", err)
-			}
-
-			if form.Phone == nil {
-				return "", fmt.Errorf("user form phone is nil")
-			}
-
-			return *form.Phone, nil
-		},
+		models.TokenActionModerateUserForm: getUserPhone,
+		models.TokenActionModerateProduct:  getUserPhone,
 	}
 
 	config.DataGetters = map[models.TokenAction]token_sender.DataGetter{
 		models.TokenActionSetUserPhone:     dataWithTokenId,
 		models.TokenActionModerateUserForm: dataWithTokenId,
+		models.TokenActionModerateProduct:  dataWithTokenId,
 	}
 
 	return token_sender.New(config)

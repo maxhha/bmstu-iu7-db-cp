@@ -35,7 +35,7 @@ func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, e
 
 	data := map[string]interface{}{}
 	if err := r.TokenPort.Create(models.TokenActionModerateUserForm, viewer, data); err != nil {
-		return false, err
+		return false, fmt.Errorf("token create: %w", err)
 	}
 
 	return true, nil

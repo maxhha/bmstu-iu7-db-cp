@@ -11,6 +11,7 @@ const (
 	TokenActionSetUserEmail     TokenAction = "SET_USER_EMAIL"
 	TokenActionSetUserPhone     TokenAction = "SET_USER_PHONE"
 	TokenActionModerateUserForm TokenAction = "MODERATE_USER_FORM"
+	TokenActionModerateProduct  TokenAction = "MODERATE_PRODUCT"
 )
 
 type Token struct {
