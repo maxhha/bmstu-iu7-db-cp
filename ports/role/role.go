@@ -10,10 +10,6 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
-type Interface interface {
-	HasRole(roleType models.RoleType, viewer models.User) error
-}
-
 type RolePort struct {
 	db ports.DB
 }

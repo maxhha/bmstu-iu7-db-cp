@@ -26,6 +26,8 @@ func InitPasswordHashSalt() {
 	passwordHashSalt = []byte(key)
 }
 
+var ErrUserFormModerating = errors.New("moderating")
+
 func getOrCreateUserDraftForm(DB ports.DB, viewer models.User) (models.UserForm, error) {
 	form, err := DB.UserForm().Take(ports.UserFormTakeConfig{
 		OrderBy:   ports.UserFormFieldCreatedAt,
@@ -36,7 +38,7 @@ func getOrCreateUserDraftForm(DB ports.DB, viewer models.User) (models.UserForm,
 	})
 
 	if err == nil {
-		if form.State == models.UserFormStateCreated || form.State == models.UserFormStateDeclained {
+		if form.IsEditable() {
 			return form, nil
 		} else if form.State == models.UserFormStateApproved {
 			// clone form
@@ -45,7 +47,7 @@ func getOrCreateUserDraftForm(DB ports.DB, viewer models.User) (models.UserForm,
 			form.CreatedAt = time.Time{}
 			form.UpdatedAt = time.Time{}
 		} else if form.State == models.UserFormStateModerating {
-			return form, fmt.Errorf("moderating")
+			return form, ErrUserFormModerating
 		} else {
 			return form, fmt.Errorf("unknown form state: %s", form.State)
 		}

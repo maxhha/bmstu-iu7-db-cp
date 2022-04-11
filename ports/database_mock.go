@@ -98,6 +98,11 @@ func (m *ProductDBMock) Create(product *models.Product) error {
 	return args.Error(0)
 }
 
+func (m *ProductDBMock) Get(id string) (models.Product, error) {
+	args := m.Called(id)
+	return args.Get(0).(models.Product), args.Error(1)
+}
+
 func (m *ProductDBMock) GetCreator(product models.Product) (models.User, error) {
 	args := m.Called(product)
 	return args.Get(0).(models.User), args.Error(1)
@@ -111,6 +116,11 @@ func (m *ProductDBMock) GetOwner(product models.Product) (models.User, error) {
 func (m *ProductDBMock) Pagination(config ProductPaginationConfig) (models.ProductsConnection, error) {
 	args := m.Called(config)
 	return args.Get(0).(models.ProductsConnection), args.Error(1)
+}
+
+func (m *ProductDBMock) Update(product *models.Product) error {
+	args := m.Called(product)
+	return args.Error(0)
 }
 
 func (m *RoleDBMock) Find(config RoleFindConfig) ([]models.Role, error) {

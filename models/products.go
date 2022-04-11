@@ -15,3 +15,7 @@ type Product struct {
 	UpdatedAt   time.Time
 	DeletedAt   sql.NullTime
 }
+
+func (p *Product) IsEditable() bool {
+	return p.State == ProductStateCreated || p.State == ProductStateDeclained
+}

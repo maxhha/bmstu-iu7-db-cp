@@ -59,10 +59,34 @@ func (d *productDB) Create(product *models.Product) error {
 	p := Product{}
 	p.copy(product)
 	if err := d.db.Create(&p).Error; err != nil {
-		return fmt.Errorf("create: %w", err)
+		return fmt.Errorf("create: %w", convertError(err))
 	}
 
 	*product = p.into()
+	return nil
+}
+
+func (d *productDB) Get(id string) (models.Product, error) {
+	obj := Product{}
+	if err := d.db.Take(&obj, "id = ?", id).Error; err != nil {
+		return models.Product{}, fmt.Errorf("take: %w", convertError(err))
+	}
+
+	return obj.into(), nil
+}
+
+func (d *productDB) Update(product *models.Product) error {
+	if product == nil {
+		return fmt.Errorf("product is nil")
+	}
+
+	p := Product{}
+	p.copy(product)
+
+	if err := d.db.Save(&p).Error; err != nil {
+		return fmt.Errorf("save: %w", convertError(err))
+	}
+
 	return nil
 }
 
@@ -159,11 +183,13 @@ func (d *productDB) ownersNumberedQuery(query *gorm.DB) *gorm.DB {
 }
 
 func (d *productDB) GetOwner(p models.Product) (models.User, error) {
-	query := d.db.Model(&Product{}).Where("id = ?", p.ID)
+	query := d.db.Model(&Product{}).Where("products.id = ?", p.ID)
 	query = d.ownersNumberedQuery(query)
 
 	owner := User{}
-	if err := query.Joins("JOIN users ON users.id = owner_id AND owner_n = 1").Take(&owner).Error; err != nil {
+	if err := d.db.Model(&owner).
+		Joins("JOIN ( ? ) ofd ON users.id = ofd.owner_id AND ofd.owner_n = 1", query).
+		Take(&owner).Error; err != nil {
 		return models.User{}, fmt.Errorf("take owner: %w", convertError(err))
 	}
 

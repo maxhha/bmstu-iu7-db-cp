@@ -2,13 +2,14 @@ package graph
 
 import (
 	"auction-back/models"
+	"auction-back/ports"
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
 )
 
-func (r *productResolver) isOwner(viewer models.User, product models.Product) error {
-	owner, err := r.DB.Product().GetOwner(product)
+func isProductOwner(DB ports.DB, viewer models.User, product models.Product) error {
+	owner, err := DB.Product().GetOwner(product)
 	if err != nil {
 		return fmt.Errorf("get owner: %w", err)
 	}
@@ -20,10 +21,10 @@ func (r *productResolver) isOwner(viewer models.User, product models.Product) er
 	return nil
 }
 
-func (r *productResolver) isOwnerOrManager(viewer models.User, obj models.Product) error {
+func (r *productResolver) isProductOwnerOrManager(viewer models.User, obj models.Product) error {
 	var errors error
 
-	if err := r.isOwner(viewer, obj); err != nil {
+	if err := isProductOwner(r.DB, viewer, obj); err != nil {
 		errors = multierror.Append(errors, err)
 	} else {
 		return nil

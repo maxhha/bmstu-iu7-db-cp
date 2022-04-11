@@ -22,6 +22,10 @@ type UserForm struct {
 	DeletedAt     sql.NullTime
 }
 
+func (f *UserForm) IsEditable() bool {
+	return f.State == UserFormStateCreated || f.State == UserFormStateDeclained
+}
+
 func (f *UserFormFilled) From(form *UserForm) (*UserFormFilled, error) {
 	var err error
 

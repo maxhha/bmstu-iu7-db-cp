@@ -171,7 +171,7 @@ func (d *userFormDB) Update(form *models.UserForm) error {
 	f.copy(form)
 
 	if err := d.db.Save(&f).Error; err != nil {
-		return fmt.Errorf("save: %w", err)
+		return fmt.Errorf("save: %w", convertError(err))
 	}
 
 	return nil
@@ -184,7 +184,7 @@ func (d *userFormDB) Create(form *models.UserForm) error {
 	f := UserForm{}
 	f.copy(form)
 	if err := d.db.Create(&f).Error; err != nil {
-		return fmt.Errorf("create: %w", err)
+		return fmt.Errorf("create: %w", convertError(err))
 	}
 
 	*form = f.into()

@@ -96,7 +96,9 @@ type UserFormDB interface {
 }
 
 type ProductDB interface {
+	Get(id string) (models.Product, error)
 	Create(product *models.Product) error
+	Update(product *models.Product) error
 	Pagination(config ProductPaginationConfig) (models.ProductsConnection, error)
 	GetOwner(product models.Product) (models.User, error)
 	GetCreator(product models.Product) (models.User, error)

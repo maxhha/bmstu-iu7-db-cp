@@ -15,19 +15,16 @@ import (
 
 func (r *mutationResolver) RequestModerateUserForm(ctx context.Context) (bool, error) {
 	viewer, err := auth.ForViewer(ctx)
-
 	if err != nil {
 		return false, err
 	}
 
-	form, err := r.User().DraftForm(ctx, &viewer)
-
+	form, err := getOrCreateUserDraftForm(r.DB, viewer)
 	if err != nil {
 		return false, fmt.Errorf("draft form: %w", err)
 	}
 
-	_, err = (&models.UserFormFilled{}).From(form)
-
+	_, err = (&models.UserFormFilled{}).From(&form)
 	if form.Password == nil {
 		err = multierror.Append(err, fmt.Errorf("no password"))
 	}

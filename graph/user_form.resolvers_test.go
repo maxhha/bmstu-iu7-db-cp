@@ -19,15 +19,52 @@ type RequestModerateUserFormSuite struct {
 	GraphSuite
 }
 
-func (s *RequestModerateUserFormSuite) TestRequestModerateUserForm() {
+func (s *RequestModerateUserFormSuite) TestEditableForm() {
 	viewer := models.User{ID: "user-test"}
 	phone := "phone"
 	name := "name"
 	password := "password"
 	email := "email"
 
-	draft_form := models.UserForm{
-		State:    models.UserFormStateCreated,
+	for _, state := range models.AllUserFormState {
+		form := models.UserForm{
+			State:    state,
+			Phone:    &phone,
+			Name:     &name,
+			Password: &password,
+			Email:    &email,
+		}
+		if !form.IsEditable() {
+			continue
+		}
+		ctx := auth.WithViewer(context.Background(), viewer)
+
+		s.DB.UserFormMock.On("Take", mock.Anything).Return(form, nil).Once()
+		s.TokenMock.
+			On("Create", models.TokenActionModerateUserForm, viewer, map[string]interface{}{}).
+			Return(nil)
+
+		result, err := s.resolver.Mutation().RequestModerateUserForm(ctx)
+
+		require.NoError(
+			s.T(),
+			err,
+			"should not return error for form with state %s",
+			state,
+		)
+		require.Equal(s.T(), result, true)
+	}
+}
+
+func (s *RequestModerateUserFormSuite) TestModeratingForm() {
+	viewer := models.User{ID: "user-test"}
+	phone := "phone"
+	name := "name"
+	password := "password"
+	email := "email"
+
+	form := models.UserForm{
+		State:    models.UserFormStateModerating,
 		Phone:    &phone,
 		Name:     &name,
 		Password: &password,
@@ -35,16 +72,12 @@ func (s *RequestModerateUserFormSuite) TestRequestModerateUserForm() {
 	}
 
 	ctx := auth.WithViewer(context.Background(), viewer)
-
-	s.DB.UserFormMock.On("Take", mock.Anything).Return(draft_form, nil)
-
-	s.TokenMock.
-		On("Create", models.TokenActionModerateUserForm, viewer, map[string]interface{}{}).
-		Return(nil)
+	s.DB.UserFormMock.On("Take", mock.Anything).Return(form, nil)
 
 	result, err := s.resolver.Mutation().RequestModerateUserForm(ctx)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), result, true)
+	require.ErrorIs(s.T(), err, ErrUserFormModerating)
+	require.Equal(s.T(), result, false)
+
 }
 
 func TestRequestModerateUserFormSuite(t *testing.T) {

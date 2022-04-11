@@ -8,10 +8,6 @@ import (
 	"fmt"
 )
 
-type Interface interface {
-	UserFormApproved(form models.UserForm) error
-}
-
 type BankPort struct {
 	db ports.DB
 }

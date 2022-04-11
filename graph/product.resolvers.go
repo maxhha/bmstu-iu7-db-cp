@@ -13,7 +13,6 @@ import (
 
 func (r *mutationResolver) CreateProduct(ctx context.Context) (*models.ProductResult, error) {
 	viewer, err := auth.ForViewer(ctx)
-
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +26,7 @@ func (r *mutationResolver) CreateProduct(ctx context.Context) (*models.ProductRe
 	}
 
 	if err := r.DB.Product().Create(&product); err != nil {
-		return nil, fmt.Errorf("create: %w", err)
+		return nil, fmt.Errorf("db create: %w", err)
 	}
 
 	return &models.ProductResult{
@@ -36,7 +35,34 @@ func (r *mutationResolver) CreateProduct(ctx context.Context) (*models.ProductRe
 }
 
 func (r *mutationResolver) UpdateProduct(ctx context.Context, input models.UpdateProductInput) (*models.ProductResult, error) {
-	panic(fmt.Errorf("not implemented"))
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	product, err := r.DB.Product().Get(input.ProductID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := isProductOwner(r.DB, viewer, product); err != nil {
+		return nil, err
+	}
+
+	if !product.IsEditable() {
+		return nil, fmt.Errorf("product is not editable")
+	}
+
+	product.Title = input.Title
+	product.Description = input.Description
+
+	if err := r.DB.Product().Update(&product); err != nil {
+		return nil, fmt.Errorf("db update: %w", err)
+	}
+
+	return &models.ProductResult{
+		Product: &product,
+	}, nil
 }
 
 func (r *mutationResolver) RequestModerateProduct(ctx context.Context, input models.RequestModerateProductInput) (bool, error) {
@@ -237,7 +263,7 @@ func (r *productResolver) Owner(ctx context.Context, obj *models.Product) (*mode
 		return nil, fmt.Errorf("for viewer: %w", err)
 	}
 
-	if err := r.isOwnerOrManager(viewer, *obj); err != nil {
+	if err := r.isProductOwnerOrManager(viewer, *obj); err != nil {
 		return nil, fmt.Errorf("owner or manager: %w", err)
 	}
 
