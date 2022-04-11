@@ -25,6 +25,10 @@ type RegisterSuite struct {
 	GraphSuite
 }
 
+func TestRegisterSuite(t *testing.T) {
+	suite.Run(t, new(RegisterSuite))
+}
+
 func (s *RegisterSuite) TestRegister() {
 	id := "user-test"
 
@@ -42,12 +46,40 @@ func (s *RegisterSuite) TestRegister() {
 	require.Equal(s.T(), id, token_id)
 }
 
-func TestRegisterSuite(t *testing.T) {
-	suite.Run(t, new(RegisterSuite))
+type LoginSuite struct {
+	GraphSuite
+}
+
+func TestLoginSuite(t *testing.T) {
+	suite.Run(t, new(LoginSuite))
+}
+
+func (s *LoginSuite) TestSuccess() {
+	userID := "test-user"
+	password := "12345"
+	passwordHash, err := hashPassword(password)
+	require.NoError(s.T(), err)
+
+	form := models.UserForm{UserID: userID, Password: &passwordHash}
+	s.DB.UserFormMock.On("GetLoginForm", mock.Anything).Return(form, nil)
+
+	ctx := context.Background()
+	input := models.LoginInput{Password: password}
+	result, err := s.resolver.Mutation().Login(ctx, input)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), result)
+
+	uid, err := jwt.ParseUser(result.Token)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), userID, uid)
 }
 
 type ApproveSetUserEmailSuite struct {
 	GraphSuite
+}
+
+func TestApproveSetUserEmailSuite(t *testing.T) {
+	suite.Run(t, new(ApproveSetUserEmailSuite))
 }
 
 func (s *ApproveSetUserEmailSuite) TestApproveSetUserEmail() {
@@ -81,12 +113,12 @@ func (s *ApproveSetUserEmailSuite) TestApproveSetUserEmail() {
 	require.Equal(s.T(), result.User, &viewer)
 }
 
-func TestApproveSetUserEmailSuite(t *testing.T) {
-	suite.Run(t, new(ApproveSetUserEmailSuite))
-}
-
 type UpdateUserPasswordSuite struct {
 	GraphSuite
+}
+
+func TestUpdateUserPasswordSuite(t *testing.T) {
+	suite.Run(t, new(UpdateUserPasswordSuite))
 }
 
 func (s *UpdateUserPasswordSuite) TestUpdatePassword() {
@@ -114,12 +146,12 @@ func (s *UpdateUserPasswordSuite) TestUpdatePassword() {
 	require.Equal(s.T(), result.User, &viewer)
 }
 
-func TestUpdateUserPasswordSuite(t *testing.T) {
-	suite.Run(t, new(UpdateUserPasswordSuite))
-}
-
 type ViewerSuite struct {
 	GraphSuite
+}
+
+func TestViewerSuite(t *testing.T) {
+	suite.Run(t, new(ViewerSuite))
 }
 
 func (s *ViewerSuite) TestViewer() {
@@ -130,8 +162,4 @@ func (s *ViewerSuite) TestViewer() {
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), result)
 	require.Equal(s.T(), result, &viewer)
-}
-
-func TestViewerSuite(t *testing.T) {
-	suite.Run(t, new(ViewerSuite))
 }
