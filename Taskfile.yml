@@ -51,10 +51,20 @@ tasks:
     cmds:
       - (docker logs -f auction-mock-notifier-{{.ENV}}-1 | sed 's/^/[NOTIFIER] /') &
 
+  restart:migration:
+    desc: Restarts migration container
+    cmds:
+      - docker restart auction-migration-{{.ENV}}-1 || true
+    sources:
+      - migrations/*
+
   dev:
     desc: Start dev server
     deps:
       - task: build:mock_notifier
+        vars:
+          ENV: dev
+      - task: restart:migration
         vars:
           ENV: dev
     env:

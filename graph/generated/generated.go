@@ -89,22 +89,24 @@ type ComplexityRoot struct {
 	Mutation struct {
 		ApproveModerateProduct  func(childComplexity int, input models.TokenInput) int
 		ApproveModerateUserForm func(childComplexity int, input models.TokenInput) int
+		ApproveProduct          func(childComplexity int, input models.ProductInput) int
 		ApproveSetUserEmail     func(childComplexity int, input models.TokenInput) int
 		ApproveSetUserPhone     func(childComplexity int, input models.TokenInput) int
 		ApproveUserForm         func(childComplexity int, input models.ApproveUserFormInput) int
 		CreateOffer             func(childComplexity int, input models.CreateOfferInput) int
 		CreateProduct           func(childComplexity int) int
+		DeclainProduct          func(childComplexity int, input models.DeclineProductInput) int
 		DeclineUserForm         func(childComplexity int, input models.DeclineUserFormInput) int
 		Login                   func(childComplexity int, input models.LoginInput) int
-		OfferProduct            func(childComplexity int, input models.OfferProductInput) int
+		OfferProduct            func(childComplexity int, input models.ProductInput) int
 		Register                func(childComplexity int) int
 		RemoveOffer             func(childComplexity int, input models.RemoveOfferInput) int
-		RequestModerateProduct  func(childComplexity int, input models.RequestModerateProductInput) int
+		RequestModerateProduct  func(childComplexity int, input models.ProductInput) int
 		RequestModerateUserForm func(childComplexity int) int
 		RequestSetUserEmail     func(childComplexity int, input models.RequestSetUserEmailInput) int
 		RequestSetUserPhone     func(childComplexity int, input models.RequestSetUserPhoneInput) int
-		SellProduct             func(childComplexity int, input models.SellProductInput) int
-		TakeOffProduct          func(childComplexity int, input models.TakeOffProductInput) int
+		SellProduct             func(childComplexity int, input models.ProductInput) int
+		TakeOffProduct          func(childComplexity int, input models.ProductInput) int
 		UpdateProduct           func(childComplexity int, input models.UpdateProductInput) int
 		UpdateUserDraftForm     func(childComplexity int, input models.UpdateUserDraftFormInput) int
 		UpdateUserPassword      func(childComplexity int, input models.UpdateUserPasswordInput) int
@@ -177,6 +179,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		MarketProducts func(childComplexity int, first *int, after *string) int
+		Products       func(childComplexity int, first *int, after *string) int
 		UserForms      func(childComplexity int, first *int, after *string, filter *models.UserFormsFilter) int
 		Users          func(childComplexity int, first *int, after *string, filter *models.UsersFilter) int
 		Viewer         func(childComplexity int) int
@@ -310,11 +313,13 @@ type MutationResolver interface {
 	RemoveOffer(ctx context.Context, input models.RemoveOfferInput) (*models.RemoveOfferResult, error)
 	CreateProduct(ctx context.Context) (*models.ProductResult, error)
 	UpdateProduct(ctx context.Context, input models.UpdateProductInput) (*models.ProductResult, error)
-	RequestModerateProduct(ctx context.Context, input models.RequestModerateProductInput) (bool, error)
+	RequestModerateProduct(ctx context.Context, input models.ProductInput) (bool, error)
 	ApproveModerateProduct(ctx context.Context, input models.TokenInput) (*models.ProductResult, error)
-	OfferProduct(ctx context.Context, input models.OfferProductInput) (*models.OfferProductResult, error)
-	TakeOffProduct(ctx context.Context, input models.TakeOffProductInput) (*models.TakeOffProductResult, error)
-	SellProduct(ctx context.Context, input models.SellProductInput) (*models.SellProductResult, error)
+	ApproveProduct(ctx context.Context, input models.ProductInput) (*models.ProductResult, error)
+	DeclainProduct(ctx context.Context, input models.DeclineProductInput) (*models.ProductResult, error)
+	OfferProduct(ctx context.Context, input models.ProductInput) (*models.OfferProductResult, error)
+	TakeOffProduct(ctx context.Context, input models.ProductInput) (*models.TakeOffProductResult, error)
+	SellProduct(ctx context.Context, input models.ProductInput) (*models.SellProductResult, error)
 	Register(ctx context.Context) (*models.TokenResult, error)
 	Login(ctx context.Context, input models.LoginInput) (*models.TokenResult, error)
 	RequestSetUserEmail(ctx context.Context, input models.RequestSetUserEmailInput) (bool, error)
@@ -344,6 +349,7 @@ type ProductResolver interface {
 	Offers(ctx context.Context, obj *models.Product, first *int, after *string) (*models.OffersConnection, error)
 }
 type QueryResolver interface {
+	Products(ctx context.Context, first *int, after *string) (*models.ProductsConnection, error)
 	MarketProducts(ctx context.Context, first *int, after *string) (*models.ProductsConnection, error)
 	Viewer(ctx context.Context) (*models.User, error)
 	Users(ctx context.Context, first *int, after *string, filter *models.UsersFilter) (*models.UsersConnection, error)
@@ -515,6 +521,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ApproveModerateUserForm(childComplexity, args["input"].(models.TokenInput)), true
 
+	case "Mutation.approveProduct":
+		if e.complexity.Mutation.ApproveProduct == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_approveProduct_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ApproveProduct(childComplexity, args["input"].(models.ProductInput)), true
+
 	case "Mutation.approveSetUserEmail":
 		if e.complexity.Mutation.ApproveSetUserEmail == nil {
 			break
@@ -570,6 +588,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateProduct(childComplexity), true
 
+	case "Mutation.declainProduct":
+		if e.complexity.Mutation.DeclainProduct == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_declainProduct_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeclainProduct(childComplexity, args["input"].(models.DeclineProductInput)), true
+
 	case "Mutation.declineUserForm":
 		if e.complexity.Mutation.DeclineUserForm == nil {
 			break
@@ -604,7 +634,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.OfferProduct(childComplexity, args["input"].(models.OfferProductInput)), true
+		return e.complexity.Mutation.OfferProduct(childComplexity, args["input"].(models.ProductInput)), true
 
 	case "Mutation.register":
 		if e.complexity.Mutation.Register == nil {
@@ -635,7 +665,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RequestModerateProduct(childComplexity, args["input"].(models.RequestModerateProductInput)), true
+		return e.complexity.Mutation.RequestModerateProduct(childComplexity, args["input"].(models.ProductInput)), true
 
 	case "Mutation.requestModerateUserForm":
 		if e.complexity.Mutation.RequestModerateUserForm == nil {
@@ -678,7 +708,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SellProduct(childComplexity, args["input"].(models.SellProductInput)), true
+		return e.complexity.Mutation.SellProduct(childComplexity, args["input"].(models.ProductInput)), true
 
 	case "Mutation.takeOffProduct":
 		if e.complexity.Mutation.TakeOffProduct == nil {
@@ -690,7 +720,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.TakeOffProduct(childComplexity, args["input"].(models.TakeOffProductInput)), true
+		return e.complexity.Mutation.TakeOffProduct(childComplexity, args["input"].(models.ProductInput)), true
 
 	case "Mutation.updateProduct":
 		if e.complexity.Mutation.UpdateProduct == nil {
@@ -989,6 +1019,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.MarketProducts(childComplexity, args["first"].(*int), args["after"].(*string)), true
+
+	case "Query.products":
+		if e.complexity.Query.Products == nil {
+			break
+		}
+
+		args, err := ec.field_Query_products_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Products(childComplexity, args["first"].(*int), args["after"].(*string)), true
 
 	case "Query.userForms":
 		if e.complexity.Query.UserForms == nil {
@@ -1749,6 +1791,11 @@ input ProductsFilter {
 }
 
 extend type Query {
+  """
+  List all products
+  """
+  products(first: Int, after: String): ProductsConnection!
+    @hasRole(role: MANAGER)
   marketProducts(first: Int, after: String): ProductsConnection!
 }
 
@@ -1762,28 +1809,21 @@ type ProductResult {
   product: Product!
 }
 
-input RequestModerateProductInput {
+input ProductInput {
   productId: ID!
 }
 
-input OfferProductInput {
+input DeclineProductInput {
   productId: ID!
+  declainReason: String
 }
 
 type OfferProductResult {
   product: Product!
 }
 
-input TakeOffProductInput {
-  productId: ID!
-}
-
 type TakeOffProductResult {
   product: Product!
-}
-
-input SellProductInput {
-  productId: ID!
 }
 
 type SellProductResult {
@@ -1802,15 +1842,25 @@ extend type Mutation {
   """
   Request token to send product for modetaion
   """
-  requestModerateProduct(input: RequestModerateProductInput!): Boolean!
+  requestModerateProduct(input: ProductInput!): Boolean!
   """
   Set product state to moderating
   """
   approveModerateProduct(input: TokenInput!): ProductResult!
 
-  offerProduct(input: OfferProductInput!): OfferProductResult!
-  takeOffProduct(input: TakeOffProductInput!): TakeOffProductResult!
-  sellProduct(input: SellProductInput!): SellProductResult!
+  """
+  Approve product
+  """
+  approveProduct(input: ProductInput!): ProductResult! @hasRole(role: MANAGER)
+  """
+  Declain product
+  """
+  declainProduct(input: DeclineProductInput!): ProductResult!
+    @hasRole(role: MANAGER)
+
+  offerProduct(input: ProductInput!): OfferProductResult!
+  takeOffProduct(input: ProductInput!): TakeOffProductResult!
+  sellProduct(input: ProductInput!): SellProductResult!
 }
 
 type Subscription {
@@ -2195,6 +2245,21 @@ func (ec *executionContext) field_Mutation_approveModerateUserForm_args(ctx cont
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_approveProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.ProductInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNProductInput2auctionᚑbackᚋmodelsᚐProductInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_approveSetUserEmail_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2255,6 +2320,21 @@ func (ec *executionContext) field_Mutation_createOffer_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_declainProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.DeclineProductInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNDeclineProductInput2auctionᚑbackᚋmodelsᚐDeclineProductInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_declineUserForm_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2288,10 +2368,10 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 func (ec *executionContext) field_Mutation_offerProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 models.OfferProductInput
+	var arg0 models.ProductInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNOfferProductInput2auctionᚑbackᚋmodelsᚐOfferProductInput(ctx, tmp)
+		arg0, err = ec.unmarshalNProductInput2auctionᚑbackᚋmodelsᚐProductInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2318,10 +2398,10 @@ func (ec *executionContext) field_Mutation_removeOffer_args(ctx context.Context,
 func (ec *executionContext) field_Mutation_requestModerateProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 models.RequestModerateProductInput
+	var arg0 models.ProductInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNRequestModerateProductInput2auctionᚑbackᚋmodelsᚐRequestModerateProductInput(ctx, tmp)
+		arg0, err = ec.unmarshalNProductInput2auctionᚑbackᚋmodelsᚐProductInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2363,10 +2443,10 @@ func (ec *executionContext) field_Mutation_requestSetUserPhone_args(ctx context.
 func (ec *executionContext) field_Mutation_sellProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 models.SellProductInput
+	var arg0 models.ProductInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNSellProductInput2auctionᚑbackᚋmodelsᚐSellProductInput(ctx, tmp)
+		arg0, err = ec.unmarshalNProductInput2auctionᚑbackᚋmodelsᚐProductInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2378,10 +2458,10 @@ func (ec *executionContext) field_Mutation_sellProduct_args(ctx context.Context,
 func (ec *executionContext) field_Mutation_takeOffProduct_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 models.TakeOffProductInput
+	var arg0 models.ProductInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNTakeOffProductInput2auctionᚑbackᚋmodelsᚐTakeOffProductInput(ctx, tmp)
+		arg0, err = ec.unmarshalNProductInput2auctionᚑbackᚋmodelsᚐProductInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2475,6 +2555,30 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 }
 
 func (ec *executionContext) field_Query_marketProducts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_products_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *int
@@ -3379,7 +3483,7 @@ func (ec *executionContext) _Mutation_requestModerateProduct(ctx context.Context
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RequestModerateProduct(rctx, args["input"].(models.RequestModerateProductInput))
+		return ec.resolvers.Mutation().RequestModerateProduct(rctx, args["input"].(models.ProductInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3438,6 +3542,138 @@ func (ec *executionContext) _Mutation_approveModerateProduct(ctx context.Context
 	return ec.marshalNProductResult2ᚖauctionᚑbackᚋmodelsᚐProductResult(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_approveProduct(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_approveProduct_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ApproveProduct(rctx, args["input"].(models.ProductInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2auctionᚑbackᚋmodelsᚐRoleType(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.ProductResult); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/models.ProductResult`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.ProductResult)
+	fc.Result = res
+	return ec.marshalNProductResult2ᚖauctionᚑbackᚋmodelsᚐProductResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_declainProduct(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_declainProduct_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DeclainProduct(rctx, args["input"].(models.DeclineProductInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2auctionᚑbackᚋmodelsᚐRoleType(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.ProductResult); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/models.ProductResult`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.ProductResult)
+	fc.Result = res
+	return ec.marshalNProductResult2ᚖauctionᚑbackᚋmodelsᚐProductResult(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_offerProduct(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3463,7 +3699,7 @@ func (ec *executionContext) _Mutation_offerProduct(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().OfferProduct(rctx, args["input"].(models.OfferProductInput))
+		return ec.resolvers.Mutation().OfferProduct(rctx, args["input"].(models.ProductInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3505,7 +3741,7 @@ func (ec *executionContext) _Mutation_takeOffProduct(ctx context.Context, field 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().TakeOffProduct(rctx, args["input"].(models.TakeOffProductInput))
+		return ec.resolvers.Mutation().TakeOffProduct(rctx, args["input"].(models.ProductInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3547,7 +3783,7 @@ func (ec *executionContext) _Mutation_sellProduct(ctx context.Context, field gra
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().SellProduct(rctx, args["input"].(models.SellProductInput))
+		return ec.resolvers.Mutation().SellProduct(rctx, args["input"].(models.ProductInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5320,6 +5556,72 @@ func (ec *executionContext) _ProductsConnectionEdge_node(ctx context.Context, fi
 	res := resTmp.(*models.Product)
 	fc.Result = res
 	return ec.marshalNProduct2ᚖauctionᚑbackᚋmodelsᚐProduct(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_products(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_products_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().Products(rctx, args["first"].(*int), args["after"].(*string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2auctionᚑbackᚋmodelsᚐRoleType(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.ProductsConnection); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/models.ProductsConnection`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.ProductsConnection)
+	fc.Result = res
+	return ec.marshalNProductsConnection2ᚖauctionᚑbackᚋmodelsᚐProductsConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_marketProducts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -8767,6 +9069,37 @@ func (ec *executionContext) unmarshalInputDateTimeRange(ctx context.Context, obj
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDeclineProductInput(ctx context.Context, obj interface{}) (models.DeclineProductInput, error) {
+	var it models.DeclineProductInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "productId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productId"))
+			it.ProductID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "declainReason":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("declainReason"))
+			it.DeclainReason, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDeclineUserFormInput(ctx context.Context, obj interface{}) (models.DeclineUserFormInput, error) {
 	var it models.DeclineUserFormInput
 	asMap := map[string]interface{}{}
@@ -8829,8 +9162,8 @@ func (ec *executionContext) unmarshalInputLoginInput(ctx context.Context, obj in
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputOfferProductInput(ctx context.Context, obj interface{}) (models.OfferProductInput, error) {
-	var it models.OfferProductInput
+func (ec *executionContext) unmarshalInputProductInput(ctx context.Context, obj interface{}) (models.ProductInput, error) {
+	var it models.ProductInput
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -8902,29 +9235,6 @@ func (ec *executionContext) unmarshalInputRemoveOfferInput(ctx context.Context, 
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputRequestModerateProductInput(ctx context.Context, obj interface{}) (models.RequestModerateProductInput, error) {
-	var it models.RequestModerateProductInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "productId":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productId"))
-			it.ProductID, err = ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputRequestSetUserEmailInput(ctx context.Context, obj interface{}) (models.RequestSetUserEmailInput, error) {
 	var it models.RequestSetUserEmailInput
 	asMap := map[string]interface{}{}
@@ -8962,52 +9272,6 @@ func (ec *executionContext) unmarshalInputRequestSetUserPhoneInput(ctx context.C
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
 			it.Phone, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputSellProductInput(ctx context.Context, obj interface{}) (models.SellProductInput, error) {
-	var it models.SellProductInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "productId":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productId"))
-			it.ProductID, err = ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputTakeOffProductInput(ctx context.Context, obj interface{}) (models.TakeOffProductInput, error) {
-	var it models.TakeOffProductInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "productId":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productId"))
-			it.ProductID, err = ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -9636,6 +9900,26 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "approveModerateProduct":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_approveModerateProduct(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "approveProduct":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_approveProduct(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "declainProduct":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_declainProduct(ctx, field)
 			}
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
@@ -10461,6 +10745,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "products":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_products(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "marketProducts":
 			field := field
 
@@ -12274,6 +12581,11 @@ func (ec *executionContext) marshalNDateTime2timeᚐTime(ctx context.Context, se
 	return res
 }
 
+func (ec *executionContext) unmarshalNDeclineProductInput2auctionᚑbackᚋmodelsᚐDeclineProductInput(ctx context.Context, v interface{}) (models.DeclineProductInput, error) {
+	res, err := ec.unmarshalInputDeclineProductInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNDeclineUserFormInput2auctionᚑbackᚋmodelsᚐDeclineUserFormInput(ctx context.Context, v interface{}) (models.DeclineUserFormInput, error) {
 	res, err := ec.unmarshalInputDeclineUserFormInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12376,11 +12688,6 @@ func (ec *executionContext) marshalNOffer2ᚖauctionᚑbackᚋmodelsᚐOffer(ctx
 		return graphql.Null
 	}
 	return ec._Offer(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNOfferProductInput2auctionᚑbackᚋmodelsᚐOfferProductInput(ctx context.Context, v interface{}) (models.OfferProductInput, error) {
-	res, err := ec.unmarshalInputOfferProductInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNOfferProductResult2auctionᚑbackᚋmodelsᚐOfferProductResult(ctx context.Context, sel ast.SelectionSet, v models.OfferProductResult) graphql.Marshaler {
@@ -12553,6 +12860,11 @@ func (ec *executionContext) marshalNProductImage2ᚖauctionᚑbackᚋmodelsᚐPr
 	return ec._ProductImage(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNProductInput2auctionᚑbackᚋmodelsᚐProductInput(ctx context.Context, v interface{}) (models.ProductInput, error) {
+	res, err := ec.unmarshalInputProductInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNProductResult2auctionᚑbackᚋmodelsᚐProductResult(ctx context.Context, sel ast.SelectionSet, v models.ProductResult) graphql.Marshaler {
 	return ec._ProductResult(ctx, sel, &v)
 }
@@ -12664,11 +12976,6 @@ func (ec *executionContext) marshalNRemoveOfferResult2ᚖauctionᚑbackᚋmodels
 	return ec._RemoveOfferResult(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNRequestModerateProductInput2auctionᚑbackᚋmodelsᚐRequestModerateProductInput(ctx context.Context, v interface{}) (models.RequestModerateProductInput, error) {
-	res, err := ec.unmarshalInputRequestModerateProductInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNRequestSetUserEmailInput2auctionᚑbackᚋmodelsᚐRequestSetUserEmailInput(ctx context.Context, v interface{}) (models.RequestSetUserEmailInput, error) {
 	res, err := ec.unmarshalInputRequestSetUserEmailInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12687,11 +12994,6 @@ func (ec *executionContext) unmarshalNRoleType2auctionᚑbackᚋmodelsᚐRoleTyp
 
 func (ec *executionContext) marshalNRoleType2auctionᚑbackᚋmodelsᚐRoleType(ctx context.Context, sel ast.SelectionSet, v models.RoleType) graphql.Marshaler {
 	return v
-}
-
-func (ec *executionContext) unmarshalNSellProductInput2auctionᚑbackᚋmodelsᚐSellProductInput(ctx context.Context, v interface{}) (models.SellProductInput, error) {
-	res, err := ec.unmarshalInputSellProductInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNSellProductResult2auctionᚑbackᚋmodelsᚐSellProductResult(ctx context.Context, sel ast.SelectionSet, v models.SellProductResult) graphql.Marshaler {
@@ -12721,11 +13023,6 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) unmarshalNTakeOffProductInput2auctionᚑbackᚋmodelsᚐTakeOffProductInput(ctx context.Context, v interface{}) (models.TakeOffProductInput, error) {
-	res, err := ec.unmarshalInputTakeOffProductInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNTakeOffProductResult2auctionᚑbackᚋmodelsᚐTakeOffProductResult(ctx context.Context, sel ast.SelectionSet, v models.TakeOffProductResult) graphql.Marshaler {

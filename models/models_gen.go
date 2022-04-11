@@ -37,6 +37,11 @@ type DateTimeRange struct {
 	To   *time.Time `json:"to"`
 }
 
+type DeclineProductInput struct {
+	ProductID     string  `json:"productId"`
+	DeclainReason *string `json:"declainReason"`
+}
+
 type DeclineUserFormInput struct {
 	UserFormID    string  `json:"userFormId"`
 	DeclainReason *string `json:"declainReason"`
@@ -51,10 +56,6 @@ type LoginInput struct {
 type Money struct {
 	Amount   float64      `json:"amount"`
 	Currency CurrencyEnum `json:"currency"`
-}
-
-type OfferProductInput struct {
-	ProductID string `json:"productId"`
 }
 
 type OfferProductResult struct {
@@ -76,6 +77,10 @@ type PageInfo struct {
 	HasPreviousPage bool    `json:"hasPreviousPage"`
 	StartCursor     *string `json:"startCursor"`
 	EndCursor       *string `json:"endCursor"`
+}
+
+type ProductInput struct {
+	ProductID string `json:"productId"`
 }
 
 type ProductResult struct {
@@ -104,10 +109,6 @@ type RemoveOfferResult struct {
 	Status string `json:"status"`
 }
 
-type RequestModerateProductInput struct {
-	ProductID string `json:"productId"`
-}
-
 type RequestSetUserEmailInput struct {
 	Email string `json:"email"`
 }
@@ -116,16 +117,8 @@ type RequestSetUserPhoneInput struct {
 	Phone string `json:"phone"`
 }
 
-type SellProductInput struct {
-	ProductID string `json:"productId"`
-}
-
 type SellProductResult struct {
 	Product *Product `json:"product"`
-}
-
-type TakeOffProductInput struct {
-	ProductID string `json:"productId"`
 }
 
 type TakeOffProductResult struct {

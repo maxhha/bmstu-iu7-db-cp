@@ -7,6 +7,7 @@ import (
 	"auction-back/auth"
 	"auction-back/graph/generated"
 	"auction-back/models"
+	"auction-back/ports"
 	"context"
 	"fmt"
 )
@@ -65,7 +66,7 @@ func (r *mutationResolver) UpdateProduct(ctx context.Context, input models.Updat
 	}, nil
 }
 
-func (r *mutationResolver) RequestModerateProduct(ctx context.Context, input models.RequestModerateProductInput) (bool, error) {
+func (r *mutationResolver) RequestModerateProduct(ctx context.Context, input models.ProductInput) (bool, error) {
 	viewer, err := auth.ForViewer(ctx)
 	if err != nil {
 		return false, err
@@ -132,7 +133,50 @@ func (r *mutationResolver) ApproveModerateProduct(ctx context.Context, input mod
 	}, nil
 }
 
-func (r *mutationResolver) OfferProduct(ctx context.Context, input models.OfferProductInput) (*models.OfferProductResult, error) {
+func (r *mutationResolver) ApproveProduct(ctx context.Context, input models.ProductInput) (*models.ProductResult, error) {
+	product, err := r.DB.Product().Get(input.ProductID)
+	if err != nil {
+		return nil, fmt.Errorf("get: %w", err)
+	}
+
+	if product.State != models.ProductStateModerating {
+		return nil, fmt.Errorf("state is not %s", models.ProductStateModerating)
+	}
+
+	product.State = models.ProductStateApproved
+
+	if err := r.DB.Product().Update(&product); err != nil {
+		return nil, fmt.Errorf("db update: %w", err)
+	}
+
+	return &models.ProductResult{
+		Product: &product,
+	}, nil
+}
+
+func (r *mutationResolver) DeclainProduct(ctx context.Context, input models.DeclineProductInput) (*models.ProductResult, error) {
+	product, err := r.DB.Product().Get(input.ProductID)
+	if err != nil {
+		return nil, fmt.Errorf("get: %w", err)
+	}
+
+	if product.State != models.ProductStateModerating {
+		return nil, fmt.Errorf("state is not %s", models.ProductStateModerating)
+	}
+
+	product.State = models.ProductStateDeclained
+	product.DeclainReason = input.DeclainReason
+
+	if err := r.DB.Product().Update(&product); err != nil {
+		return nil, fmt.Errorf("db update: %w", err)
+	}
+
+	return &models.ProductResult{
+		Product: &product,
+	}, nil
+}
+
+func (r *mutationResolver) OfferProduct(ctx context.Context, input models.ProductInput) (*models.OfferProductResult, error) {
 	panic(fmt.Errorf("not implemented"))
 	// viewer := auth.ForViewer(ctx)
 
@@ -179,7 +223,7 @@ func (r *mutationResolver) OfferProduct(ctx context.Context, input models.OfferP
 	// return &models.OfferProductResult{Product: p}, nil
 }
 
-func (r *mutationResolver) TakeOffProduct(ctx context.Context, input models.TakeOffProductInput) (*models.TakeOffProductResult, error) {
+func (r *mutationResolver) TakeOffProduct(ctx context.Context, input models.ProductInput) (*models.TakeOffProductResult, error) {
 	panic(fmt.Errorf("not implemented"))
 	// viewer := auth.ForViewer(ctx)
 
@@ -216,7 +260,7 @@ func (r *mutationResolver) TakeOffProduct(ctx context.Context, input models.Take
 	// return &models.TakeOffProductResult{Product: p}, nil
 }
 
-func (r *mutationResolver) SellProduct(ctx context.Context, input models.SellProductInput) (*models.SellProductResult, error) {
+func (r *mutationResolver) SellProduct(ctx context.Context, input models.ProductInput) (*models.SellProductResult, error) {
 	panic(fmt.Errorf("not implemented"))
 
 	// viewer := auth.ForViewer(ctx)
@@ -364,6 +408,20 @@ func (r *productResolver) Offers(ctx context.Context, obj *models.Product, first
 	// query := r.DB.Where("product_id = ?", obj.ID).Order("id")
 
 	// return OfferPagination(query, first, after)
+}
+
+func (r *queryResolver) Products(ctx context.Context, first *int, after *string) (*models.ProductsConnection, error) {
+	config := ports.ProductPaginationConfig{
+		First: first,
+		After: after,
+	}
+
+	connection, err := r.DB.Product().Pagination(config)
+	if err != nil {
+		return nil, fmt.Errorf("db pagination: %w", err)
+	}
+
+	return &connection, nil
 }
 
 func (r *queryResolver) MarketProducts(ctx context.Context, first *int, after *string) (*models.ProductsConnection, error) {

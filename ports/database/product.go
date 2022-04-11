@@ -15,26 +15,28 @@ type productDB struct{ *Database }
 func (d *Database) Product() ports.ProductDB { return &productDB{d} }
 
 type Product struct {
-	ID          string              `gorm:"default:generated();"`
-	State       models.ProductState `gorm:"default:'CREATED';"`
-	Title       string
-	Description string
-	CreatorID   string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   sql.NullTime
+	ID            string              `gorm:"default:generated();"`
+	State         models.ProductState `gorm:"default:'CREATED';"`
+	Title         string
+	Description   string
+	CreatorID     string
+	DeclainReason *string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeletedAt     sql.NullTime
 }
 
 func (p *Product) into() models.Product {
 	return models.Product{
-		ID:          p.ID,
-		State:       p.State,
-		Title:       p.Title,
-		Description: p.Description,
-		CreatorID:   p.CreatorID,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
-		DeletedAt:   p.DeletedAt,
+		ID:            p.ID,
+		State:         p.State,
+		Title:         p.Title,
+		Description:   p.Description,
+		CreatorID:     p.CreatorID,
+		DeclainReason: p.DeclainReason,
+		CreatedAt:     p.CreatedAt,
+		UpdatedAt:     p.UpdatedAt,
+		DeletedAt:     p.DeletedAt,
 	}
 }
 
@@ -47,6 +49,7 @@ func (p *Product) copy(product *models.Product) {
 	p.Title = product.Title
 	p.Description = product.Description
 	p.CreatorID = product.CreatorID
+	p.DeclainReason = product.DeclainReason
 	p.CreatedAt = product.CreatedAt
 	p.UpdatedAt = product.UpdatedAt
 	p.DeletedAt = product.DeletedAt
@@ -93,7 +96,7 @@ func (d *productDB) Update(product *models.Product) error {
 func (d *productDB) filter(query *gorm.DB, config models.ProductsFilter) *gorm.DB {
 	if len(config.OwnerIDs) > 0 {
 		query = query.Joins(
-			"JOIN ( ? ) ofd ON products.id = ofd.product_id AND ofd.owner_n = 1 AND ofd.owner_id IN (?) ",
+			"JOIN ( ? ) ofd ON products.id = ofd.product_id AND ofd.owner_n = 1 AND ofd.owner_id IN ?",
 			d.ownersNumberedQuery(query),
 			config.OwnerIDs,
 		)
@@ -109,11 +112,9 @@ func (d *productDB) Pagination(config ports.ProductPaginationConfig) (models.Pro
 		return models.ProductsConnection{}, fmt.Errorf("pagination: %w", err)
 	}
 
-	var products []models.Product
-	result := query.Find(&products)
-
-	if result.Error != nil {
-		return models.ProductsConnection{}, result.Error
+	var products []Product
+	if err := query.Find(&products).Error; err != nil {
+		return models.ProductsConnection{}, fmt.Errorf("find: %w", convertError(err))
 	}
 
 	if len(products) == 0 {
@@ -132,7 +133,8 @@ func (d *productDB) Pagination(config ports.ProductPaginationConfig) (models.Pro
 
 	edges := make([]*models.ProductsConnectionEdge, 0, len(products))
 
-	for _, node := range products {
+	for _, obj := range products {
+		node := obj.into()
 		edges = append(edges, &models.ProductsConnectionEdge{
 			Cursor: node.ID,
 			Node:   &node,
@@ -163,7 +165,7 @@ func (d *productDB) ownersQuery(query *gorm.DB) *gorm.DB {
 	buyers := query.Session(&gorm.Session{Initialized: true}).
 		Model(&Product{}).
 		Select("products.id as product_id, auctions.buyer_id as owner_id, auctions.finished_at as from_date").
-		Joins("FULL JOIN auctions ON auctions.product_id = products.id")
+		Joins("JOIN auctions ON auctions.product_id = products.id")
 
 	return d.db.Raw("? UNION ALL ?", creators, buyers)
 }
@@ -173,7 +175,7 @@ func (d *productDB) ownersQuery(query *gorm.DB) *gorm.DB {
 func (d *productDB) ownersNumberedQuery(query *gorm.DB) *gorm.DB {
 	query = d.ownersQuery(query)
 
-	ownersNumbered := d.db.Table("(?) as ofd", query)
+	ownersNumbered := d.db.Table("( ? ) as ofd", query)
 
 	ownersNumbered = ownersNumbered.Select(
 		"*, ROW_NUMBER() OVER(PARTITION BY ofd.product_id ORDER BY ofd.from_date DESC) as owner_n",

@@ -12,6 +12,10 @@ type Product {
   """
   state: ProductState!
   """
+  Declain reason
+  """
+  declainReason: String
+  """
   Title of product
   """
   title: String!
@@ -65,6 +69,11 @@ input ProductsFilter {
 }
 
 extend type Query {
+  """
+  List all products
+  """
+  products(first: Int, after: String): ProductsConnection!
+    @hasRole(role: MANAGER)
   marketProducts(first: Int, after: String): ProductsConnection!
 }
 
@@ -78,28 +87,21 @@ type ProductResult {
   product: Product!
 }
 
-input RequestModerateProductInput {
+input ProductInput {
   productId: ID!
 }
 
-input OfferProductInput {
+input DeclineProductInput {
   productId: ID!
+  declainReason: String
 }
 
 type OfferProductResult {
   product: Product!
 }
 
-input TakeOffProductInput {
-  productId: ID!
-}
-
 type TakeOffProductResult {
   product: Product!
-}
-
-input SellProductInput {
-  productId: ID!
 }
 
 type SellProductResult {
@@ -118,15 +120,25 @@ extend type Mutation {
   """
   Request token to send product for modetaion
   """
-  requestModerateProduct(input: RequestModerateProductInput!): Boolean!
+  requestModerateProduct(input: ProductInput!): Boolean!
   """
   Set product state to moderating
   """
   approveModerateProduct(input: TokenInput!): ProductResult!
 
-  offerProduct(input: OfferProductInput!): OfferProductResult!
-  takeOffProduct(input: TakeOffProductInput!): TakeOffProductResult!
-  sellProduct(input: SellProductInput!): SellProductResult!
+  """
+  Approve product
+  """
+  approveProduct(input: ProductInput!): ProductResult! @hasRole(role: MANAGER)
+  """
+  Declain product
+  """
+  declainProduct(input: DeclineProductInput!): ProductResult!
+    @hasRole(role: MANAGER)
+
+  offerProduct(input: ProductInput!): OfferProductResult!
+  takeOffProduct(input: ProductInput!): TakeOffProductResult!
+  sellProduct(input: ProductInput!): SellProductResult!
 }
 
 type Subscription {
