@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  db-test:
+    extends:
+      file: docker-compose.yml
+      service: db
+    env_file: .db-test.env
+    networks:
+      - backend-test
+
+  migration-test:
+    depends_on:
+      db-test:
+        condition: service_healthy
+    extends:
+      file: docker-compose.yml
+      service: migration
+    env_file: .db-test.env
+    networks:
+      - backend-test
+
+  mock-redis-test:
+    extends:
+      file: docker-compose.yml
+      service: mock-redis
+    ports:
+      - 6379:6379
+    networks:
+      - backend-test
+
+  mock-notifier-test:
+    extends:
+      file: docker-compose.yml
+      service: mock-notifier
+    depends_on:
+      - mock-redis-test
+    env_file: .mock-notifier-test.env
+    networks:
+      - backend-test
+
+networks:
+  backend-test:

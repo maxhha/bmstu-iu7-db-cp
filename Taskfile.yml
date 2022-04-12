@@ -42,9 +42,9 @@ tasks:
       - grpc/notifier/*.go
       - services/mock_notifier/*
     vars:
-      ENV: prod
+      DOCKERCOMPOSE: config/docker-compose.{{.ENV}}.yml
     cmds:
-      - docker-compose build mock-notifier-{{.ENV}}
+      - docker-compose -f {{.DOCKERCOMPOSE}} build mock-notifier-{{.ENV}}
 
   log:mock_notifier:
     desc: Follow logs of mock_notifier container
@@ -58,9 +58,17 @@ tasks:
     sources:
       - migrations/*
 
+  create:dev-network:
+    desc: Creates dev network
+    cmds:
+      - docker network create auction_backend-dev
+    status:
+      - test "$(docker network inspect auction_backend-dev)" != "[]"
+
   dev:
     desc: Start dev server
     deps:
+      - task: create:dev-network
       - task: build:mock_notifier
         vars:
           ENV: dev
@@ -68,14 +76,16 @@ tasks:
         vars:
           ENV: dev
     env:
-      SERVER_DOTENV: .server-dev.env
+      SERVER_DOTENV: config/.server-dev.env
+    vars:
+      DOCKERCOMPOSE: config/docker-compose.dev.yml
     cmds:
-      - docker-compose --profile dev up -d
-      - defer: docker-compose --profile dev stop
+      - docker-compose -f {{.DOCKERCOMPOSE}} up -d
+      - defer: docker-compose -f {{.DOCKERCOMPOSE}} stop
       - task: log:mock_notifier
         vars:
           ENV: dev
-      - air
+      - air -c config/.air.toml
 
   dir:out:
     desc: Creates out directiory
@@ -103,7 +113,7 @@ tasks:
   test:
     desc: Run test with colorful output
     cmds:
-      - grc -c grc-test.conf go test {{.CLI_ARGS}}
+      - grc -c config/grc-test.conf go test {{.CLI_ARGS}}
 
   test:unit:
     desc: Get code coverage by unit tests
@@ -132,15 +142,16 @@ tasks:
         vars:
           ENV: test
     env:
-      SERVER_DOTENV: .server-test.env
+      SERVER_DOTENV: config/.server-test.env
       GIN_MODE: test
     vars:
       TMPOUT: ./out/it-coverage.tmp.out
       OUT: ./out/it-coverage.out
       HTML: ./out/it-coverage.html
+      DOCKERCOMPOSE: config/docker-compose.test.yml
     cmds:
-      - docker-compose --profile test up --force-recreate -d
-      - defer: docker-compose --profile test down
+      - docker-compose -f {{.DOCKERCOMPOSE}} up --force-recreate -d
+      - defer: docker-compose -f {{.DOCKERCOMPOSE}} down
       - task: log:mock_notifier
         vars:
           ENV: test
