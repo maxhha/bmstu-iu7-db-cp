@@ -92,11 +92,6 @@ export type CreateOfferResult = {
   offer: Offer
 }
 
-export type CreateProductInput = {
-  description: Scalars["String"]
-  title: Scalars["String"]
-}
-
 export enum CurrencyEnum {
   Eur = "EUR",
   Rub = "RUB",
@@ -106,6 +101,11 @@ export enum CurrencyEnum {
 export type DateTimeRange = {
   from?: InputMaybe<Scalars["DateTime"]>
   to?: InputMaybe<Scalars["DateTime"]>
+}
+
+export type DeclineProductInput = {
+  declainReason?: InputMaybe<Scalars["String"]>
+  productId: Scalars["ID"]
 }
 
 export type DeclineUserFormInput = {
@@ -127,8 +127,12 @@ export type Money = {
 
 export type Mutation = {
   __typename?: "Mutation"
+  /** Set product state to moderating */
+  approveModerateProduct: ProductResult
   /** Set user form state to moderate */
   approveModerateUserForm: UserResult
+  /** Approve product */
+  approveProduct: ProductResult
   /** First input of users email */
   approveSetUserEmail: UserResult
   /** First input of users */
@@ -138,6 +142,8 @@ export type Mutation = {
   createOffer: CreateOfferResult
   /** Creates product with creator of current viewer */
   createProduct: ProductResult
+  /** Declain product */
+  declainProduct: ProductResult
   /** Decline user form */
   declineUserForm: UserFormResult
   /** User login */
@@ -146,6 +152,8 @@ export type Mutation = {
   /** Registrates empty user */
   register: TokenResult
   removeOffer: RemoveOfferResult
+  /** Request token to send product for modetaion */
+  requestModerateProduct: Scalars["Boolean"]
   /** Send token for user form moderation */
   requestModerateUserForm: Scalars["Boolean"]
   /** Request set user email */
@@ -154,14 +162,24 @@ export type Mutation = {
   requestSetUserPhone: Scalars["Boolean"]
   sellProduct: SellProductResult
   takeOffProduct: TakeOffProductResult
+  /** Update product info */
+  updateProduct: ProductResult
   /** Update user draft form fields */
   updateUserDraftForm: UserResult
   /** Update user password using old password */
   updateUserPassword: UserResult
 }
 
+export type MutationApproveModerateProductArgs = {
+  input: TokenInput
+}
+
 export type MutationApproveModerateUserFormArgs = {
   input: TokenInput
+}
+
+export type MutationApproveProductArgs = {
+  input: ProductInput
 }
 
 export type MutationApproveSetUserEmailArgs = {
@@ -180,8 +198,8 @@ export type MutationCreateOfferArgs = {
   input: CreateOfferInput
 }
 
-export type MutationCreateProductArgs = {
-  input: CreateProductInput
+export type MutationDeclainProductArgs = {
+  input: DeclineProductInput
 }
 
 export type MutationDeclineUserFormArgs = {
@@ -193,11 +211,15 @@ export type MutationLoginArgs = {
 }
 
 export type MutationOfferProductArgs = {
-  input: OfferProductInput
+  input: ProductInput
 }
 
 export type MutationRemoveOfferArgs = {
   input: RemoveOfferInput
+}
+
+export type MutationRequestModerateProductArgs = {
+  input: ProductInput
 }
 
 export type MutationRequestSetUserEmailArgs = {
@@ -209,11 +231,15 @@ export type MutationRequestSetUserPhoneArgs = {
 }
 
 export type MutationSellProductArgs = {
-  input: SellProductInput
+  input: ProductInput
 }
 
 export type MutationTakeOffProductArgs = {
-  input: TakeOffProductInput
+  input: ProductInput
+}
+
+export type MutationUpdateProductArgs = {
+  input: UpdateProductInput
 }
 
 export type MutationUpdateUserDraftFormArgs = {
@@ -243,10 +269,6 @@ export type Offer = {
   transactions: Array<Transaction>
   /** User created this offer */
   user: User
-}
-
-export type OfferProductInput = {
-  productId: Scalars["ID"]
 }
 
 export type OfferProductResult = {
@@ -291,17 +313,19 @@ export type Product = {
   __typename?: "Product"
   /** Creator of product */
   creator: User
+  /** Declain reason */
+  declainReason?: Maybe<Scalars["String"]>
   /** Product description */
   description: Scalars["String"]
   id: Scalars["ID"]
   /** Product images */
   images: Array<ProductImage>
-  /** Product visibility on market */
-  isOnMarket: Scalars["Boolean"]
   /** Offers for this product */
   offers: OffersConnection
   /** Current owner of product */
   owner: User
+  /** Current state of product */
+  state: ProductState
   /** Title of product */
   title: Scalars["String"]
   /** The greatest offer */
@@ -321,9 +345,20 @@ export type ProductImage = {
   path: Scalars["String"]
 }
 
+export type ProductInput = {
+  productId: Scalars["ID"]
+}
+
 export type ProductResult = {
   __typename?: "ProductResult"
   product: Product
+}
+
+export enum ProductState {
+  Approved = "APPROVED",
+  Created = "CREATED",
+  Declained = "DECLAINED",
+  Moderating = "MODERATING",
 }
 
 export type ProductsConnection = {
@@ -338,9 +373,15 @@ export type ProductsConnectionEdge = {
   node: Product
 }
 
+export type ProductsFilter = {
+  ownerIDs?: InputMaybe<Array<Scalars["String"]>>
+}
+
 export type Query = {
   __typename?: "Query"
   marketProducts: ProductsConnection
+  /** List all products */
+  products: ProductsConnection
   /** List of all user forms */
   userForms: UserFormsConnection
   /** List of all users */
@@ -350,6 +391,11 @@ export type Query = {
 }
 
 export type QueryMarketProductsArgs = {
+  after?: InputMaybe<Scalars["String"]>
+  first?: InputMaybe<Scalars["Int"]>
+}
+
+export type QueryProductsArgs = {
   after?: InputMaybe<Scalars["String"]>
   first?: InputMaybe<Scalars["Int"]>
 }
@@ -388,10 +434,6 @@ export enum RoleType {
   Manager = "MANAGER",
 }
 
-export type SellProductInput = {
-  productId: Scalars["ID"]
-}
-
 export type SellProductResult = {
   __typename?: "SellProductResult"
   product: Product
@@ -400,10 +442,6 @@ export type SellProductResult = {
 export type Subscription = {
   __typename?: "Subscription"
   productOffered?: Maybe<Product>
-}
-
-export type TakeOffProductInput = {
-  productId: Scalars["ID"]
 }
 
 export type TakeOffProductResult = {
@@ -471,6 +509,12 @@ export type TransactionsConnectionEdge = {
   __typename?: "TransactionsConnectionEdge"
   cursor: Scalars["Cursor"]
   node: Transaction
+}
+
+export type UpdateProductInput = {
+  description: Scalars["String"]
+  productId: Scalars["ID"]
+  title: Scalars["String"]
 }
 
 export type UpdateUserDraftFormInput = {
@@ -673,6 +717,15 @@ export type RequestSetUserEmailMutation = {
   requestSetUserEmail: boolean
 }
 
+export type RequestSetUserPhoneMutationVariables = Exact<{
+  input: RequestSetUserPhoneInput
+}>
+
+export type RequestSetUserPhoneMutation = {
+  __typename?: "Mutation"
+  requestSetUserPhone: boolean
+}
+
 export type ApproveSetUserEmailMutationVariables = Exact<{
   input: TokenInput
 }>
@@ -688,6 +741,36 @@ export type ApproveSetUserEmailMutation = {
   }
 }
 
+export type UpdateUserDraftFormMutationVariables = Exact<{
+  input: UpdateUserDraftFormInput
+}>
+
+export type UpdateUserDraftFormMutation = {
+  __typename?: "Mutation"
+  updateUserDraftForm: {
+    __typename?: "UserResult"
+    user: {
+      __typename?: "User"
+      draftForm?: { __typename?: "UserForm"; name?: string | null } | null
+    }
+  }
+}
+
+export type ApproveSetUserPhoneMutationVariables = Exact<{
+  input: TokenInput
+}>
+
+export type ApproveSetUserPhoneMutation = {
+  __typename?: "Mutation"
+  approveSetUserPhone: {
+    __typename?: "UserResult"
+    user: {
+      __typename?: "User"
+      draftForm?: { __typename?: "UserForm"; phone?: string | null } | null
+    }
+  }
+}
+
 export type LoginMutationVariables = Exact<{
   input: LoginInput
 }>
@@ -695,6 +778,30 @@ export type LoginMutationVariables = Exact<{
 export type LoginMutation = {
   __typename?: "Mutation"
   login: { __typename?: "TokenResult"; token: string }
+}
+
+export type RequestModerateUserFormMutationVariables = Exact<{
+  [key: string]: never
+}>
+
+export type RequestModerateUserFormMutation = {
+  __typename?: "Mutation"
+  requestModerateUserForm: boolean
+}
+
+export type ApproveModerateUserFormMutationVariables = Exact<{
+  input: TokenInput
+}>
+
+export type ApproveModerateUserFormMutation = {
+  __typename?: "Mutation"
+  approveModerateUserForm: {
+    __typename?: "UserResult"
+    user: {
+      __typename?: "User"
+      draftForm?: { __typename?: "UserForm"; state: UserFormState } | null
+    }
+  }
 }
 
 export const RegisterDocument = gql`
@@ -725,6 +832,11 @@ export const RequestSetUserEmailDocument = gql`
     requestSetUserEmail(input: $input)
   }
 `
+export const RequestSetUserPhoneDocument = gql`
+  mutation RequestSetUserPhone($input: RequestSetUserPhoneInput!) {
+    requestSetUserPhone(input: $input)
+  }
+`
 export const ApproveSetUserEmailDocument = gql`
   mutation ApproveSetUserEmail($input: TokenInput!) {
     approveSetUserEmail(input: $input) {
@@ -736,10 +848,48 @@ export const ApproveSetUserEmailDocument = gql`
     }
   }
 `
+export const UpdateUserDraftFormDocument = gql`
+  mutation UpdateUserDraftForm($input: UpdateUserDraftFormInput!) {
+    updateUserDraftForm(input: $input) {
+      user {
+        draftForm {
+          name
+        }
+      }
+    }
+  }
+`
+export const ApproveSetUserPhoneDocument = gql`
+  mutation ApproveSetUserPhone($input: TokenInput!) {
+    approveSetUserPhone(input: $input) {
+      user {
+        draftForm {
+          phone
+        }
+      }
+    }
+  }
+`
 export const LoginDocument = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
       token
+    }
+  }
+`
+export const RequestModerateUserFormDocument = gql`
+  mutation RequestModerateUserForm {
+    requestModerateUserForm
+  }
+`
+export const ApproveModerateUserFormDocument = gql`
+  mutation ApproveModerateUserForm($input: TokenInput!) {
+    approveModerateUserForm(input: $input) {
+      user {
+        draftForm {
+          state
+        }
+      }
     }
   }
 `
@@ -759,8 +909,17 @@ export const RegisterDocumentString = print(RegisterDocument)
 export const ViewerDocumentString = print(ViewerDocument)
 export const UpdateUserPasswordDocumentString = print(UpdateUserPasswordDocument)
 export const RequestSetUserEmailDocumentString = print(RequestSetUserEmailDocument)
+export const RequestSetUserPhoneDocumentString = print(RequestSetUserPhoneDocument)
 export const ApproveSetUserEmailDocumentString = print(ApproveSetUserEmailDocument)
+export const UpdateUserDraftFormDocumentString = print(UpdateUserDraftFormDocument)
+export const ApproveSetUserPhoneDocumentString = print(ApproveSetUserPhoneDocument)
 export const LoginDocumentString = print(LoginDocument)
+export const RequestModerateUserFormDocumentString = print(
+  RequestModerateUserFormDocument
+)
+export const ApproveModerateUserFormDocumentString = print(
+  ApproveModerateUserFormDocument
+)
 export function getSdk(
   client: GraphQLClient,
   withWrapper: SdkFunctionWrapper = defaultWrapper
@@ -845,6 +1004,26 @@ export function getSdk(
         "mutation"
       )
     },
+    RequestSetUserPhone(
+      variables: RequestSetUserPhoneMutationVariables,
+      requestHeaders?: Dom.RequestInit["headers"]
+    ): Promise<{
+      data: RequestSetUserPhoneMutation
+      extensions?: any
+      headers: Dom.Headers
+      status: number
+    }> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.rawRequest<RequestSetUserPhoneMutation>(
+            RequestSetUserPhoneDocumentString,
+            variables,
+            { ...requestHeaders, ...wrappedRequestHeaders }
+          ),
+        "RequestSetUserPhone",
+        "mutation"
+      )
+    },
     ApproveSetUserEmail(
       variables: ApproveSetUserEmailMutationVariables,
       requestHeaders?: Dom.RequestInit["headers"]
@@ -865,6 +1044,46 @@ export function getSdk(
         "mutation"
       )
     },
+    UpdateUserDraftForm(
+      variables: UpdateUserDraftFormMutationVariables,
+      requestHeaders?: Dom.RequestInit["headers"]
+    ): Promise<{
+      data: UpdateUserDraftFormMutation
+      extensions?: any
+      headers: Dom.Headers
+      status: number
+    }> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.rawRequest<UpdateUserDraftFormMutation>(
+            UpdateUserDraftFormDocumentString,
+            variables,
+            { ...requestHeaders, ...wrappedRequestHeaders }
+          ),
+        "UpdateUserDraftForm",
+        "mutation"
+      )
+    },
+    ApproveSetUserPhone(
+      variables: ApproveSetUserPhoneMutationVariables,
+      requestHeaders?: Dom.RequestInit["headers"]
+    ): Promise<{
+      data: ApproveSetUserPhoneMutation
+      extensions?: any
+      headers: Dom.Headers
+      status: number
+    }> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.rawRequest<ApproveSetUserPhoneMutation>(
+            ApproveSetUserPhoneDocumentString,
+            variables,
+            { ...requestHeaders, ...wrappedRequestHeaders }
+          ),
+        "ApproveSetUserPhone",
+        "mutation"
+      )
+    },
     Login(
       variables: LoginMutationVariables,
       requestHeaders?: Dom.RequestInit["headers"]
@@ -881,6 +1100,46 @@ export function getSdk(
             ...wrappedRequestHeaders,
           }),
         "Login",
+        "mutation"
+      )
+    },
+    RequestModerateUserForm(
+      variables?: RequestModerateUserFormMutationVariables,
+      requestHeaders?: Dom.RequestInit["headers"]
+    ): Promise<{
+      data: RequestModerateUserFormMutation
+      extensions?: any
+      headers: Dom.Headers
+      status: number
+    }> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.rawRequest<RequestModerateUserFormMutation>(
+            RequestModerateUserFormDocumentString,
+            variables,
+            { ...requestHeaders, ...wrappedRequestHeaders }
+          ),
+        "RequestModerateUserForm",
+        "mutation"
+      )
+    },
+    ApproveModerateUserForm(
+      variables: ApproveModerateUserFormMutationVariables,
+      requestHeaders?: Dom.RequestInit["headers"]
+    ): Promise<{
+      data: ApproveModerateUserFormMutation
+      extensions?: any
+      headers: Dom.Headers
+      status: number
+    }> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.rawRequest<ApproveModerateUserFormMutation>(
+            ApproveModerateUserFormDocumentString,
+            variables,
+            { ...requestHeaders, ...wrappedRequestHeaders }
+          ),
+        "ApproveModerateUserForm",
         "mutation"
       )
     },

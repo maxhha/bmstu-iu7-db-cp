@@ -1,0 +1,77 @@
+mutation Register {
+  register {
+    token
+  }
+}
+
+query Viewer {
+  viewer {
+    id
+  }
+}
+
+mutation UpdateUserPassword($input: UpdateUserPasswordInput!) {
+  updateUserPassword(input: $input) {
+    user {
+      id
+    }
+  }
+}
+
+mutation RequestSetUserEmail($input: RequestSetUserEmailInput!) {
+  requestSetUserEmail(input: $input)
+}
+
+mutation RequestSetUserPhone($input: RequestSetUserPhoneInput!) {
+  requestSetUserPhone(input: $input)
+}
+
+mutation ApproveSetUserEmail($input: TokenInput!) {
+  approveSetUserEmail(input: $input) {
+    user {
+      draftForm {
+        email
+      }
+    }
+  }
+}
+
+mutation UpdateUserDraftForm($input: UpdateUserDraftFormInput!) {
+  updateUserDraftForm(input: $input) {
+    user {
+      draftForm {
+        name
+      }
+    }
+  }
+}
+
+mutation ApproveSetUserPhone($input: TokenInput!) {
+  approveSetUserPhone(input: $input) {
+    user {
+      draftForm {
+        phone
+      }
+    }
+  }
+}
+
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
+    token
+  }
+}
+
+mutation RequestModerateUserForm {
+  requestModerateUserForm
+}
+
+mutation ApproveModerateUserForm($input: TokenInput!) {
+  approveModerateUserForm(input: $input) {
+    user {
+      draftForm {
+        state
+      }
+    }
+  }
+}

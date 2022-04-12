@@ -1,11 +1,12 @@
-import { BaseTest } from "../BaseTest"
+import { BaseTest, randid } from "../BaseTest"
 
 export class Register extends BaseTest {
-  protected password = "HelloWorld-password"
-  protected email = "test-email@email.com"
+  protected password = `password-${randid()}`
+  protected email = `test-email-${randid()}@email.com`
   protected userId!: string
+  protected token!: string
 
-  register() {
+  run() {
     it("should create new token on register", async () => {
       const response = await this.client.Register()
       expect(response.status).toBe(200)

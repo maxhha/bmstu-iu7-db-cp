@@ -1,9 +1,22 @@
-import { Register } from "../Register/Register"
+import { BaseTest, randid } from "../BaseTest"
 
-export class UserLogin extends Register {
-  login = () => {
-    this.register()
+export class UserLogin extends BaseTest {
+  private password = "HelloWorld-password" + randid()
+  private email = `test-email-${randid()}@email.com`
+  private userId!: string
 
+  async before() {
+    await super.before()
+    const { userId, token } = await this.register()
+    this.userId = userId
+    await this.fillUser({
+      token,
+      email: this.email,
+      password: this.password,
+    })
+  }
+
+  async run() {
     it("should return null viewer when authorization token not set", async () => {
       this.client.setToken(undefined)
       const response = await this.client.Viewer()
