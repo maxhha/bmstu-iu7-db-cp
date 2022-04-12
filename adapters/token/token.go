@@ -12,10 +12,10 @@ import (
 
 type TokenPort struct {
 	db      ports.DB
-	senders []ports.Sender
+	senders []ports.TokenSender
 }
 
-func New(db ports.DB, senders []ports.Sender) TokenPort {
+func New(db ports.DB, senders []ports.TokenSender) TokenPort {
 	return TokenPort{db, senders}
 }
 

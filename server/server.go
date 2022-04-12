@@ -1,22 +1,21 @@
 package server
 
 import (
+	"auction-back/adapters/bank"
+	"auction-back/adapters/database"
+	"auction-back/adapters/role"
+	"auction-back/adapters/token"
 	"auction-back/auth"
 	"auction-back/graph"
 	"auction-back/graph/generated"
 	"auction-back/jwt"
 	"auction-back/ports"
-	"auction-back/ports/bank"
-	"auction-back/ports/role"
-	"auction-back/ports/token"
 	"log"
 	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-
-	"auction-back/ports/database"
 )
 
 func init() {
@@ -36,7 +35,7 @@ func init() {
 func Init() *gin.Engine {
 	db := database.Connect()
 
-	senders := []ports.Sender{
+	senders := []ports.TokenSender{
 		emailTokenSender(),
 		phoneTokenSender(&db),
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 type UserForm struct {
-	ID            string `json:"id" gorm:"default:generated();"`
+	ID            string `json:"id"`
 	UserID        string
 	State         UserFormState
 	Name          *string `json:"name"`

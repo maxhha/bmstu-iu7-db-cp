@@ -9,7 +9,7 @@ type Token interface {
 	Activate(action models.TokenAction, token_code string, viewer models.User) (models.Token, error)
 }
 
-type Sender interface {
+type TokenSender interface {
 	Name() string
 	Send(models.Token) (bool, error)
 }

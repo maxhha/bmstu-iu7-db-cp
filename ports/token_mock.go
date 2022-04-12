@@ -6,19 +6,9 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type SenderMock struct{ mock.Mock }
-
 type TokenMock struct{ mock.Mock }
 
-func (m *SenderMock) Name() string {
-	args := m.Called()
-	return args.String(0)
-}
-
-func (m *SenderMock) Send(arg0 models.Token) (bool, error) {
-	args := m.Called(arg0)
-	return args.Bool(0), args.Error(1)
-}
+type TokenSenderMock struct{ mock.Mock }
 
 func (m *TokenMock) Activate(action models.TokenAction, token_code string, viewer models.User) (models.Token, error) {
 	args := m.Called(action, token_code, viewer)
@@ -28,4 +18,14 @@ func (m *TokenMock) Activate(action models.TokenAction, token_code string, viewe
 func (m *TokenMock) Create(action models.TokenAction, viewer models.User, data map[string]interface{}) error {
 	args := m.Called(action, viewer, data)
 	return args.Error(0)
+}
+
+func (m *TokenSenderMock) Name() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+func (m *TokenSenderMock) Send(arg0 models.Token) (bool, error) {
+	args := m.Called(arg0)
+	return args.Bool(0), args.Error(1)
 }
