@@ -54,7 +54,8 @@ tasks:
   restart:migration:
     desc: Restarts migration container
     cmds:
-      - docker restart auction-migration-{{.ENV}}-1 || true
+      - cmd: docker restart auction-migration-{{.ENV}}-1
+        ignore_error: "{{.IGNORE_ERROR | default false}}"
     sources:
       - migrations/*
 
@@ -75,6 +76,7 @@ tasks:
       - task: restart:migration
         vars:
           ENV: dev
+          IGNORE_ERROR: true
     env:
       SERVER_DOTENV: config/.server-dev.env
     vars:
