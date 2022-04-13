@@ -110,7 +110,7 @@ func (r *mutationResolver) DeclineUserForm(ctx context.Context, input models.Dec
 		return nil, fmt.Errorf("get: %w", err)
 	}
 
-	if form.State != models.UserFormStateModerating {
+	if form.State != models.UserFormStateModerating && form.State != models.UserFormStateApproved {
 		return nil, fmt.Errorf("state is not %s", models.UserFormStateModerating)
 	}
 

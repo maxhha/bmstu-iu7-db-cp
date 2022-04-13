@@ -72,6 +72,11 @@ type AccountDB interface {
 	UserPagination(config AccountPaginationConfig) (models.UserAccountsConnection, error)
 }
 
+type AuctionDB interface {
+	Create(auction *models.Auction) error
+	Pagination(first *int, after *string, filter *models.AuctionsFilter) (models.AuctionsConnection, error)
+}
+
 type BankDB interface {
 	Get(id string) (models.Bank, error)
 	Take(config BankTakeConfig) (models.Bank, error)
@@ -117,6 +122,7 @@ type TokenDB interface {
 
 type DB interface {
 	Account() AccountDB
+	Auction() AuctionDB
 	Bank() BankDB
 	User() UserDB
 	Product() ProductDB

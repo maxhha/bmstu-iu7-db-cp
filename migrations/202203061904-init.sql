@@ -284,20 +284,43 @@ SELECT EXISTS (
       'SUCCEEDED'
     );
 
+    CREATE TYPE currency AS ENUM (
+        'RUB',
+        'EUR',
+        'USD'
+    );
+
     CREATE TABLE auctions (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         state auction_state NOT NULL DEFAULT 'CREATED', 
         product_id UUID NOT NULL,
         seller_id SHORTKEY NOT NULL,
-        buyer_id SHORTKEY NOT NULL,
-        scheduled_for TIMESTAMP NOT NULL,
+        buyer_id SHORTKEY,
+        min_amount DECIMAL(12, 2),
+        min_amount_currency currency,
+        scheduled_start_at TIMESTAMP,
+        scheduled_finish_at TIMESTAMP,
         started_at TIMESTAMP,
         finished_at TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
         CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id),
         CONSTRAINT fk_seller FOREIGN KEY (seller_id) REFERENCES users(id),
-        CONSTRAINT fk_buyer FOREIGN KEY (buyer_id) REFERENCES users(id)
+        CONSTRAINT fk_buyer FOREIGN KEY (buyer_id) REFERENCES users(id),
+        CONSTRAINT chk_currency CHECK (
+            (min_amount IS NULL AND min_amount_currency IS NULL)
+            OR 
+            (min_amount IS NOT NULL AND min_amount_currency IS NOT NULL)
+        ),
+        CONSTRAINT chk_started_at CHECK (
+            state = 'CREATED' OR started_at IS NOT NULL
+        ),
+        CONSTRAINT chk_finished_at CHECK (
+            state = 'CREATED' OR state = 'STARTED' OR finished_at IS NOT NULL
+        ),
+        CONSTRAINT chk_buyer CHECK (
+            NOT (state = 'SUCCEEDED' AND buyer_id IS NULL)
+        )
     );
 
     -- CREATE TABLE product_images (
@@ -356,12 +379,6 @@ SELECT EXISTS (
     --     'BUY',
     --     'FEE',
     --     'WITHDRAWAL'
-    -- );
-
-    -- CREATE TYPE transaction_currency AS ENUM (
-    --     'RUB',
-    --     'EUR',
-    --     'USD'
     -- );
 
     -- CREATE TABLE transactions (

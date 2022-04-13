@@ -165,7 +165,7 @@ func (d *productDB) ownersQuery(query *gorm.DB) *gorm.DB {
 	buyers := query.Session(&gorm.Session{Initialized: true}).
 		Model(&Product{}).
 		Select("products.id as product_id, auctions.buyer_id as owner_id, auctions.finished_at as from_date").
-		Joins("JOIN auctions ON auctions.product_id = products.id")
+		Joins("JOIN auctions ON auctions.product_id = products.id AND auctions.state = ?", models.AuctionStateSucceeded)
 
 	return d.db.Raw("? UNION ALL ?", creators, buyers)
 }

@@ -1,0 +1,84 @@
+enum AuctionState {
+  CREATED
+  STARTED
+  FINISHED
+  FAILED
+  SUCCEEDED
+}
+
+type Auction {
+  id: String!
+  state: AuctionState!
+  """
+  Product for selling
+  """
+  product: Product!
+  """
+  Product seller, auction creator
+  """
+  seller: User!
+  """
+  Product buyer
+  """
+  buyer: User
+  """
+  First offer must have equal or greater amount
+  """
+  minMoney: Money
+  """
+  Planned time for auction start
+  """
+  scheduledStartAt: DateTime
+  """
+  Planned time for auction end
+  """
+  scheduledFinishAt: DateTime
+  """
+  Real auction start time
+  """
+  startedAt: DateTime
+  """
+  Real time of auction end
+  """
+  finishedAt: DateTime
+}
+
+type AuctionsConnectionEdge {
+  cursor: Cursor!
+  node: Auction!
+}
+
+type AuctionsConnection {
+  pageInfo: PageInfo!
+  edges: [AuctionsConnectionEdge!]!
+}
+
+input AuctionsFilter {
+  IDs: [ID!] = []
+  states: [AuctionState!] = []
+  sellerIDs: [String!] = []
+  buyerIDs: [String!] = []
+  productIDs: [String!] = []
+}
+
+extend type Query {
+  """
+  All auctions
+  """
+  auctions(
+    first: Int
+    after: Cursor
+    filter: AuctionsFilter
+  ): AuctionsConnection! @hasRole(role: MANAGER)
+}
+
+type AuctionResult {
+  auction: Auction!
+}
+
+extend type Mutation {
+  """
+  Create auction for given product
+  """
+  createAuction(input: ProductInput!): AuctionResult!
+}

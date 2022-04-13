@@ -23,6 +23,28 @@ type ApproveUserFormInput struct {
 	UserFormID string `json:"userFormId"`
 }
 
+type AuctionResult struct {
+	Auction *Auction `json:"auction"`
+}
+
+type AuctionsConnection struct {
+	PageInfo *PageInfo                 `json:"pageInfo"`
+	Edges    []*AuctionsConnectionEdge `json:"edges"`
+}
+
+type AuctionsConnectionEdge struct {
+	Cursor string   `json:"cursor"`
+	Node   *Auction `json:"node"`
+}
+
+type AuctionsFilter struct {
+	IDs        []string       `json:"IDs"`
+	States     []AuctionState `json:"states"`
+	SellerIDs  []string       `json:"sellerIDs"`
+	BuyerIDs   []string       `json:"buyerIDs"`
+	ProductIDs []string       `json:"productIDs"`
+}
+
 type CreateOfferInput struct {
 	ProductID string  `json:"productId"`
 	Amount    float64 `json:"amount"`
@@ -50,12 +72,6 @@ type DeclineUserFormInput struct {
 type LoginInput struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-}
-
-// Мoney in a specific currency
-type Money struct {
-	Amount   float64      `json:"amount"`
-	Currency CurrencyEnum `json:"currency"`
 }
 
 type OfferProductResult struct {
@@ -222,6 +238,53 @@ type UsersConnectionEdge struct {
 
 type UsersFilter struct {
 	ID []string `json:"id"`
+}
+
+type AuctionState string
+
+const (
+	AuctionStateCreated   AuctionState = "CREATED"
+	AuctionStateStarted   AuctionState = "STARTED"
+	AuctionStateFinished  AuctionState = "FINISHED"
+	AuctionStateFailed    AuctionState = "FAILED"
+	AuctionStateSucceeded AuctionState = "SUCCEEDED"
+)
+
+var AllAuctionState = []AuctionState{
+	AuctionStateCreated,
+	AuctionStateStarted,
+	AuctionStateFinished,
+	AuctionStateFailed,
+	AuctionStateSucceeded,
+}
+
+func (e AuctionState) IsValid() bool {
+	switch e {
+	case AuctionStateCreated, AuctionStateStarted, AuctionStateFinished, AuctionStateFailed, AuctionStateSucceeded:
+		return true
+	}
+	return false
+}
+
+func (e AuctionState) String() string {
+	return string(e)
+}
+
+func (e *AuctionState) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AuctionState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AuctionState", str)
+	}
+	return nil
+}
+
+func (e AuctionState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 type CurrencyEnum string

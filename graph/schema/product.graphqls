@@ -72,8 +72,11 @@ extend type Query {
   """
   List all products
   """
-  products(first: Int, after: String): ProductsConnection!
-    @hasRole(role: MANAGER)
+  products(
+    first: Int
+    after: String
+    filter: ProductsFilter
+  ): ProductsConnection! @hasRole(role: MANAGER)
   marketProducts(first: Int, after: String): ProductsConnection!
 }
 

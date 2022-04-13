@@ -160,7 +160,7 @@ func (r *mutationResolver) DeclainProduct(ctx context.Context, input models.Decl
 		return nil, fmt.Errorf("get: %w", err)
 	}
 
-	if product.State != models.ProductStateModerating {
+	if product.State != models.ProductStateModerating && product.State != models.ProductStateApproved {
 		return nil, fmt.Errorf("state is not %s", models.ProductStateModerating)
 	}
 
@@ -410,10 +410,14 @@ func (r *productResolver) Offers(ctx context.Context, obj *models.Product, first
 	// return OfferPagination(query, first, after)
 }
 
-func (r *queryResolver) Products(ctx context.Context, first *int, after *string) (*models.ProductsConnection, error) {
+func (r *queryResolver) Products(ctx context.Context, first *int, after *string, filter *models.ProductsFilter) (*models.ProductsConnection, error) {
 	config := ports.ProductPaginationConfig{
 		First: first,
 		After: after,
+	}
+
+	if filter != nil {
+		config.Filter = *filter
 	}
 
 	connection, err := r.DB.Product().Pagination(config)
@@ -452,12 +456,8 @@ func (r *subscriptionResolver) ProductOffered(ctx context.Context) (<-chan *mode
 // Product returns generated.ProductResolver implementation.
 func (r *Resolver) Product() generated.ProductResolver { return &productResolver{r} }
 
-// Query returns generated.QueryResolver implementation.
-func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
-
 // Subscription returns generated.SubscriptionResolver implementation.
 func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subscriptionResolver{r} }
 
 type productResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }

@@ -8,10 +8,13 @@ import (
 
 type AccountDBMock struct{ mock.Mock }
 
+type AuctionDBMock struct{ mock.Mock }
+
 type BankDBMock struct{ mock.Mock }
 
 type DBMock struct {
 	AccountMock  AccountDBMock
+	AuctionMock  AuctionDBMock
 	BankMock     BankDBMock
 	ProductMock  ProductDBMock
 	RoleMock     RoleDBMock
@@ -50,6 +53,16 @@ func (m *AccountDBMock) UserPagination(config AccountPaginationConfig) (models.U
 	return args.Get(0).(models.UserAccountsConnection), args.Error(1)
 }
 
+func (m *AuctionDBMock) Create(auction *models.Auction) error {
+	args := m.Called(auction)
+	return args.Error(0)
+}
+
+func (m *AuctionDBMock) Pagination(first *int, after *string, filter *models.AuctionsFilter) (models.AuctionsConnection, error) {
+	args := m.Called(first, after, filter)
+	return args.Get(0).(models.AuctionsConnection), args.Error(1)
+}
+
 func (m *BankDBMock) Get(id string) (models.Bank, error) {
 	args := m.Called(id)
 	return args.Get(0).(models.Bank), args.Error(1)
@@ -67,6 +80,10 @@ func (m *BankDBMock) Take(config BankTakeConfig) (models.Bank, error) {
 
 func (m *DBMock) Account() AccountDB {
 	return &m.AccountMock
+}
+
+func (m *DBMock) Auction() AuctionDB {
+	return &m.AuctionMock
 }
 
 func (m *DBMock) Bank() BankDB {

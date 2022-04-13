@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/shopspring/decimal"
 )
 
 const dateTimeLayout = "2006-01-02T15:04:05.000Z"
@@ -30,4 +31,9 @@ func UnmarshalDateTime(v interface{}) (time.Time, error) {
 	}
 
 	return t, nil
+}
+
+type Money struct {
+	Amount   decimal.Decimal `json:"amount"`
+	Currency CurrencyEnum    `json:"currency"`
 }

@@ -32,6 +32,7 @@ func (s *ProductOwnersQuerySuite) TestSimpleQuery() {
 			SELECT products.id as product_id, auctions.buyer_id as owner_id, auctions.finished_at as from_date
 			FROM "products"
 			JOIN auctions ON auctions.product_id = products.id
+			AND auctions.state = 'SUCCEEDED'
 		`),
 		query,
 	)
@@ -53,6 +54,7 @@ func (s *ProductOwnersQuerySuite) TestSubQuery() {
 			SELECT products.id as product_id, auctions.buyer_id as owner_id, auctions.finished_at as from_date
 			FROM "products"
 			JOIN auctions ON auctions.product_id = products.id 
+			AND auctions.state = 'SUCCEEDED'
 			WHERE id = 'test-product'
 		`),
 		query,
@@ -90,6 +92,7 @@ func (s *ProductFilterSuite) TestFilterOwnerIDs() {
 					FROM "products"
 					JOIN auctions 
 					ON auctions.product_id = products.id
+					AND auctions.state = 'SUCCEEDED'
 				) as ofd
 			) ofd 
 			ON products.id = ofd.product_id AND ofd.owner_n = 1 AND ofd.owner_id IN ('test-user')`),
