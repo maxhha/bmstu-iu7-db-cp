@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Role struct {
@@ -13,7 +15,7 @@ type Role struct {
 	UserID    string
 	IssuerID  string
 	CreatedAt time.Time
-	DeletedAt sql.NullTime
+	DeletedAt gorm.DeletedAt
 }
 
 func (r *Role) into() models.Role {
@@ -22,7 +24,7 @@ func (r *Role) into() models.Role {
 		UserID:    r.UserID,
 		IssuerID:  r.IssuerID,
 		CreatedAt: r.CreatedAt,
-		DeletedAt: r.DeletedAt,
+		DeletedAt: sql.NullTime(r.DeletedAt),
 	}
 }
 
@@ -47,7 +49,7 @@ func (d *roleDB) Find(config ports.RoleFindConfig) ([]models.Role, error) {
 
 	var objs []Role
 	if err := query.Find(&objs).Error; err != nil {
-		return nil, fmt.Errorf("find: %w", err)
+		return nil, fmt.Errorf("find: %w", convertError(err))
 	}
 
 	arr := make([]models.Role, 0, len(objs))

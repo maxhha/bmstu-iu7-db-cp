@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type userDB struct{ *Database }
@@ -15,7 +17,7 @@ func (d *Database) User() ports.UserDB { return &userDB{d} }
 type User struct {
 	ID           string    `gorm:"default:generated();"`
 	CreatedAt    time.Time `gorm:"default:now();"`
-	DeletedAt    sql.NullTime
+	DeletedAt    gorm.DeletedAt
 	BlockedUntil sql.NullTime
 }
 
@@ -23,7 +25,7 @@ func (u *User) into() models.User {
 	return models.User{
 		ID:           u.ID,
 		CreatedAt:    u.CreatedAt,
-		DeletedAt:    u.DeletedAt,
+		DeletedAt:    sql.NullTime(u.DeletedAt),
 		BlockedUntil: u.BlockedUntil,
 	}
 }
@@ -34,7 +36,7 @@ func (u *User) copy(user *models.User) {
 	}
 	u.ID = user.ID
 	u.CreatedAt = user.CreatedAt
-	u.DeletedAt = user.DeletedAt
+	u.DeletedAt = gorm.DeletedAt(user.DeletedAt)
 	u.BlockedUntil = user.BlockedUntil
 }
 

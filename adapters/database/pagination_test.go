@@ -13,6 +13,10 @@ type PaginationQueryByCreatedAtDescSuite struct {
 	DatabaseSuite
 }
 
+func TestPaginationQueryByCreatedAtDescSuite(t *testing.T) {
+	suite.Run(t, new(PaginationQueryByCreatedAtDescSuite))
+}
+
 func (s *PaginationQueryByCreatedAtDescSuite) TestGetAllQuery() {
 	query := s.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		tx = tx.Model(&Account{}).Where("user_id = ?", "USER_ID")
@@ -23,7 +27,12 @@ func (s *PaginationQueryByCreatedAtDescSuite) TestGetAllQuery() {
 
 	assert.Equal(
 		s.T(),
-		`SELECT * FROM "accounts" WHERE user_id = 'USER_ID' ORDER BY created_at desc`,
+		s.SQL(`
+			SELECT * FROM "accounts"
+			WHERE user_id = 'USER_ID'
+			AND "accounts"."deleted_at" IS NULL
+			ORDER BY created_at desc
+		`),
 		query,
 	)
 }
@@ -44,6 +53,7 @@ func (s *PaginationQueryByCreatedAtDescSuite) TestGetFirstNQuery() {
 			SELECT *
 			FROM "accounts"
 			WHERE user_id = 'USER_ID'
+			AND "accounts"."deleted_at" IS NULL
 			ORDER BY created_at desc LIMIT %d
 		`, first+1),
 		query,
@@ -71,13 +81,11 @@ func (s *PaginationQueryByCreatedAtDescSuite) TestGetAfterQuery() {
 				FROM "accounts"
 				WHERE user_id = 'USER_ID'
 				AND id = '%s'
+				AND "accounts"."deleted_at" IS NULL
 			)
+			AND "accounts"."deleted_at" IS NULL
 			ORDER BY created_at desc
 		`, after),
 		query,
 	)
-}
-
-func TestPaginationQueryByCreatedAtDescSuite(t *testing.T) {
-	suite.Run(t, new(PaginationQueryByCreatedAtDescSuite))
 }

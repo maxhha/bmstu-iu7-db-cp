@@ -1,7 +1,7 @@
 package database
 
 import (
-	"fmt"
+	"auction-back/ports"
 
 	"gorm.io/gorm"
 )
@@ -19,7 +19,7 @@ func paginationQueryByCreatedAtDesc(query *gorm.DB, first *int, after *string) (
 
 	if first != nil {
 		if *first < 1 {
-			return nil, fmt.Errorf("first must be positive")
+			return nil, ports.ErrInvalidFirst
 		}
 		query = query.Limit(*first + 1)
 	}

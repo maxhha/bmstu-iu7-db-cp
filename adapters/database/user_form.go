@@ -26,7 +26,7 @@ type UserForm struct {
 	DeclainReason *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
-	DeletedAt     sql.NullTime
+	DeletedAt     gorm.DeletedAt
 }
 
 func (u *UserForm) into() models.UserForm {
@@ -41,7 +41,7 @@ func (u *UserForm) into() models.UserForm {
 		DeclainReason: u.DeclainReason,
 		CreatedAt:     u.CreatedAt,
 		UpdatedAt:     u.UpdatedAt,
-		DeletedAt:     u.DeletedAt,
+		DeletedAt:     sql.NullTime(u.DeletedAt),
 	}
 }
 
@@ -59,7 +59,7 @@ func (f *UserForm) copy(form *models.UserForm) {
 	f.DeclainReason = form.DeclainReason
 	f.CreatedAt = form.CreatedAt
 	f.UpdatedAt = form.UpdatedAt
-	f.DeletedAt = form.DeletedAt
+	f.DeletedAt = gorm.DeletedAt(form.DeletedAt)
 }
 
 var userFormFieldToColumn = map[ports.UserFormField]string{
@@ -164,7 +164,7 @@ func (d *userFormDB) Take(config ports.UserFormTakeConfig) (models.UserForm, err
 // TODO: check if gorm.DB.Update updates objects field UpdatedAt
 func (d *userFormDB) Update(form *models.UserForm) error {
 	if form == nil {
-		return fmt.Errorf("form is nil")
+		return ports.ErrUserFormIsNil
 	}
 
 	f := UserForm{}
@@ -173,13 +173,14 @@ func (d *userFormDB) Update(form *models.UserForm) error {
 	if err := d.db.Save(&f).Error; err != nil {
 		return fmt.Errorf("save: %w", convertError(err))
 	}
+	*form = f.into()
 
 	return nil
 }
 
 func (d *userFormDB) Create(form *models.UserForm) error {
 	if form == nil {
-		return fmt.Errorf("form is nil")
+		return ports.ErrUserFormIsNil
 	}
 	f := UserForm{}
 	f.copy(form)

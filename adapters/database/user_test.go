@@ -25,7 +25,7 @@ func (s *UserGetSuite) TestGetExistedID() {
 	id := "test-user"
 
 	s.SqlMock.
-		ExpectQuery(`SELECT \* FROM "users" WHERE id = \$1 LIMIT 1`).
+		ExpectQuery(`SELECT \* FROM "users" WHERE id = \$1 AND "users"\."deleted_at" IS NULL LIMIT 1`).
 		WithArgs(id).
 		WillReturnRows(MockRows(User{ID: id}))
 
@@ -38,7 +38,7 @@ func (s *UserGetSuite) TestGetUnknownID() {
 	id := "unknown-user"
 
 	s.SqlMock.
-		ExpectQuery(`SELECT \* FROM "users" WHERE id = \$1 LIMIT 1`).
+		ExpectQuery(`SELECT \* FROM "users" WHERE id = \$1 AND "users"\."deleted_at" IS NULL LIMIT 1`).
 		WithArgs(id).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
@@ -96,7 +96,7 @@ func (s *UserPaginationSuite) TestPaginationSuccessMany() {
 	}
 
 	s.SqlMock.
-		ExpectQuery(`SELECT \* FROM "users" ORDER BY created_at desc`).
+		ExpectQuery(`SELECT \* FROM "users" .* ORDER BY created_at desc`).
 		WillReturnRows(MockRows(objs))
 
 	config := ports.UserPaginationConfig{}
@@ -128,7 +128,7 @@ func (s *UserLastApprovedUserFormSuite) TestSuccess() {
 	form := UserForm{ID: "test-user-form"}
 
 	s.SqlMock.
-		ExpectQuery(`SELECT \* FROM "user_forms" WHERE user_id = \$1 AND state = \$2 ORDER BY created_at desc LIMIT 1`).
+		ExpectQuery(`SELECT \* FROM "user_forms" WHERE \(user_id = \$1 AND state = \$2\) AND "user_forms"\."deleted_at" IS NULL ORDER BY created_at desc LIMIT 1`).
 		WithArgs(user.ID, models.UserFormStateApproved).
 		WillReturnRows(MockRows(form))
 

@@ -1,10 +1,10 @@
 package server
 
 import (
-	"auction-back/graph/generated"
 	"net/http"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
@@ -14,8 +14,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func graphqlHandler(config generated.Config) gin.HandlerFunc {
-	h := handler.New(generated.NewExecutableSchema(config))
+func graphqlHandler(es graphql.ExecutableSchema) gin.HandlerFunc {
+	h := handler.New(es)
 
 	h.AddTransport(transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,

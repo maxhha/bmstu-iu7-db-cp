@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -9,6 +10,8 @@ import (
 )
 
 var signingKey []byte
+
+var ErrWrongSigningMethod = errors.New("unexpected signing method")
 
 func Init() {
 	key, ok := os.LookupEnv("SIGNING_KEY")
@@ -35,7 +38,7 @@ func parse(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, ErrWrongSigningMethod // fmt.Errorf("%w: %v", ErrWrongSigningMethod, token.Header["alg"])
 		}
 
 		return signingKey, nil
@@ -45,12 +48,11 @@ func parse(tokenString string) (jwt.MapClaims, error) {
 		return nil, err
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-
 	if !token.Valid {
 		return nil, fmt.Errorf("token is invalid")
 	}
 
+	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return nil, fmt.Errorf("failed to convert to map claims")
 	}
@@ -60,13 +62,11 @@ func parse(tokenString string) (jwt.MapClaims, error) {
 
 func ParseUser(tokenString string) (string, error) {
 	claims, err := parse(tokenString)
-
 	if err != nil {
 		return "", err
 	}
 
 	subject, ok := claims["sub"].(string)
-
 	if !ok {
 		return "", fmt.Errorf("failed to convert sub")
 	}
@@ -76,7 +76,6 @@ func ParseUser(tokenString string) (string, error) {
 	}
 
 	id, ok := claims["jti"].(string)
-
 	if !ok {
 		return "", fmt.Errorf("failed to convert jti")
 	}

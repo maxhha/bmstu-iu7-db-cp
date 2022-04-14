@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type bankDB struct{ *Database }
@@ -17,7 +19,7 @@ type Bank struct {
 	Name      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt sql.NullTime
+	DeletedAt gorm.DeletedAt
 }
 
 func (b *Bank) into() models.Bank {
@@ -26,7 +28,7 @@ func (b *Bank) into() models.Bank {
 		Name:      b.Name,
 		CreatedAt: b.CreatedAt,
 		UpdatedAt: b.UpdatedAt,
-		DeletedAt: b.DeletedAt,
+		DeletedAt: sql.NullTime(b.DeletedAt),
 	}
 }
 

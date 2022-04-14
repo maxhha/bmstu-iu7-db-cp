@@ -6,6 +6,8 @@ services:
       file: docker-compose.yml
       service: db
     env_file: .db-test.env
+    ports:
+    - 5432:5432
     networks:
       - backend-test
 

@@ -245,6 +245,19 @@ func (s *UserRequestSetUserEmail) Test() {
 			Error:   auth.ErrUnauthorized,
 		},
 		{
+			Name:    "Fail create token",
+			Context: auth.WithViewer(context.Background(), viewer),
+			Mock: func() {
+				s.TokenMock.On(
+					"Create",
+					models.TokenActionSetUserEmail,
+					viewer,
+					map[string]interface{}{"email": email},
+				).Return(sql.ErrConnDone).Once()
+			},
+			Error: sql.ErrConnDone,
+		},
+		{
 			Name:    "Success",
 			Context: auth.WithViewer(context.Background(), viewer),
 			Mock: func() {
@@ -261,6 +274,76 @@ func (s *UserRequestSetUserEmail) Test() {
 	for _, c := range cases {
 		c.Mock()
 		ok, err := s.resolver.Mutation().RequestSetUserEmail(c.Context, models.RequestSetUserEmailInput{Email: email})
+
+		if c.Error == nil {
+			require.NoError(s.T(), err, "[%s] should not have error", c.Name)
+			require.Equal(s.T(), ok, true)
+		} else {
+			require.ErrorIs(
+				s.T(),
+				err,
+				c.Error,
+				"[%s] should have error",
+				c.Name,
+			)
+			require.Equal(s.T(), ok, false)
+		}
+	}
+}
+
+type UserRequestSetUserPhone struct {
+	GraphSuite
+}
+
+func TestUserRequestSetUserPhone(t *testing.T) {
+	suite.Run(t, new(UserRequestSetUserPhone))
+}
+
+func (s *UserRequestSetUserPhone) Test() {
+	viewer := models.User{ID: "test-user"}
+	phone := "new-phone"
+	cases := []struct {
+		Name    string
+		Context context.Context
+		Mock    func()
+		Error   error
+	}{
+		{
+			Name:    "No viewer",
+			Context: context.Background(),
+			Mock:    func() {},
+			Error:   auth.ErrUnauthorized,
+		},
+		{
+			Name:    "Fail create token",
+			Context: auth.WithViewer(context.Background(), viewer),
+			Mock: func() {
+				s.TokenMock.On(
+					"Create",
+					models.TokenActionSetUserPhone,
+					viewer,
+					map[string]interface{}{"phone": phone},
+				).Return(sql.ErrConnDone).Once()
+			},
+			Error: sql.ErrConnDone,
+		},
+		{
+			Name:    "Success",
+			Context: auth.WithViewer(context.Background(), viewer),
+			Mock: func() {
+				s.TokenMock.On(
+					"Create",
+					models.TokenActionSetUserPhone,
+					viewer,
+					map[string]interface{}{"phone": phone},
+				).Return(nil).Once()
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c.Mock()
+		ok, err := s.resolver.Mutation().RequestSetUserPhone(c.Context, models.RequestSetUserPhoneInput{Phone: phone})
 
 		if c.Error == nil {
 			require.NoError(s.T(), err, "[%s] should not have error", c.Name)

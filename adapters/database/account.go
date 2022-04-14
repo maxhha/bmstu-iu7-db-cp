@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"gorm.io/gorm"
 )
 
 type accountDB struct{ *Database }
@@ -21,7 +22,7 @@ type Account struct {
 	BankID    string
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt sql.NullTime
+	DeletedAt gorm.DeletedAt
 }
 
 func (a *Account) into() models.Account {
@@ -32,7 +33,7 @@ func (a *Account) into() models.Account {
 		BankID:    a.BankID,
 		CreatedAt: a.CreatedAt,
 		UpdatedAt: a.UpdatedAt,
-		DeletedAt: a.DeletedAt,
+		DeletedAt: sql.NullTime(a.DeletedAt),
 	}
 }
 
@@ -46,7 +47,7 @@ func (a *Account) copy(account *models.Account) {
 	a.BankID = account.BankID
 	a.CreatedAt = account.CreatedAt
 	a.UpdatedAt = account.UpdatedAt
-	a.DeletedAt = account.DeletedAt
+	a.DeletedAt = gorm.DeletedAt(account.DeletedAt)
 }
 
 func (a *Account) String() string {

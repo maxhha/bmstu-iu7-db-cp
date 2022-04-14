@@ -18,9 +18,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func init() {
+func Init() *gin.Engine {
 	filename, ok := os.LookupEnv("SERVER_DOTENV")
-
 	if !ok {
 		log.Fatalln("SERVER_DOTENV does not exist in environment variables!")
 	}
@@ -30,23 +29,21 @@ func init() {
 	}
 
 	jwt.Init()
-}
-
-func Init() *gin.Engine {
 	db := database.Connect()
 
 	senders := []ports.TokenSender{
-		emailTokenSender(),
+		emailTokenSender(&db),
 		phoneTokenSender(&db),
 	}
 
-	tokenPort := token.New(&db, senders)
-	bankPort := bank.New(&db)
-	rolePort := role.New(&db)
+	tokenAdapter := token.New(&db, senders)
+	bankAdapter := bank.New(&db)
+	roleAdapter := role.New(&db)
 
-	resolver := graph.New(&db, &tokenPort, &bankPort, &rolePort)
+	resolver := graph.New(&db, &tokenAdapter, &bankAdapter, &roleAdapter)
 	config := generated.Config{Resolvers: resolver}
-	config.Directives.HasRole = rolePort.Handler()
+	config.Directives.HasRole = roleAdapter.Handler()
+	schema := generated.NewExecutableSchema(config)
 
 	r := gin.Default()
 
@@ -56,7 +53,7 @@ func Init() *gin.Engine {
 	r.Use(cors.New(corsConfig))
 
 	r.Use(auth.New(&db))
-	r.Any("/graphql", graphqlHandler(config))
+	r.Any("/graphql", graphqlHandler(schema))
 	r.GET("/graphiql", playgroundHandler())
 
 	return r
