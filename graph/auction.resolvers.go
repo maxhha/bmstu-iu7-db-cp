@@ -9,6 +9,7 @@ import (
 	"auction-back/models"
 	"context"
 	"fmt"
+	"time"
 )
 
 func (r *auctionResolver) Product(ctx context.Context, obj *models.Auction) (*models.Product, error) {
@@ -80,6 +81,66 @@ func (r *mutationResolver) CreateAuction(ctx context.Context, input models.Produ
 	return &models.AuctionResult{
 		Auction: &auction,
 	}, nil
+}
+
+func (r *mutationResolver) UpdateAuction(ctx context.Context, input models.UpdateAuctionInput) (*models.AuctionResult, error) {
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	auction, err := r.DB.Auction().Get(input.AuctionID)
+	if err != nil {
+		return nil, fmt.Errorf("db get: %w", err)
+	}
+
+	if err := isAuctionOwner(viewer, auction); err != nil {
+		return nil, err
+	}
+
+	if !auction.IsEditable() {
+		return nil, ErrNotEditable
+	}
+
+	auction.MinMoney = input.MinMoney.IntoPtr()
+	auction.ScheduledStartAt = input.ScheduledStartAt
+	auction.ScheduledFinishAt = input.ScheduledFinishAt
+
+	if err := r.DB.Auction().Update(&auction); err != nil {
+		return nil, fmt.Errorf("db auction update: %w", err)
+	}
+
+	return &models.AuctionResult{Auction: &auction}, nil
+}
+
+func (r *mutationResolver) StartAuction(ctx context.Context, input models.AuctionInput) (*models.AuctionResult, error) {
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	auction, err := r.DB.Auction().Get(input.AuctionID)
+	if err != nil {
+		return nil, fmt.Errorf("db get: %w", err)
+	}
+
+	if err := isAuctionOwner(viewer, auction); err != nil {
+		return nil, err
+	}
+
+	if !auction.IsEditable() {
+		return nil, ErrNotEditable
+	}
+
+	now := time.Now()
+	auction.ScheduledStartAt = &now
+	auction.State = models.AuctionStateStarted
+
+	if err := r.DB.Auction().Update(&auction); err != nil {
+		return nil, fmt.Errorf("db auction update: %w", err)
+	}
+
+	return &models.AuctionResult{Auction: &auction}, nil
 }
 
 func (r *queryResolver) Auctions(ctx context.Context, first *int, after *string, filter *models.AuctionsFilter) (*models.AuctionsConnection, error) {

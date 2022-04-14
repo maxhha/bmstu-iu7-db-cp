@@ -80,6 +80,30 @@ func (a *Auction) copy(auction *models.Auction) {
 	a.UpdatedAt = auction.UpdatedAt
 }
 
+func (d *auctionDB) Get(id string) (models.Auction, error) {
+	obj := Auction{}
+	if err := d.db.Take(&obj, "id = ?", id).Error; err != nil {
+		return models.Auction{}, fmt.Errorf("take: %w", convertError(err))
+	}
+
+	return obj.into(), nil
+}
+
+func (d *auctionDB) Update(auction *models.Auction) error {
+	if auction == nil {
+		return ports.ErrAuctionIsNil
+	}
+
+	a := Auction{}
+	a.copy(auction)
+
+	if err := d.db.Save(&a).Error; err != nil {
+		return fmt.Errorf("save: %w", convertError(err))
+	}
+
+	return nil
+}
+
 func (d *auctionDB) Create(auction *models.Auction) error {
 	if auction == nil {
 		return fmt.Errorf("auction is nil")
@@ -87,7 +111,7 @@ func (d *auctionDB) Create(auction *models.Auction) error {
 	a := Auction{}
 	a.copy(auction)
 	if err := d.db.Create(&a).Error; err != nil {
-		return fmt.Errorf("create: %w", err)
+		return fmt.Errorf("create: %w", convertError(err))
 	}
 
 	*auction = a.into()
@@ -99,11 +123,41 @@ func (d *auctionDB) filter(query *gorm.DB, config *models.AuctionsFilter) *gorm.
 		return query
 	}
 
+	if len(config.IDs) > 0 {
+		query = query.Where("id IN ?", config.IDs)
+	}
+
+	if len(config.SellerIDs) > 0 {
+		query = query.Where("seller_id IN ?", config.SellerIDs)
+	}
+
+	if len(config.BuyerIDs) > 0 {
+		query = query.Where("buyer_id IN ?", config.BuyerIDs)
+	}
+
+	if len(config.ProductIDs) > 0 {
+		query = query.Where("product_id IN ?", config.ProductIDs)
+	}
+
+	if len(config.States) > 0 {
+		query = query.Where("state IN ?", config.States)
+	}
+
 	return query
 }
 
+func (d *auctionDB) Take(filter *models.AuctionsFilter) (models.Auction, error) {
+	query := d.filter(d.db.Model(&Auction{}), filter)
+	auction := Auction{}
+	if err := query.Take(&auction).Error; err != nil {
+		return models.Auction{}, fmt.Errorf("take: %w", convertError(err))
+	}
+
+	return auction.into(), nil
+}
+
 func (d *auctionDB) Pagination(first *int, after *string, filter *models.AuctionsFilter) (models.AuctionsConnection, error) {
-	query := d.filter(d.db.Model(&Product{}), filter)
+	query := d.filter(d.db.Model(&Auction{}), filter)
 	query, err := paginationQueryByCreatedAtDesc(query, first, after)
 
 	if err != nil {

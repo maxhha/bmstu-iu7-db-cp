@@ -23,7 +23,7 @@ type Product struct {
 	DeclainReason *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
-	DeletedAt     sql.NullTime
+	DeletedAt     gorm.DeletedAt
 }
 
 func (p *Product) into() models.Product {
@@ -36,7 +36,7 @@ func (p *Product) into() models.Product {
 		DeclainReason: p.DeclainReason,
 		CreatedAt:     p.CreatedAt,
 		UpdatedAt:     p.UpdatedAt,
-		DeletedAt:     p.DeletedAt,
+		DeletedAt:     sql.NullTime(p.DeletedAt),
 	}
 }
 
@@ -52,12 +52,12 @@ func (p *Product) copy(product *models.Product) {
 	p.DeclainReason = product.DeclainReason
 	p.CreatedAt = product.CreatedAt
 	p.UpdatedAt = product.UpdatedAt
-	p.DeletedAt = product.DeletedAt
+	p.DeletedAt = gorm.DeletedAt(product.DeletedAt)
 }
 
 func (d *productDB) Create(product *models.Product) error {
 	if product == nil {
-		return fmt.Errorf("product is nil")
+		return ports.ErrProductIsNil
 	}
 	p := Product{}
 	p.copy(product)
@@ -80,7 +80,7 @@ func (d *productDB) Get(id string) (models.Product, error) {
 
 func (d *productDB) Update(product *models.Product) error {
 	if product == nil {
-		return fmt.Errorf("product is nil")
+		return ports.ErrProductIsNil
 	}
 
 	p := Product{}

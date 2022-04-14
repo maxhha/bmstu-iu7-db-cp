@@ -3,7 +3,6 @@ package database
 import (
 	"auction-back/models"
 	"auction-back/ports"
-	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -43,7 +42,7 @@ func (s *UserGetSuite) TestGetUnknownID() {
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 	_, err := s.database.User().Get(id)
-	assert.ErrorIs(s.T(), err, sql.ErrNoRows)
+	assert.ErrorIs(s.T(), err, ports.ErrRecordNotFound)
 }
 
 type UserCreateSuite struct {
@@ -73,10 +72,10 @@ func (s *UserCreateSuite) TestCreateError() {
 	s.SqlMock.
 		ExpectQuery(`INSERT INTO "users" .+ RETURNING "id","created_at"`).
 		WithArgs(nil, nil).
-		WillReturnError(sql.ErrNoRows)
+		WillReturnError(ports.ErrRecordNotFound)
 
 	err := s.database.User().Create(&user)
-	assert.ErrorIs(s.T(), err, sql.ErrNoRows)
+	assert.ErrorIs(s.T(), err, ports.ErrRecordNotFound)
 }
 
 type UserPaginationSuite struct {

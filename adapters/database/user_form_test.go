@@ -62,7 +62,7 @@ func (s *UserFormSuite) TestGet() {
 					WithArgs(id).
 					WillReturnError(gorm.ErrRecordNotFound)
 			},
-			sql.ErrNoRows,
+			ports.ErrRecordNotFound,
 		},
 	}
 
@@ -395,7 +395,7 @@ func (s *UserFormSuite) TestPagination() {
 			"Pagination error",
 			func() {},
 			ports.UserFormPaginationConfig{First: &negfirst},
-			ErrInvalidFirst,
+			ports.ErrInvalidFirst,
 			nil,
 			nil,
 		},

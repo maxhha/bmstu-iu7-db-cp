@@ -23,6 +23,10 @@ type ApproveUserFormInput struct {
 	UserFormID string `json:"userFormId"`
 }
 
+type AuctionInput struct {
+	AuctionID string `json:"auctionId"`
+}
+
 type AuctionResult struct {
 	Auction *Auction `json:"auction"`
 }
@@ -72,6 +76,12 @@ type DeclineUserFormInput struct {
 type LoginInput struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+// Input money in a specific currency
+type MoneyInput struct {
+	Amount   float64      `json:"amount"`
+	Currency CurrencyEnum `json:"currency"`
 }
 
 type OfferProductResult struct {
@@ -159,6 +169,13 @@ type TransactionsConnection struct {
 type TransactionsConnectionEdge struct {
 	Cursor string       `json:"cursor"`
 	Node   *Transaction `json:"node"`
+}
+
+type UpdateAuctionInput struct {
+	AuctionID         string      `json:"auctionId"`
+	MinMoney          *MoneyInput `json:"minMoney"`
+	ScheduledStartAt  *time.Time  `json:"scheduledStartAt"`
+	ScheduledFinishAt *time.Time  `json:"scheduledFinishAt"`
 }
 
 type UpdateProductInput struct {

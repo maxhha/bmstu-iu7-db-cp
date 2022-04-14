@@ -37,3 +37,14 @@ type Money struct {
 	Amount   decimal.Decimal `json:"amount"`
 	Currency CurrencyEnum    `json:"currency"`
 }
+
+func (m *MoneyInput) IntoPtr() *Money {
+	if m == nil {
+		return nil
+	}
+
+	return &Money{
+		Amount:   decimal.NewFromFloat(m.Amount),
+		Currency: m.Currency,
+	}
+}

@@ -5,6 +5,7 @@ package graph
 
 import (
 	"auction-back/auth"
+	"auction-back/graph/generated"
 	"auction-back/models"
 	"auction-back/ports"
 	"context"
@@ -142,3 +143,26 @@ func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string
 
 	return &connection, nil
 }
+
+func (r *userFormResolver) User(ctx context.Context, obj *models.UserForm) (*models.User, error) {
+	if obj == nil {
+		return nil, nil
+	}
+
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := r.DB.User().Get(viewer.ID)
+	if err != nil {
+		return nil, fmt.Errorf("db user get: %w", err)
+	}
+
+	return &user, nil
+}
+
+// UserForm returns generated.UserFormResolver implementation.
+func (r *Resolver) UserForm() generated.UserFormResolver { return &userFormResolver{r} }
+
+type userFormResolver struct{ *Resolver }

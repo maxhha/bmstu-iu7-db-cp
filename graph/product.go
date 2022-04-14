@@ -15,7 +15,7 @@ func isProductOwner(DB ports.DB, viewer models.User, product models.Product) err
 	}
 
 	if owner.ID != viewer.ID {
-		return fmt.Errorf("viewer is not owner")
+		return ErrViewerNotOwner
 	}
 
 	return nil

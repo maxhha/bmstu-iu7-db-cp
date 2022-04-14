@@ -18,3 +18,7 @@ type Auction struct {
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }
+
+func (a *Auction) IsEditable() bool {
+	return a.State == AuctionStateCreated
+}

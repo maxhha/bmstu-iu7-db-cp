@@ -3,7 +3,6 @@ package database
 import (
 	"auction-back/models"
 	"auction-back/ports"
-	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -86,7 +85,7 @@ func (s *RoleSuite) TestFind() {
 					ExpectQuery(`SELECT \* FROM "roles"`).
 					WillReturnError(gorm.ErrRecordNotFound)
 			},
-			Error: sql.ErrNoRows,
+			Error: ports.ErrRecordNotFound,
 		},
 	}
 

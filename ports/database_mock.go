@@ -58,9 +58,24 @@ func (m *AuctionDBMock) Create(auction *models.Auction) error {
 	return args.Error(0)
 }
 
+func (m *AuctionDBMock) Get(id string) (models.Auction, error) {
+	args := m.Called(id)
+	return args.Get(0).(models.Auction), args.Error(1)
+}
+
 func (m *AuctionDBMock) Pagination(first *int, after *string, filter *models.AuctionsFilter) (models.AuctionsConnection, error) {
 	args := m.Called(first, after, filter)
 	return args.Get(0).(models.AuctionsConnection), args.Error(1)
+}
+
+func (m *AuctionDBMock) Take(filter *models.AuctionsFilter) (models.Auction, error) {
+	args := m.Called(filter)
+	return args.Get(0).(models.Auction), args.Error(1)
+}
+
+func (m *AuctionDBMock) Update(auction *models.Auction) error {
+	args := m.Called(auction)
+	return args.Error(0)
 }
 
 func (m *BankDBMock) Get(id string) (models.Bank, error) {

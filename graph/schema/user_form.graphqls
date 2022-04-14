@@ -26,6 +26,10 @@ type UserForm {
   User name
   """
   name: String
+  """
+  UserForm owner
+  """
+  user: User!
 }
 
 """

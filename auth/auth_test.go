@@ -4,7 +4,6 @@ import (
 	"auction-back/jwt"
 	"auction-back/models"
 	"auction-back/ports"
-	"database/sql"
 	"net/http"
 	"os"
 	"testing"
@@ -67,7 +66,7 @@ func (s *AuthSuite) TestUnknownUser() {
 		},
 	}
 
-	s.db.UserMock.On("Get", id).Return(models.User{}, sql.ErrNoRows)
+	s.db.UserMock.On("Get", id).Return(models.User{}, ports.ErrRecordNotFound)
 
 	s.handler(&ctx)
 

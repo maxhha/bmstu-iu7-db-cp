@@ -10,14 +10,10 @@ import (
 	"auction-back/models"
 	"auction-back/ports"
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 )
-
-var ErrNoPassword = errors.New("password not set")
-var ErrPasswordMissmatch = errors.New("password mismatch")
 
 func (r *mutationResolver) Register(ctx context.Context) (*models.TokenResult, error) {
 	user := models.User{}
@@ -243,9 +239,10 @@ func (r *queryResolver) Users(ctx context.Context, first *int, after *string, fi
 	return &connection, nil
 }
 
+// TODO: Add decorators for per filed access of approved user form
+// Access levels: MANAGER, OWNER, USER, GUEST
 func (r *userResolver) Form(ctx context.Context, obj *models.User) (*models.UserFormFilled, error) {
 	viewer, err := auth.ForViewer(ctx)
-
 	if err != nil {
 		return nil, err
 	}
@@ -254,8 +251,8 @@ func (r *userResolver) Form(ctx context.Context, obj *models.User) (*models.User
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 
-	form, err := r.DB.User().LastApprovedUserForm(viewer)
-	if errors.Is(err, sql.ErrNoRows) {
+	form, err := r.DB.User().LastApprovedUserForm(*obj)
+	if errors.Is(err, ports.ErrRecordNotFound) {
 		return nil, nil
 	}
 
@@ -284,7 +281,7 @@ func (r *userResolver) DraftForm(ctx context.Context, obj *models.User) (*models
 		},
 	})
 
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, ports.ErrRecordNotFound) {
 		return nil, nil
 	}
 
@@ -364,6 +361,28 @@ func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *in
 	}
 
 	return &connection, nil
+}
+
+func (r *userResolver) Auctions(ctx context.Context, obj *models.User, first *int, after *string) (*models.AuctionsConnection, error) {
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := r.isOwnerOrManager(viewer, obj); err != nil {
+		return nil, fmt.Errorf("denied: %w", err)
+	}
+
+	filter := models.AuctionsFilter{
+		SellerIDs: []string{obj.ID},
+	}
+
+	conn, err := r.DB.Auction().Pagination(first, after, &filter)
+	if err != nil {
+		return nil, fmt.Errorf("db auction pagination: %w", err)
+	}
+
+	return &conn, nil
 }
 
 func (r *userResolver) Offers(ctx context.Context, obj *models.User, first *int, after *string) (*models.OffersConnection, error) {

@@ -3,7 +3,6 @@ package bank
 import (
 	"auction-back/models"
 	"auction-back/ports"
-	"database/sql"
 	"errors"
 	"fmt"
 )
@@ -55,7 +54,7 @@ func (b *BankPort) UserFormApproved(form models.UserForm) error {
 		return nil
 	}
 
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, ports.ErrRecordNotFound) {
 		return b.createAccount(form.UserID)
 	}
 

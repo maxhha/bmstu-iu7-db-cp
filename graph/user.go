@@ -3,7 +3,6 @@ package graph
 import (
 	"auction-back/models"
 	"auction-back/ports"
-	"database/sql"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -14,6 +13,9 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 )
+
+var ErrNoPassword = errors.New("password not set")
+var ErrPasswordMissmatch = errors.New("password mismatch")
 
 var passwordHashSalt []byte
 
@@ -53,7 +55,7 @@ func getOrCreateUserDraftForm(DB ports.DB, viewer models.User) (models.UserForm,
 		} else {
 			return form, fmt.Errorf("unknown form state: %s", form.State)
 		}
-	} else if !errors.Is(err, sql.ErrNoRows) {
+	} else if !errors.Is(err, ports.ErrRecordNotFound) {
 		return form, fmt.Errorf("take: %w", err)
 	}
 

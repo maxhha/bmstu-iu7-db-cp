@@ -38,6 +38,10 @@ type User {
   """
   accounts(first: Int, after: Cursor): UserAccountsConnection!
   """
+  Auctions which user created
+  """
+  auctions(first: Int, after: Cursor): AuctionsConnection!
+  """
   User offers
   """
   offers(first: Int, after: Cursor): OffersConnection!

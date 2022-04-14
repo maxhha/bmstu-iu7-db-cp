@@ -1,7 +1,7 @@
 package database
 
 import (
-	"database/sql"
+	"auction-back/ports"
 	"errors"
 	"fmt"
 
@@ -9,7 +9,7 @@ import (
 )
 
 var errorMap = map[error]error{
-	gorm.ErrRecordNotFound: sql.ErrNoRows,
+	gorm.ErrRecordNotFound: ports.ErrRecordNotFound,
 }
 
 func convertError(err error) error {

@@ -11,6 +11,14 @@ type Money {
 }
 
 """
+Input money in a specific currency
+"""
+input MoneyInput {
+  amount: Float!
+  currency: CurrencyEnum!
+}
+
+"""
 Used for actions activation
 """
 input TokenInput {

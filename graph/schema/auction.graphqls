@@ -76,9 +76,28 @@ type AuctionResult {
   auction: Auction!
 }
 
+input UpdateAuctionInput {
+  auctionId: ID!
+  minMoney: MoneyInput
+  scheduledStartAt: DateTime
+  scheduledFinishAt: DateTime
+}
+
+input AuctionInput {
+  auctionId: ID!
+}
+
 extend type Mutation {
   """
   Create auction for given product
   """
   createAuction(input: ProductInput!): AuctionResult!
+  """
+  Update auction
+  """
+  updateAuction(input: UpdateAuctionInput!): AuctionResult!
+  """
+  Starts auction manually
+  """
+  startAuction(input: AuctionInput!): AuctionResult!
 }

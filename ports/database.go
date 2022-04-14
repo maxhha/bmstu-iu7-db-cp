@@ -73,7 +73,10 @@ type AccountDB interface {
 }
 
 type AuctionDB interface {
+	Get(id string) (models.Auction, error)
+	Take(filter *models.AuctionsFilter) (models.Auction, error)
 	Create(auction *models.Auction) error
+	Update(auction *models.Auction) error
 	Pagination(first *int, after *string, filter *models.AuctionsFilter) (models.AuctionsConnection, error)
 }
 

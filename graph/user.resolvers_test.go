@@ -4,6 +4,7 @@ import (
 	"auction-back/auth"
 	"auction-back/jwt"
 	"auction-back/models"
+	"auction-back/ports"
 	"context"
 	"database/sql"
 	"os"
@@ -72,8 +73,8 @@ func (s *LoginSuite) Test() {
 		{
 			Name:                 "Fail find user form",
 			GetLoginFormUserForm: models.UserForm{},
-			GetLoginFormError:    sql.ErrNoRows,
-			Error:                sql.ErrNoRows,
+			GetLoginFormError:    ports.ErrRecordNotFound,
+			Error:                ports.ErrRecordNotFound,
 		},
 		{
 			Name:                 "Form without password",
@@ -152,7 +153,7 @@ func (s *ApproveSetUserEmailSuite) TestApproveSetUserEmail() {
 			nil,
 		)
 
-	s.DB.UserFormMock.On("Take", mock.Anything).Return(models.UserForm{}, sql.ErrNoRows)
+	s.DB.UserFormMock.On("Take", mock.Anything).Return(models.UserForm{}, ports.ErrRecordNotFound)
 
 	s.DB.UserFormMock.On("Create", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 		form := args.Get(0).(*models.UserForm)
