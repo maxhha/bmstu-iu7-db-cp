@@ -27,6 +27,8 @@ func InitPasswordHashSalt() {
 }
 
 var ErrUserFormModerating = errors.New("moderating")
+var ErrUserNotOwner = errors.New("viewer is not owner")
+var ErrUserIsNil = errors.New("user is nil")
 
 func getOrCreateUserDraftForm(DB ports.DB, viewer models.User) (models.UserForm, error) {
 	form, err := DB.UserForm().Take(ports.UserFormTakeConfig{
@@ -86,13 +88,13 @@ func checkHashAndPassword(hash string, password string) bool {
 
 func (r *userResolver) isOwnerOrManager(viewer models.User, obj *models.User) error {
 	if obj == nil {
-		return fmt.Errorf("user is nil")
+		return ErrUserIsNil
 	}
 
 	var errors error
 
 	if viewer.ID != obj.ID {
-		errors = multierror.Append(errors, fmt.Errorf("viewer is not owner"))
+		errors = multierror.Append(errors, ErrUserNotOwner)
 	} else {
 		return nil
 	}

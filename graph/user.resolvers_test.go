@@ -54,24 +54,81 @@ func TestLoginSuite(t *testing.T) {
 	suite.Run(t, new(LoginSuite))
 }
 
-func (s *LoginSuite) TestSuccess() {
+func (s *LoginSuite) Test() {
 	userID := "test-user"
 	password := "12345"
 	passwordHash, err := hashPassword(password)
 	require.NoError(s.T(), err)
-
-	form := models.UserForm{UserID: userID, Password: &passwordHash}
-	s.DB.UserFormMock.On("GetLoginForm", mock.Anything).Return(form, nil)
-
+	passwordHash2 := "password-hash"
 	ctx := context.Background()
 	input := models.LoginInput{Password: password}
-	result, err := s.resolver.Mutation().Login(ctx, input)
-	require.NoError(s.T(), err)
-	require.NotNil(s.T(), result)
 
-	uid, err := jwt.ParseUser(result.Token)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), userID, uid)
+	cases := []struct {
+		Name                 string
+		GetLoginFormUserForm models.UserForm
+		GetLoginFormError    error
+		Error                error
+	}{
+		{
+			Name:                 "Fail find user form",
+			GetLoginFormUserForm: models.UserForm{},
+			GetLoginFormError:    sql.ErrNoRows,
+			Error:                sql.ErrNoRows,
+		},
+		{
+			Name:                 "Form without password",
+			GetLoginFormUserForm: models.UserForm{UserID: userID},
+			Error:                ErrNoPassword,
+		},
+		{
+			Name:                 "Enter wrong password",
+			GetLoginFormUserForm: models.UserForm{UserID: userID, Password: &passwordHash2},
+			Error:                ErrPasswordMissmatch,
+		},
+		{
+			Name: "Success",
+			GetLoginFormUserForm: models.UserForm{
+				UserID:   userID,
+				Password: &passwordHash,
+			},
+		},
+	}
+
+	for _, c := range cases {
+		s.DB.UserFormMock.On("GetLoginForm", mock.Anything).
+			Return(c.GetLoginFormUserForm, c.GetLoginFormError).
+			Once()
+
+		result, err := s.resolver.Mutation().Login(ctx, input)
+
+		if c.Error == nil {
+			require.NoError(s.T(), err, "error not exists in case '%s'", c.Name)
+			require.NotNil(s.T(), result, "result must be in case '%s'", c.Name)
+
+			uid, err := jwt.ParseUser(result.Token)
+			require.NoError(
+				s.T(),
+				err,
+				"must parse given token in case '%s'",
+				c.Name,
+			)
+			require.Equal(
+				s.T(),
+				userID,
+				uid,
+				"token must match user id in case '%s'",
+				c.Name,
+			)
+		} else {
+			require.ErrorIs(
+				s.T(),
+				err,
+				c.Error,
+				"error must exists in case '%s'",
+				c.Name,
+			)
+		}
+	}
 }
 
 type ApproveSetUserEmailSuite struct {
@@ -162,4 +219,61 @@ func (s *ViewerSuite) TestViewer() {
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), result)
 	require.Equal(s.T(), result, &viewer)
+}
+
+type UserRequestSetUserEmail struct {
+	GraphSuite
+}
+
+func TestUserRequestSetUserEmail(t *testing.T) {
+	suite.Run(t, new(UserRequestSetUserEmail))
+}
+
+func (s *UserRequestSetUserEmail) Test() {
+	viewer := models.User{ID: "test-user"}
+	email := "new-email"
+	cases := []struct {
+		Name    string
+		Context context.Context
+		Mock    func()
+		Error   error
+	}{
+		{
+			Name:    "No viewer",
+			Context: context.Background(),
+			Mock:    func() {},
+			Error:   auth.ErrUnauthorized,
+		},
+		{
+			Name:    "Success",
+			Context: auth.WithViewer(context.Background(), viewer),
+			Mock: func() {
+				s.TokenMock.On(
+					"Create",
+					models.TokenActionSetUserEmail,
+					viewer,
+					map[string]interface{}{"email": email},
+				).Return(nil).Once()
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c.Mock()
+		ok, err := s.resolver.Mutation().RequestSetUserEmail(c.Context, models.RequestSetUserEmailInput{Email: email})
+
+		if c.Error == nil {
+			require.NoError(s.T(), err, "[%s] should not have error", c.Name)
+			require.Equal(s.T(), ok, true)
+		} else {
+			require.ErrorIs(
+				s.T(),
+				err,
+				c.Error,
+				"[%s] should have error",
+				c.Name,
+			)
+			require.Equal(s.T(), ok, false)
+		}
+	}
 }

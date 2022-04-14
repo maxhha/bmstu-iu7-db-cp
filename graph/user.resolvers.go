@@ -16,6 +16,9 @@ import (
 	"time"
 )
 
+var ErrNoPassword = errors.New("password not set")
+var ErrPasswordMissmatch = errors.New("password mismatch")
+
 func (r *mutationResolver) Register(ctx context.Context) (*models.TokenResult, error) {
 	user := models.User{}
 
@@ -24,7 +27,6 @@ func (r *mutationResolver) Register(ctx context.Context) (*models.TokenResult, e
 	}
 
 	token, err := jwt.NewUser(user.ID)
-
 	if err != nil {
 		return nil, err
 	}
@@ -36,23 +38,21 @@ func (r *mutationResolver) Register(ctx context.Context) (*models.TokenResult, e
 
 func (r *mutationResolver) Login(ctx context.Context, input models.LoginInput) (*models.TokenResult, error) {
 	form, err := r.DB.UserForm().GetLoginForm(input)
-
 	if err != nil {
 		return nil, fmt.Errorf("get login form: %w", err)
 	}
 
 	if form.Password == nil {
-		return nil, fmt.Errorf("password not set")
+		return nil, ErrNoPassword
 	}
 
 	if !checkHashAndPassword(*form.Password, input.Password) {
-		return nil, fmt.Errorf("password mismatch")
+		return nil, ErrPasswordMissmatch
 	}
 
 	token, err := jwt.NewUser(form.UserID)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("jwt new user: %w", err)
 	}
 
 	return &models.TokenResult{

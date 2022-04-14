@@ -1,6 +1,8 @@
 package ports
 
-import "auction-back/models"
+import (
+	"auction-back/models"
+)
 
 //go:generate go run ../codegen/portmocks/main.go --config ../portmocksgen.yml --in role.go --out role_mock.go --outpkg ports
 
