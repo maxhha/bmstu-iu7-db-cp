@@ -7,7 +7,9 @@ import (
 	"auction-back/auth"
 	"auction-back/graph/generated"
 	"auction-back/models"
+	"auction-back/ports"
 	"context"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -70,7 +72,19 @@ func (r *mutationResolver) CreateAuction(ctx context.Context, input models.Produ
 		return nil, fmt.Errorf("product state is not %s", models.ProductStateApproved)
 	}
 
-	auction := models.Auction{
+	auction, err := r.DB.Auction().Take(&models.AuctionsFilter{
+		SellerIDs:  []string{viewer.ID},
+		ProductIDs: []string{product.ID},
+	})
+	if err == nil {
+		if auction.State != models.AuctionStateFailed {
+			return nil, ErrAlreadyExists
+		}
+	} else if !errors.Is(err, ports.ErrRecordNotFound) {
+		return nil, fmt.Errorf("db auction take: %w", err)
+	}
+
+	auction = models.Auction{
 		ProductID: product.ID,
 		SellerID:  viewer.ID,
 	}
@@ -132,8 +146,8 @@ func (r *mutationResolver) StartAuction(ctx context.Context, input models.Auctio
 		return nil, ErrNotEditable
 	}
 
-	now := time.Now()
-	auction.ScheduledStartAt = &now
+	now := time.Now().UTC()
+	auction.StartedAt = &now
 	auction.State = models.AuctionStateStarted
 
 	if err := r.DB.Auction().Update(&auction); err != nil {

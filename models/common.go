@@ -9,11 +9,13 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const dateTimeLayout = "2006-01-02T15:04:05.000Z"
+const dateTimeLayout = `2006-01-02T15:04:05.000Z07:00`
 
 func MarshalDateTime(t time.Time) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
-		w.Write([]byte(t.Format(dateTimeLayout)))
+		w.Write([]byte(`"`))
+		w.Write([]byte(t.UTC().Format(dateTimeLayout)))
+		w.Write([]byte(`"`))
 	})
 }
 

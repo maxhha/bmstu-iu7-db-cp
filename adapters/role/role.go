@@ -45,7 +45,7 @@ func (r *RolePort) HasRole(roleType models.RoleType, viewer models.User) error {
 	}
 
 	if len(roles) == 0 {
-		return fmt.Errorf("no role %s", roleType)
+		return fmt.Errorf("%w: %s", ports.ErrNoRole, roleType)
 	}
 
 	return nil

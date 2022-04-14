@@ -49,7 +49,7 @@ func (t *TokenPort) send(token models.Token) error {
 
 func (t *TokenPort) Create(action models.TokenAction, viewer models.User, data map[string]interface{}) error {
 	token := models.Token{
-		ExpiresAt: time.Now().Add(time.Hour * time.Duration(1)),
+		ExpiresAt: time.Now().UTC().Add(time.Hour * time.Duration(1)),
 		Action:    action,
 		Data:      data,
 		UserID:    viewer.ID,
@@ -84,7 +84,7 @@ func (t *TokenPort) Activate(action models.TokenAction, token_code string, viewe
 	}
 
 	token.ActivatedAt = sql.NullTime{
-		Time:  time.Now(),
+		Time:  time.Now().UTC(),
 		Valid: true,
 	}
 
