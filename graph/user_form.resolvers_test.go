@@ -25,6 +25,7 @@ func (s *RequestModerateUserFormSuite) TestEditableForm() {
 	name := "name"
 	password := "password"
 	email := "email"
+	currency := models.CurrencyEnumEur
 
 	for _, state := range models.AllUserFormState {
 		form := models.UserForm{
@@ -33,6 +34,7 @@ func (s *RequestModerateUserFormSuite) TestEditableForm() {
 			Name:     &name,
 			Password: &password,
 			Email:    &email,
+			Currency: &currency,
 		}
 		if !form.IsEditable() {
 			continue

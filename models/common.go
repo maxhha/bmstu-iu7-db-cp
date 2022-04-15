@@ -46,7 +46,27 @@ func (m *MoneyInput) IntoPtr() *Money {
 	}
 
 	return &Money{
-		Amount:   decimal.NewFromFloat(m.Amount),
+		Amount:   m.Amount,
 		Currency: m.Currency,
 	}
+}
+
+func MarshalDecimal(d decimal.Decimal) graphql.Marshaler {
+	return graphql.WriterFunc(func(w io.Writer) {
+		w.Write([]byte(d.String()))
+	})
+}
+
+func UnmarshalDecimal(v interface{}) (decimal.Decimal, error) {
+	valf, okf := v.(float64)
+	if okf {
+		return decimal.NewFromFloatWithExponent(valf, -2), nil
+	}
+
+	vali, oki := v.(int64)
+	if oki {
+		return decimal.NewFromInt(vali), nil
+	}
+
+	return decimal.Decimal{}, fmt.Errorf("fail convert to float or int %#v", v)
 }

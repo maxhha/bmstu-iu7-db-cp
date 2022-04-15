@@ -22,9 +22,13 @@ type Auction {
   """
   buyer: User
   """
+  Auctions currency
+  """
+  currency: CurrencyEnum!
+  """
   First offer must have equal or greater amount
   """
-  minMoney: Money
+  minAmount: Float
   """
   Planned time for auction start
   """
@@ -78,7 +82,8 @@ type AuctionResult {
 
 input UpdateAuctionInput {
   auctionId: ID!
-  minMoney: MoneyInput
+  currency: CurrencyEnum!
+  minAmount: Float
   scheduledStartAt: DateTime
   scheduledFinishAt: DateTime
 }

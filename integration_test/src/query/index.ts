@@ -56,6 +56,67 @@ export type ApproveUserFormInput = {
   userFormId: Scalars["ID"]
 }
 
+export type Auction = {
+  __typename?: "Auction"
+  /** Product buyer */
+  buyer?: Maybe<User>
+  /** Auctions currency */
+  currency: CurrencyEnum
+  /** Real time of auction end */
+  finishedAt?: Maybe<Scalars["DateTime"]>
+  id: Scalars["String"]
+  /** First offer must have equal or greater amount */
+  minAmount?: Maybe<Scalars["Float"]>
+  /** Product for selling */
+  product: Product
+  /** Planned time for auction end */
+  scheduledFinishAt?: Maybe<Scalars["DateTime"]>
+  /** Planned time for auction start */
+  scheduledStartAt?: Maybe<Scalars["DateTime"]>
+  /** Product seller, auction creator */
+  seller: User
+  /** Real auction start time */
+  startedAt?: Maybe<Scalars["DateTime"]>
+  state: AuctionState
+}
+
+export type AuctionInput = {
+  auctionId: Scalars["ID"]
+}
+
+export type AuctionResult = {
+  __typename?: "AuctionResult"
+  auction: Auction
+}
+
+export enum AuctionState {
+  Created = "CREATED",
+  Failed = "FAILED",
+  Finished = "FINISHED",
+  Started = "STARTED",
+  Succeeded = "SUCCEEDED",
+}
+
+export type AuctionsConnection = {
+  __typename?: "AuctionsConnection"
+  edges: Array<AuctionsConnectionEdge>
+  pageInfo: PageInfo
+}
+
+export type AuctionsConnectionEdge = {
+  __typename?: "AuctionsConnectionEdge"
+  cursor: Scalars["Cursor"]
+  node: Auction
+}
+
+export type AuctionsFilter = {
+  IDs?: InputMaybe<Array<Scalars["ID"]>>
+  buyerIDs?: InputMaybe<Array<Scalars["String"]>>
+  productIDs?: InputMaybe<Array<Scalars["String"]>>
+  sellerIDs?: InputMaybe<Array<Scalars["String"]>>
+  states?: InputMaybe<Array<AuctionState>>
+}
+
 /** Bank that is cooperated with platform */
 export type Bank = {
   __typename?: "Bank"
@@ -125,6 +186,12 @@ export type Money = {
   currency: CurrencyEnum
 }
 
+/** Input money in a specific currency */
+export type MoneyInput = {
+  amount: Scalars["Float"]
+  currency: CurrencyEnum
+}
+
 export type Mutation = {
   __typename?: "Mutation"
   /** Set product state to moderating */
@@ -139,6 +206,8 @@ export type Mutation = {
   approveSetUserPhone: UserResult
   /** Approve user form */
   approveUserForm: UserFormResult
+  /** Create auction for given product */
+  createAuction: AuctionResult
   createOffer: CreateOfferResult
   /** Creates product with creator of current viewer */
   createProduct: ProductResult
@@ -161,7 +230,11 @@ export type Mutation = {
   /** Request set user email */
   requestSetUserPhone: Scalars["Boolean"]
   sellProduct: SellProductResult
+  /** Starts auction manually */
+  startAuction: AuctionResult
   takeOffProduct: TakeOffProductResult
+  /** Update auction */
+  updateAuction: AuctionResult
   /** Update product info */
   updateProduct: ProductResult
   /** Update user draft form fields */
@@ -192,6 +265,10 @@ export type MutationApproveSetUserPhoneArgs = {
 
 export type MutationApproveUserFormArgs = {
   input: ApproveUserFormInput
+}
+
+export type MutationCreateAuctionArgs = {
+  input: ProductInput
 }
 
 export type MutationCreateOfferArgs = {
@@ -234,8 +311,16 @@ export type MutationSellProductArgs = {
   input: ProductInput
 }
 
+export type MutationStartAuctionArgs = {
+  input: AuctionInput
+}
+
 export type MutationTakeOffProductArgs = {
   input: ProductInput
+}
+
+export type MutationUpdateAuctionArgs = {
+  input: UpdateAuctionInput
 }
 
 export type MutationUpdateProductArgs = {
@@ -379,6 +464,8 @@ export type ProductsFilter = {
 
 export type Query = {
   __typename?: "Query"
+  /** All auctions */
+  auctions: AuctionsConnection
   marketProducts: ProductsConnection
   /** List all products */
   products: ProductsConnection
@@ -390,6 +477,12 @@ export type Query = {
   viewer?: Maybe<User>
 }
 
+export type QueryAuctionsArgs = {
+  after?: InputMaybe<Scalars["Cursor"]>
+  filter?: InputMaybe<AuctionsFilter>
+  first?: InputMaybe<Scalars["Int"]>
+}
+
 export type QueryMarketProductsArgs = {
   after?: InputMaybe<Scalars["String"]>
   first?: InputMaybe<Scalars["Int"]>
@@ -397,6 +490,7 @@ export type QueryMarketProductsArgs = {
 
 export type QueryProductsArgs = {
   after?: InputMaybe<Scalars["String"]>
+  filter?: InputMaybe<ProductsFilter>
   first?: InputMaybe<Scalars["Int"]>
 }
 
@@ -511,6 +605,14 @@ export type TransactionsConnectionEdge = {
   node: Transaction
 }
 
+export type UpdateAuctionInput = {
+  auctionId: Scalars["ID"]
+  currency: CurrencyEnum
+  minAmount?: InputMaybe<Scalars["Float"]>
+  scheduledFinishAt?: InputMaybe<Scalars["DateTime"]>
+  scheduledStartAt?: InputMaybe<Scalars["DateTime"]>
+}
+
 export type UpdateProductInput = {
   description: Scalars["String"]
   productId: Scalars["ID"]
@@ -518,6 +620,7 @@ export type UpdateProductInput = {
 }
 
 export type UpdateUserDraftFormInput = {
+  currency?: InputMaybe<CurrencyEnum>
   name?: InputMaybe<Scalars["String"]>
 }
 
@@ -530,6 +633,8 @@ export type User = {
   __typename?: "User"
   /** User accounts */
   accounts: UserAccountsConnection
+  /** Auctions which user created */
+  auctions: AuctionsConnection
   /** Available moneys */
   available: Array<Money>
   /** Money that is blocked in some offers */
@@ -550,6 +655,11 @@ export type User = {
 }
 
 export type UserAccountsArgs = {
+  after?: InputMaybe<Scalars["Cursor"]>
+  first?: InputMaybe<Scalars["Int"]>
+}
+
+export type UserAuctionsArgs = {
   after?: InputMaybe<Scalars["Cursor"]>
   first?: InputMaybe<Scalars["Int"]>
 }
@@ -604,6 +714,8 @@ export type UserAccountsConnectionEdge = {
 /** User personal information */
 export type UserForm = {
   __typename?: "UserForm"
+  /** User default currency */
+  currency?: Maybe<CurrencyEnum>
   /** User email */
   email?: Maybe<Scalars["String"]>
   id: Scalars["ID"]
@@ -613,11 +725,15 @@ export type UserForm = {
   phone?: Maybe<Scalars["String"]>
   /** User form state */
   state: UserFormState
+  /** UserForm owner */
+  user: User
 }
 
 /** UserFrom with all required fields filled in */
 export type UserFormFilled = {
   __typename?: "UserFormFilled"
+  /** User default currency */
+  currency: CurrencyEnum
   /** User email */
   email: Scalars["String"]
   /** User name */

@@ -23,6 +23,7 @@ type UserForm struct {
 	Password      *string
 	Phone         *string
 	Email         *string
+	Currency      *models.CurrencyEnum
 	DeclainReason *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
@@ -38,6 +39,7 @@ func (u *UserForm) into() models.UserForm {
 		Password:      u.Password,
 		Phone:         u.Phone,
 		Email:         u.Email,
+		Currency:      u.Currency,
 		DeclainReason: u.DeclainReason,
 		CreatedAt:     u.CreatedAt,
 		UpdatedAt:     u.UpdatedAt,
@@ -56,6 +58,7 @@ func (f *UserForm) copy(form *models.UserForm) {
 	f.Password = form.Password
 	f.Phone = form.Phone
 	f.Email = form.Email
+	f.Currency = form.Currency
 	f.DeclainReason = form.DeclainReason
 	f.CreatedAt = form.CreatedAt
 	f.UpdatedAt = form.UpdatedAt

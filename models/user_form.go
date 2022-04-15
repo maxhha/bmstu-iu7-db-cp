@@ -14,8 +14,9 @@ type UserForm struct {
 	State         UserFormState
 	Name          *string `json:"name"`
 	Password      *string
-	Phone         *string `json:"phone"`
-	Email         *string `json:"email"`
+	Phone         *string       `json:"phone"`
+	Email         *string       `json:"email"`
+	Currency      *CurrencyEnum `json:"currency"`
 	DeclainReason *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
@@ -45,6 +46,12 @@ func (f *UserFormFilled) From(form *UserForm) (*UserFormFilled, error) {
 		err = multierror.Append(err, fmt.Errorf("no name"))
 	} else {
 		f.Name = *form.Name
+	}
+
+	if form.Currency == nil {
+		err = multierror.Append(err, fmt.Errorf("no currency"))
+	} else {
+		f.Currency = *form.Currency
 	}
 
 	return f, err

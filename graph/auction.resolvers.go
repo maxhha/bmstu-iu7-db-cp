@@ -84,12 +84,21 @@ func (r *mutationResolver) CreateAuction(ctx context.Context, input models.Produ
 		return nil, fmt.Errorf("db auction take: %w", err)
 	}
 
+	form, err := r.DB.User().LastApprovedUserForm(viewer)
+	if err != nil {
+		return nil, fmt.Errorf("db user last approved form: %w", err)
+	}
+	if form.Currency == nil {
+		return nil, ErrCurrencyIsNil
+	}
+
 	auction = models.Auction{
 		ProductID: product.ID,
 		SellerID:  viewer.ID,
+		Currency:  *form.Currency,
 	}
 	if err := r.DB.Auction().Create(&auction); err != nil {
-		return nil, fmt.Errorf("db create: %w", err)
+		return nil, fmt.Errorf("db auction create: %w", err)
 	}
 
 	return &models.AuctionResult{
@@ -116,7 +125,8 @@ func (r *mutationResolver) UpdateAuction(ctx context.Context, input models.Updat
 		return nil, ErrNotEditable
 	}
 
-	auction.MinMoney = input.MinMoney.IntoPtr()
+	auction.Currency = input.Currency
+	auction.MinAmount = input.MinAmount
 	auction.ScheduledStartAt = input.ScheduledStartAt
 	auction.ScheduledFinishAt = input.ScheduledFinishAt
 

@@ -57,6 +57,9 @@ models:
   DateTime:
     model:
       - auction-back/models.DateTime
+  Float:
+    model:
+      - auction-back/models.Decimal
   Cursor:
     model:
       - github.com/99designs/gqlgen/graphql.String

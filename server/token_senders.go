@@ -6,6 +6,7 @@ import (
 	"auction-back/ports"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 var ErrUserEmailIsNil = errors.New("user form email is nil")
@@ -20,7 +21,6 @@ func userEmailReceiverGetter(DB ports.DB) token_sender.ReceiverGetter {
 		}
 
 		form, err := DB.User().MostRelevantUserForm(user)
-
 		if err != nil {
 			return "", fmt.Errorf("last relevant user form: %w", err)
 		}
@@ -38,7 +38,8 @@ func tokenEmailReceiverGetter(getUserEmail token_sender.ReceiverGetter) token_se
 		userEmail, err := getUserEmail(token)
 		if err == nil {
 			return userEmail, nil
-		} else if !errors.Is(err, ErrUserEmailIsNil) {
+		} else if !errors.Is(err, ErrUserEmailIsNil) &&
+			!strings.Contains(err.Error(), "last relevant user form: take: not found") {
 			return "", err
 		}
 
@@ -82,7 +83,8 @@ func tokenPhoneReceiverGetter(getUserPhone token_sender.ReceiverGetter) token_se
 		userPhone, err := getUserPhone(token)
 		if err == nil {
 			return userPhone, nil
-		} else if !errors.Is(err, ErrUserPhoneIsNil) {
+		} else if !errors.Is(err, ErrUserPhoneIsNil) &&
+			!strings.Contains(err.Error(), "last relevant user form: take: not found") {
 			return "", err
 		}
 

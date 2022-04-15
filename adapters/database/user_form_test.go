@@ -103,6 +103,7 @@ func (s *UserFormSuite) TestCreate() {
 						nil,
 						nil,
 						nil,
+						nil,
 						test.AfterTime{Time: time.Now()},
 						test.AfterTime{Time: time.Now()},
 						nil,
@@ -120,6 +121,7 @@ func (s *UserFormSuite) TestCreate() {
 					WithArgs(
 						"",
 						models.UserFormStateCreated,
+						nil,
 						nil,
 						nil,
 						nil,
@@ -179,11 +181,12 @@ func (s *UserFormSuite) TestUpdate() {
 				s.SqlMock.
 					ExpectExec(s.SQL(`
 						UPDATE "user_forms" SET .*
-						WHERE "user_forms"\."deleted_at" IS NULL AND "id" = \$11
+						WHERE "user_forms"\."deleted_at" IS NULL AND "id" = 
 					`)).
 					WithArgs(
 						form.UserID,
 						models.UserFormStateModerating,
+						nil,
 						nil,
 						nil,
 						nil,
@@ -205,11 +208,12 @@ func (s *UserFormSuite) TestUpdate() {
 				s.SqlMock.
 					ExpectExec(s.SQL(`
 						UPDATE "user_forms" SET .*
-						WHERE "user_forms"\."deleted_at" IS NULL AND "id" = \$11
+						WHERE "user_forms"\."deleted_at" IS NULL AND "id" =
 					`)).
 					WithArgs(
 						form.UserID,
 						models.UserFormStateModerating,
+						nil,
 						nil,
 						nil,
 						nil,

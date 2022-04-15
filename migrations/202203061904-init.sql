@@ -127,6 +127,12 @@ SELECT EXISTS (
         'DECLAINED'
     );
 
+    CREATE TYPE currency AS ENUM (
+        'RUB',
+        'EUR',
+        'USD'
+    );
+
     -- represents user data
     CREATE TABLE user_forms (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -136,6 +142,7 @@ SELECT EXISTS (
         password VARCHAR,
         phone VARCHAR,
         email VARCHAR,
+        currency currency,
         declain_reason TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -284,12 +291,6 @@ SELECT EXISTS (
       'SUCCEEDED'
     );
 
-    CREATE TYPE currency AS ENUM (
-        'RUB',
-        'EUR',
-        'USD'
-    );
-
     CREATE TABLE auctions (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         state auction_state NOT NULL DEFAULT 'CREATED', 
@@ -297,20 +298,22 @@ SELECT EXISTS (
         seller_id SHORTKEY NOT NULL,
         buyer_id SHORTKEY,
         min_amount DECIMAL(12, 2),
-        min_amount_currency currency,
+        "currency" currency,
         scheduled_start_at TIMESTAMP,
         scheduled_finish_at TIMESTAMP,
         started_at TIMESTAMP,
         finished_at TIMESTAMP,
+        fail_reason TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
         CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id),
         CONSTRAINT fk_seller FOREIGN KEY (seller_id) REFERENCES users(id),
         CONSTRAINT fk_buyer FOREIGN KEY (buyer_id) REFERENCES users(id),
         CONSTRAINT chk_currency CHECK (
-            (min_amount IS NULL AND min_amount_currency IS NULL)
-            OR 
-            (min_amount IS NOT NULL AND min_amount_currency IS NOT NULL)
+            state = 'CREATED' OR "currency" IS NOT NULL
+        ),
+        CONSTRAINT chk_min_amount CHECK (
+            min_amount IS NULL OR "currency" IS NOT NULL
         ),
         CONSTRAINT chk_started_at CHECK (
             state = 'CREATED' OR started_at IS NOT NULL
@@ -348,22 +351,6 @@ SELECT EXISTS (
     --     'RETURN_MONEY_FAILED',
     --     'MONEY_RETURNED'
     -- );
-
-    -- CREATE TABLE offers (
-    --     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    --     state offer_state NOT NULL DEFAULT 'CREATED',
-    --     fail_message VARCHAR,
-    --     delete_on_sell BOOLEAN NOT NULL DEFAULT TRUE, 
-    --     product_id UUID NOT NULL,
-    --     consumer_id UUID NOT NULL,
-    --     created_at TIMESTAMP NOT NULL,
-    --     updated_at TIMESTAMP NOT NULL,
-    --     deleted_at TIMESTAMP,
-    --     CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id),
-    --     CONSTRAINT fk_consumer FOREIGN KEY (consumer_id) REFERENCES users(id)
-    -- );
-
-    -- CREATE INDEX idx_offer_indices_deleted_at ON offers(deleted_at);
 
     -- CREATE TYPE transaction_state AS ENUM (
     --     'CREATED',

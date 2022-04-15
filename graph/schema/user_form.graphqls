@@ -27,6 +27,10 @@ type UserForm {
   """
   name: String
   """
+  User default currency
+  """
+  currency: CurrencyEnum
+  """
   UserForm owner
   """
   user: User!
@@ -48,6 +52,10 @@ type UserFormFilled {
   User name
   """
   name: String!
+  """
+  User default currency
+  """
+  currency: CurrencyEnum!
 }
 
 type UserFormsConnectionEdge {

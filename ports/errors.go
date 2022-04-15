@@ -1,12 +1,16 @@
 package ports
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var ErrNoRole = errors.New("no role")
 var ErrRecordNotFound = errors.New("not found")
 
-var ErrUserFormIsNil = errors.New("user form is nil")
-var ErrProductIsNil = errors.New("product is nil")
-var ErrAuctionIsNil = errors.New("auction is nil")
+var ErrIsNil = errors.New("is nil")
+var ErrUserFormIsNil = fmt.Errorf("user form %w", ErrIsNil)
+var ErrProductIsNil = fmt.Errorf("product %w", ErrIsNil)
+var ErrAuctionIsNil = fmt.Errorf("auction %w", ErrIsNil)
 
 var ErrInvalidFirst = errors.New("first must be positive")

@@ -200,6 +200,7 @@ func (r *mutationResolver) UpdateUserDraftForm(ctx context.Context, input models
 	}
 
 	form.Name = input.Name
+	form.Currency = input.Currency
 	if err = r.DB.UserForm().Update(&form); err != nil {
 		return nil, fmt.Errorf("db update: %w", err)
 	}
@@ -239,8 +240,6 @@ func (r *queryResolver) Users(ctx context.Context, first *int, after *string, fi
 	return &connection, nil
 }
 
-// TODO: Add decorators for per filed access of approved user form
-// Access levels: MANAGER, OWNER, USER, GUEST
 func (r *userResolver) Form(ctx context.Context, obj *models.User) (*models.UserFormFilled, error) {
 	viewer, err := auth.ForViewer(ctx)
 	if err != nil {

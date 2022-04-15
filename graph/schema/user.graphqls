@@ -101,6 +101,7 @@ input LoginInput {
 
 input UpdateUserDraftFormInput {
   name: String
+  currency: CurrencyEnum
 }
 
 extend type Mutation {

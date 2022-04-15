@@ -1,5 +1,5 @@
 import { BaseTest, randid } from "../BaseTest"
-import { UserFormState } from "../query"
+import { CurrencyEnum, UserFormState } from "../query"
 
 export class UserFormModeration extends BaseTest {
   private password = "password" + randid()
@@ -21,7 +21,7 @@ export class UserFormModeration extends BaseTest {
       email: this.email,
       phone: this.phone,
       password: this.password,
-      form: { name: this.name },
+      form: { name: this.name, currency: CurrencyEnum.Rub },
     })
   }
 

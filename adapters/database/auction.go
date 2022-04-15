@@ -20,8 +20,8 @@ type Auction struct {
 	ProductID         string
 	SellerID          string
 	BuyerID           *string
-	minAmount         *decimal.Decimal
-	minAmountCurrency *models.CurrencyEnum
+	MinAmount         *decimal.Decimal
+	Currency          models.CurrencyEnum
 	ScheduledStartAt  *time.Time
 	ScheduledFinishAt *time.Time
 	StartedAt         *time.Time
@@ -31,22 +31,14 @@ type Auction struct {
 }
 
 func (a *Auction) into() models.Auction {
-	var money *models.Money
-
-	if a.minAmount != nil && a.minAmountCurrency != nil {
-		money = &models.Money{
-			Amount:   *a.minAmount,
-			Currency: *a.minAmountCurrency,
-		}
-	}
-
 	return models.Auction{
 		ID:                a.ID,
 		State:             a.State,
 		ProductID:         a.ProductID,
 		SellerID:          a.SellerID,
 		BuyerID:           a.BuyerID,
-		MinMoney:          money,
+		Currency:          a.Currency,
+		MinAmount:         a.MinAmount,
 		ScheduledStartAt:  a.ScheduledStartAt,
 		ScheduledFinishAt: a.ScheduledFinishAt,
 		StartedAt:         a.StartedAt,
@@ -66,12 +58,7 @@ func (a *Auction) copy(auction *models.Auction) {
 	a.ProductID = auction.ProductID
 	a.SellerID = auction.SellerID
 	a.BuyerID = auction.BuyerID
-
-	if auction.MinMoney != nil {
-		a.minAmount = &auction.MinMoney.Amount
-		a.minAmountCurrency = &auction.MinMoney.Currency
-	}
-
+	a.Currency = auction.Currency
 	a.ScheduledStartAt = auction.ScheduledStartAt
 	a.ScheduledFinishAt = auction.ScheduledFinishAt
 	a.StartedAt = auction.StartedAt

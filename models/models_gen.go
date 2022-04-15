@@ -7,6 +7,8 @@ import (
 	"io"
 	"strconv"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type AccountsConnection struct {
@@ -50,8 +52,8 @@ type AuctionsFilter struct {
 }
 
 type CreateOfferInput struct {
-	ProductID string  `json:"productId"`
-	Amount    float64 `json:"amount"`
+	ProductID string          `json:"productId"`
+	Amount    decimal.Decimal `json:"amount"`
 }
 
 type CreateOfferResult struct {
@@ -80,8 +82,8 @@ type LoginInput struct {
 
 // Input money in a specific currency
 type MoneyInput struct {
-	Amount   float64      `json:"amount"`
-	Currency CurrencyEnum `json:"currency"`
+	Amount   decimal.Decimal `json:"amount"`
+	Currency CurrencyEnum    `json:"currency"`
 }
 
 type OfferProductResult struct {
@@ -172,10 +174,11 @@ type TransactionsConnectionEdge struct {
 }
 
 type UpdateAuctionInput struct {
-	AuctionID         string      `json:"auctionId"`
-	MinMoney          *MoneyInput `json:"minMoney"`
-	ScheduledStartAt  *time.Time  `json:"scheduledStartAt"`
-	ScheduledFinishAt *time.Time  `json:"scheduledFinishAt"`
+	AuctionID         string           `json:"auctionId"`
+	Currency          CurrencyEnum     `json:"currency"`
+	MinAmount         *decimal.Decimal `json:"minAmount"`
+	ScheduledStartAt  *time.Time       `json:"scheduledStartAt"`
+	ScheduledFinishAt *time.Time       `json:"scheduledFinishAt"`
 }
 
 type UpdateProductInput struct {
@@ -185,7 +188,8 @@ type UpdateProductInput struct {
 }
 
 type UpdateUserDraftFormInput struct {
-	Name *string `json:"name"`
+	Name     *string       `json:"name"`
+	Currency *CurrencyEnum `json:"currency"`
 }
 
 type UpdateUserPasswordInput struct {
@@ -212,6 +216,8 @@ type UserFormFilled struct {
 	Phone string `json:"phone"`
 	// User name
 	Name string `json:"name"`
+	// User default currency
+	Currency CurrencyEnum `json:"currency"`
 }
 
 type UserFormHistoryFilter struct {

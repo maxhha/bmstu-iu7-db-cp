@@ -26,10 +26,6 @@ func (r *transactionResolver) Currency(ctx context.Context, obj *models.Transact
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *transactionResolver) Amount(ctx context.Context, obj *models.Transaction) (float64, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
 func (r *transactionResolver) AccountFrom(ctx context.Context, obj *models.Transaction) (models.AccountInterface, error) {
 	panic(fmt.Errorf("not implemented"))
 }

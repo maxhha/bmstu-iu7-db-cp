@@ -16,6 +16,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/shopspring/decimal"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -41,7 +42,6 @@ type ResolverRoot interface {
 	Auction() AuctionResolver
 	Bank() BankResolver
 	BankAccount() BankAccountResolver
-	Money() MoneyResolver
 	Mutation() MutationResolver
 	Offer() OfferResolver
 	Product() ProductResolver
@@ -70,9 +70,10 @@ type ComplexityRoot struct {
 
 	Auction struct {
 		Buyer             func(childComplexity int) int
+		Currency          func(childComplexity int) int
 		FinishedAt        func(childComplexity int) int
 		ID                func(childComplexity int) int
-		MinMoney          func(childComplexity int) int
+		MinAmount         func(childComplexity int) int
 		Product           func(childComplexity int) int
 		ScheduledFinishAt func(childComplexity int) int
 		ScheduledStartAt  func(childComplexity int) int
@@ -295,18 +296,20 @@ type ComplexityRoot struct {
 	}
 
 	UserForm struct {
-		Email func(childComplexity int) int
-		ID    func(childComplexity int) int
-		Name  func(childComplexity int) int
-		Phone func(childComplexity int) int
-		State func(childComplexity int) int
-		User  func(childComplexity int) int
+		Currency func(childComplexity int) int
+		Email    func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Name     func(childComplexity int) int
+		Phone    func(childComplexity int) int
+		State    func(childComplexity int) int
+		User     func(childComplexity int) int
 	}
 
 	UserFormFilled struct {
-		Email func(childComplexity int) int
-		Name  func(childComplexity int) int
-		Phone func(childComplexity int) int
+		Currency func(childComplexity int) int
+		Email    func(childComplexity int) int
+		Name     func(childComplexity int) int
+		Phone    func(childComplexity int) int
 	}
 
 	UserFormResult struct {
@@ -349,9 +352,6 @@ type BankResolver interface {
 type BankAccountResolver interface {
 	Bank(ctx context.Context, obj *models.BankAccount) (*models.Bank, error)
 	Transactions(ctx context.Context, obj *models.BankAccount, first *int, after *string) (*models.TransactionsConnection, error)
-}
-type MoneyResolver interface {
-	Amount(ctx context.Context, obj *models.Money) (float64, error)
 }
 type MutationResolver interface {
 	CreateAuction(ctx context.Context, input models.ProductInput) (*models.AuctionResult, error)
@@ -413,7 +413,6 @@ type TransactionResolver interface {
 	State(ctx context.Context, obj *models.Transaction) (models.TransactionStateEnum, error)
 	Type(ctx context.Context, obj *models.Transaction) (models.TransactionTypeEnum, error)
 	Currency(ctx context.Context, obj *models.Transaction) (models.CurrencyEnum, error)
-	Amount(ctx context.Context, obj *models.Transaction) (float64, error)
 
 	AccountFrom(ctx context.Context, obj *models.Transaction) (models.AccountInterface, error)
 	AccountTo(ctx context.Context, obj *models.Transaction) (models.AccountInterface, error)
@@ -489,6 +488,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Auction.Buyer(childComplexity), true
 
+	case "Auction.currency":
+		if e.complexity.Auction.Currency == nil {
+			break
+		}
+
+		return e.complexity.Auction.Currency(childComplexity), true
+
 	case "Auction.finishedAt":
 		if e.complexity.Auction.FinishedAt == nil {
 			break
@@ -503,12 +509,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Auction.ID(childComplexity), true
 
-	case "Auction.minMoney":
-		if e.complexity.Auction.MinMoney == nil {
+	case "Auction.minAmount":
+		if e.complexity.Auction.MinAmount == nil {
 			break
 		}
 
-		return e.complexity.Auction.MinMoney(childComplexity), true
+		return e.complexity.Auction.MinAmount(childComplexity), true
 
 	case "Auction.product":
 		if e.complexity.Auction.Product == nil {
@@ -1572,6 +1578,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UserAccountsConnectionEdge.Node(childComplexity), true
 
+	case "UserForm.currency":
+		if e.complexity.UserForm.Currency == nil {
+			break
+		}
+
+		return e.complexity.UserForm.Currency(childComplexity), true
+
 	case "UserForm.email":
 		if e.complexity.UserForm.Email == nil {
 			break
@@ -1613,6 +1626,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UserForm.User(childComplexity), true
+
+	case "UserFormFilled.currency":
+		if e.complexity.UserFormFilled.Currency == nil {
+			break
+		}
+
+		return e.complexity.UserFormFilled.Currency(childComplexity), true
 
 	case "UserFormFilled.email":
 		if e.complexity.UserFormFilled.Email == nil {
@@ -1861,9 +1881,13 @@ type Auction {
   """
   buyer: User
   """
+  Auctions currency
+  """
+  currency: CurrencyEnum!
+  """
   First offer must have equal or greater amount
   """
-  minMoney: Money
+  minAmount: Float
   """
   Planned time for auction start
   """
@@ -1917,7 +1941,8 @@ type AuctionResult {
 
 input UpdateAuctionInput {
   auctionId: ID!
-  minMoney: MoneyInput
+  currency: CurrencyEnum!
+  minAmount: Float
   scheduledStartAt: DateTime
   scheduledFinishAt: DateTime
 }
@@ -2376,6 +2401,7 @@ input LoginInput {
 
 input UpdateUserDraftFormInput {
   name: String
+  currency: CurrencyEnum
 }
 
 extend type Mutation {
@@ -2442,6 +2468,13 @@ type UserForm {
   User name
   """
   name: String
+  """
+  User default currency
+  """
+  currency: CurrencyEnum
+  """
+  UserForm owner
+  """
   user: User!
 }
 
@@ -2461,6 +2494,10 @@ type UserFormFilled {
   User name
   """
   name: String!
+  """
+  User default currency
+  """
+  currency: CurrencyEnum!
 }
 
 type UserFormsConnectionEdge {
@@ -3614,7 +3651,7 @@ func (ec *executionContext) _Auction_buyer(ctx context.Context, field graphql.Co
 	return ec.marshalOUser2ᚖauctionᚑbackᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Auction_minMoney(ctx context.Context, field graphql.CollectedField, obj *models.Auction) (ret graphql.Marshaler) {
+func (ec *executionContext) _Auction_currency(ctx context.Context, field graphql.CollectedField, obj *models.Auction) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3632,7 +3669,42 @@ func (ec *executionContext) _Auction_minMoney(ctx context.Context, field graphql
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.MinMoney, nil
+		return obj.Currency, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.CurrencyEnum)
+	fc.Result = res
+	return ec.marshalNCurrencyEnum2auctionᚑbackᚋmodelsᚐCurrencyEnum(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Auction_minAmount(ctx context.Context, field graphql.CollectedField, obj *models.Auction) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Auction",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MinAmount, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3641,9 +3713,9 @@ func (ec *executionContext) _Auction_minMoney(ctx context.Context, field graphql
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*models.Money)
+	res := resTmp.(*decimal.Decimal)
 	fc.Result = res
-	return ec.marshalOMoney2ᚖauctionᚑbackᚋmodelsᚐMoney(ctx, field.Selections, res)
+	return ec.marshalOFloat2ᚖgithubᚗcomᚋshopspringᚋdecimalᚐDecimal(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Auction_scheduledStartAt(ctx context.Context, field graphql.CollectedField, obj *models.Auction) (ret graphql.Marshaler) {
@@ -4212,14 +4284,14 @@ func (ec *executionContext) _Money_amount(ctx context.Context, field graphql.Col
 		Object:     "Money",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Money().Amount(rctx, obj)
+		return obj.Amount, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4231,9 +4303,9 @@ func (ec *executionContext) _Money_amount(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(float64)
+	res := resTmp.(decimal.Decimal)
 	fc.Result = res
-	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+	return ec.marshalNFloat2githubᚗcomᚋshopspringᚋdecimalᚐDecimal(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Money_currency(ctx context.Context, field graphql.CollectedField, obj *models.Money) (ret graphql.Marshaler) {
@@ -7461,14 +7533,14 @@ func (ec *executionContext) _Transaction_amount(ctx context.Context, field graph
 		Object:     "Transaction",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Transaction().Amount(rctx, obj)
+		return obj.Amount, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7480,9 +7552,9 @@ func (ec *executionContext) _Transaction_amount(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(float64)
+	res := resTmp.(decimal.Decimal)
 	fc.Result = res
-	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+	return ec.marshalNFloat2githubᚗcomᚋshopspringᚋdecimalᚐDecimal(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_error(ctx context.Context, field graphql.CollectedField, obj *models.Transaction) (ret graphql.Marshaler) {
@@ -8647,6 +8719,38 @@ func (ec *executionContext) _UserForm_name(ctx context.Context, field graphql.Co
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _UserForm_currency(ctx context.Context, field graphql.CollectedField, obj *models.UserForm) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserForm",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Currency, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.CurrencyEnum)
+	fc.Result = res
+	return ec.marshalOCurrencyEnum2ᚖauctionᚑbackᚋmodelsᚐCurrencyEnum(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _UserForm_user(ctx context.Context, field graphql.CollectedField, obj *models.UserForm) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -8785,6 +8889,41 @@ func (ec *executionContext) _UserFormFilled_name(ctx context.Context, field grap
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserFormFilled_currency(ctx context.Context, field graphql.CollectedField, obj *models.UserFormFilled) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserFormFilled",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Currency, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.CurrencyEnum)
+	fc.Result = res
+	return ec.marshalNCurrencyEnum2auctionᚑbackᚋmodelsᚐCurrencyEnum(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UserFormResult_userForm(ctx context.Context, field graphql.CollectedField, obj *models.UserFormResult) (ret graphql.Marshaler) {
@@ -10397,7 +10536,7 @@ func (ec *executionContext) unmarshalInputCreateOfferInput(ctx context.Context, 
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amount"))
-			it.Amount, err = ec.unmarshalNFloat2float64(ctx, v)
+			it.Amount, err = ec.unmarshalNFloat2githubᚗcomᚋshopspringᚋdecimalᚐDecimal(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -10544,7 +10683,7 @@ func (ec *executionContext) unmarshalInputMoneyInput(ctx context.Context, obj in
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amount"))
-			it.Amount, err = ec.unmarshalNFloat2float64(ctx, v)
+			it.Amount, err = ec.unmarshalNFloat2githubᚗcomᚋshopspringᚋdecimalᚐDecimal(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -10721,11 +10860,19 @@ func (ec *executionContext) unmarshalInputUpdateAuctionInput(ctx context.Context
 			if err != nil {
 				return it, err
 			}
-		case "minMoney":
+		case "currency":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minMoney"))
-			it.MinMoney, err = ec.unmarshalOMoneyInput2ᚖauctionᚑbackᚋmodelsᚐMoneyInput(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currency"))
+			it.Currency, err = ec.unmarshalNCurrencyEnum2auctionᚑbackᚋmodelsᚐCurrencyEnum(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "minAmount":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minAmount"))
+			it.MinAmount, err = ec.unmarshalOFloat2ᚖgithubᚗcomᚋshopspringᚋdecimalᚐDecimal(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -10804,6 +10951,14 @@ func (ec *executionContext) unmarshalInputUpdateUserDraftFormInput(ctx context.C
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "currency":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currency"))
+			it.Currency, err = ec.unmarshalOCurrencyEnum2ᚖauctionᚑbackᚋmodelsᚐCurrencyEnum(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11158,9 +11313,19 @@ func (ec *executionContext) _Auction(ctx context.Context, sel ast.SelectionSet, 
 				return innerFunc(ctx)
 
 			})
-		case "minMoney":
+		case "currency":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Auction_minMoney(ctx, field, obj)
+				return ec._Auction_currency(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "minAmount":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Auction_minAmount(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -11491,25 +11656,15 @@ func (ec *executionContext) _Money(ctx context.Context, sel ast.SelectionSet, ob
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Money")
 		case "amount":
-			field := field
-
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Money_amount(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
+				return ec._Money_amount(ctx, field, obj)
 			}
 
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
+			out.Values[i] = innerFunc(ctx)
 
-			})
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "currency":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Money_currency(ctx, field, obj)
@@ -11518,7 +11673,7 @@ func (ec *executionContext) _Money(ctx context.Context, sel ast.SelectionSet, ob
 			out.Values[i] = innerFunc(ctx)
 
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -12884,25 +13039,15 @@ func (ec *executionContext) _Transaction(ctx context.Context, sel ast.SelectionS
 
 			})
 		case "amount":
-			field := field
-
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Transaction_amount(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
+				return ec._Transaction_amount(ctx, field, obj)
 			}
 
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
+			out.Values[i] = innerFunc(ctx)
 
-			})
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "error":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Transaction_error(ctx, field, obj)
@@ -13496,6 +13641,13 @@ func (ec *executionContext) _UserForm(ctx context.Context, sel ast.SelectionSet,
 
 			out.Values[i] = innerFunc(ctx)
 
+		case "currency":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._UserForm_currency(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
 		case "user":
 			field := field
 
@@ -13560,6 +13712,16 @@ func (ec *executionContext) _UserFormFilled(ctx context.Context, sel ast.Selecti
 		case "name":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._UserFormFilled_name(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "currency":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._UserFormFilled_currency(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -14501,19 +14663,19 @@ func (ec *executionContext) unmarshalNDeclineUserFormInput2auctionᚑbackᚋmode
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
-	res, err := graphql.UnmarshalFloatContext(ctx, v)
+func (ec *executionContext) unmarshalNFloat2githubᚗcomᚋshopspringᚋdecimalᚐDecimal(ctx context.Context, v interface{}) (decimal.Decimal, error) {
+	res, err := models.UnmarshalDecimal(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
-	res := graphql.MarshalFloatContext(v)
+func (ec *executionContext) marshalNFloat2githubᚗcomᚋshopspringᚋdecimalᚐDecimal(ctx context.Context, sel ast.SelectionSet, v decimal.Decimal) graphql.Marshaler {
+	res := models.MarshalDecimal(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 	}
-	return graphql.WrapContextMarshaler(ctx, res)
+	return res
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
@@ -15746,6 +15908,22 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) unmarshalOCurrencyEnum2ᚖauctionᚑbackᚋmodelsᚐCurrencyEnum(ctx context.Context, v interface{}) (*models.CurrencyEnum, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models.CurrencyEnum)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOCurrencyEnum2ᚖauctionᚑbackᚋmodelsᚐCurrencyEnum(ctx context.Context, sel ast.SelectionSet, v *models.CurrencyEnum) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) unmarshalOCursor2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -15785,6 +15963,22 @@ func (ec *executionContext) marshalODateTime2ᚖtimeᚐTime(ctx context.Context,
 		return graphql.Null
 	}
 	res := models.MarshalDateTime(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚖgithubᚗcomᚋshopspringᚋdecimalᚐDecimal(ctx context.Context, v interface{}) (*decimal.Decimal, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := models.UnmarshalDecimal(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖgithubᚗcomᚋshopspringᚋdecimalᚐDecimal(ctx context.Context, sel ast.SelectionSet, v *decimal.Decimal) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := models.MarshalDecimal(*v)
 	return res
 }
 
@@ -15840,21 +16034,6 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	}
 	res := graphql.MarshalInt(*v)
 	return res
-}
-
-func (ec *executionContext) marshalOMoney2ᚖauctionᚑbackᚋmodelsᚐMoney(ctx context.Context, sel ast.SelectionSet, v *models.Money) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Money(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOMoneyInput2ᚖauctionᚑbackᚋmodelsᚐMoneyInput(ctx context.Context, v interface{}) (*models.MoneyInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputMoneyInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOOffer2auctionᚑbackᚋmodelsᚐOffer(ctx context.Context, sel ast.SelectionSet, v models.Offer) graphql.Marshaler {

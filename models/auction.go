@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type Auction struct {
@@ -10,7 +12,8 @@ type Auction struct {
 	ProductID         string
 	SellerID          string
 	BuyerID           *string
-	MinMoney          *Money `json:"minMoney"`
+	MinAmount         *decimal.Decimal
+	Currency          CurrencyEnum `json:"currency"`
 	ScheduledStartAt  *time.Time
 	ScheduledFinishAt *time.Time
 	StartedAt         *time.Time
