@@ -2,6 +2,12 @@ scalar DateTime
 scalar Cursor
 scalar Map
 
+enum CurrencyEnum {
+  RUB
+  EUR
+  USD
+}
+
 """
 Мoney in a specific currency
 """

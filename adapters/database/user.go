@@ -124,7 +124,7 @@ func (d *userDB) Create(user *models.User) error {
 
 func (d *userDB) MostRelevantUserForm(user models.User) (models.UserForm, error) {
 	form := UserForm{}
-	err := approvedOrFirstUserFormFilter(&d.db).Take(&form, "user_id = ?", user.ID).Error
+	err := approvedOrFirstUserFormFilter(d.db).Take(&form, "user_id = ?", user.ID).Error
 	if err != nil {
 		return models.UserForm{}, fmt.Errorf("take: %w", convertError(err))
 	}

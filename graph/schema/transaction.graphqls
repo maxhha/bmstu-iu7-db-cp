@@ -1,45 +1,61 @@
-enum TransactionStateEnum {
-  CREATED,
-  CANCELLED,
-  PROCESSING,
-  ERROR,
-  SUCCEEDED,
+enum TransactionState {
+  CREATED
+  CANCELLED
+  PROCESSING
+  ERROR
+  SUCCEEDED
   FAILED
 }
 
-enum TransactionTypeEnum {
-  DEPOSIT,
-  BUY,
-  FEE,
+enum TransactionType {
+  DEPOSIT
+  CURRENCY_CONVERTION
+  RETURN
+  FEE_RETURN
+  BUY
+  FEE_BUY
   WITHDRAWAL
-}
-
-enum CurrencyEnum {
-  RUB,
-  EUR,
-  USD
+  FEE_WITHDRAWAL
 }
 
 type Transaction {
   id: ID!
-  """Time of apply this transaction"""
+  """
+  Time of apply this transaction
+  """
   date: DateTime
-  """Current state"""
-  state: TransactionStateEnum!
-  """Transaction type"""
-  type: TransactionTypeEnum!
-  """Transaction currency"""
+  """
+  Current state
+  """
+  state: TransactionState!
+  """
+  Transaction type
+  """
+  type: TransactionType!
+  """
+  Transaction currency
+  """
   currency: CurrencyEnum!
-  """Transaction amount"""
+  """
+  Transaction amount
+  """
   amount: Float!
-  """Error message for state = ERROR or FAILED"""
+  """
+  Error message for state = ERROR or FAILED
+  """
   error: String
-  """Offer for type = BUY"""
-  offer: Offer
-  """From account"""
+  """
+  From account
+  """
   accountFrom: Account!
-  """To account"""
+  """
+  To account
+  """
   accountTo: Account!
+  """
+  Related offer
+  """
+  offer: Offer
 }
 
 type TransactionsConnectionEdge {
@@ -52,3 +68,24 @@ type TransactionsConnection {
   edges: [TransactionsConnectionEdge!]!
 }
 
+input TransactionsFilter {
+  IDs: [ID!] = []
+  dateRange: DateTimeRange = {}
+  states: [TransactionState!] = []
+  types: [TransactionType!] = []
+  currencies: [CurrencyEnum!] = []
+  accountFormIDs: [ID!] = []
+  accountToIDs: [ID!] = []
+  offerIDs: [ID!] = []
+}
+
+extend type Query {
+  """
+  All transactions
+  """
+  transactions(
+    first: Int
+    after: Cursor
+    filter: TransactionsFilter = {}
+  ): TransactionsConnection @hasRole(role: MANAGER)
+}

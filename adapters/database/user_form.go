@@ -142,7 +142,7 @@ func (d *userFormDB) Pagination(config ports.UserFormPaginationConfig) (models.U
 }
 
 func (d *userFormDB) Take(config ports.UserFormTakeConfig) (models.UserForm, error) {
-	query := d.filter(&d.db, config.UserFormsFilter)
+	query := d.filter(d.db, config.UserFormsFilter)
 
 	if config.OrderBy != "" {
 		column, ok := userFormFieldToColumn[config.OrderBy]
@@ -205,7 +205,7 @@ func approvedOrFirstUserFormFilter(query *gorm.DB) *gorm.DB {
 
 func (d *userFormDB) GetLoginForm(input models.LoginInput) (models.UserForm, error) {
 	form := UserForm{}
-	query := approvedOrFirstUserFormFilter(&d.db)
+	query := approvedOrFirstUserFormFilter(d.db)
 	err := query.
 		Where(
 			"name = @username OR email = @username OR phone = @username",

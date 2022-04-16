@@ -15,6 +15,24 @@ const (
 	UserFormFieldDeclainReason UserFormField = "declain_reason"
 )
 
+type OfferField string
+
+const (
+	OfferFieldCreatedAt OfferField = "created_at"
+)
+
+type TokenField string
+
+const (
+	TokenFieldCreatedAt TokenField = "created_at"
+)
+
+type TransactionField string
+
+const (
+	TransactionFieldID TransactionField = "id"
+)
+
 type AccountPaginationConfig struct {
 	First   *int
 	After   *string
@@ -61,15 +79,40 @@ type RoleFindConfig struct {
 }
 
 type TokenTakeConfig struct {
-	UserIDs []string
-	IDs     []string
+	UserIDs   []string
+	IDs       []string
+	Actions   []models.TokenAction
+	OrderBy   TokenField
+	OrderDesc bool
+}
+
+type OfferTakeConfig struct {
+	Filter    *models.OffersFilter
+	OrderBy   OfferField
+	OrderDesc bool
+}
+
+type TransactionTakeConfig struct {
+	Filter    *models.TransactionsFilter
+	OrderBy   TransactionField
+	OrderDesc bool
+}
+
+type TransactionFindConfig struct {
+	Filter    *models.TransactionsFilter
+	OrderBy   TransactionField
+	OrderDesc bool
+	Limit     int
 }
 
 type AccountDB interface {
+	Get(id string) (models.Account, error)
 	Take(config AccountTakeConfig) (models.Account, error)
 	Create(account *models.Account) error
 	Pagination(config AccountPaginationConfig) (models.AccountsConnection, error)
 	UserPagination(config AccountPaginationConfig) (models.UserAccountsConnection, error)
+	LockFull(account *models.Account) error
+	GetAvailableMoney(account models.Account) (map[models.CurrencyEnum]models.Money, error)
 }
 
 type AuctionDB interface {
@@ -78,6 +121,7 @@ type AuctionDB interface {
 	Create(auction *models.Auction) error
 	Update(auction *models.Auction) error
 	Pagination(first *int, after *string, filter *models.AuctionsFilter) (models.AuctionsConnection, error)
+	LockShare(auction *models.Auction) error
 }
 
 type BankDB interface {
@@ -123,6 +167,23 @@ type TokenDB interface {
 	GetUser(token models.Token) (models.User, error)
 }
 
+type OfferDB interface {
+	Get(id string) (models.Offer, error)
+	Take(config OfferTakeConfig) (models.Offer, error)
+	Create(offer *models.Offer) error
+	Update(offer *models.Offer) error
+	Pagination(first *int, after *string, filter *models.OffersFilter) (models.OffersConnection, error)
+}
+
+type TransactionDB interface {
+	Get(id int) (models.Transaction, error)
+	Take(config TransactionTakeConfig) (models.Transaction, error)
+	Find(config TransactionFindConfig) ([]models.Transaction, error)
+	Create(tr *models.Transaction) error
+	Update(tr *models.Transaction) error
+	Pagination(first *int, after *string, filter *models.TransactionsFilter) (models.TransactionsConnection, error)
+}
+
 type DB interface {
 	Account() AccountDB
 	Auction() AuctionDB
@@ -132,4 +193,13 @@ type DB interface {
 	UserForm() UserFormDB
 	Role() RoleDB
 	Token() TokenDB
+	Offer() OfferDB
+	Transaction() TransactionDB
+	Tx() TXDB
+}
+
+type TXDB interface {
+	DB() DB
+	Rollback()
+	Commit() error
 }

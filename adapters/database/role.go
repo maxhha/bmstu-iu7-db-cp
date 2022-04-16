@@ -33,7 +33,7 @@ type roleDB struct{ *Database }
 func (d *Database) Role() ports.RoleDB { return &roleDB{d} }
 
 func (d *roleDB) Find(config ports.RoleFindConfig) ([]models.Role, error) {
-	query := &d.db
+	query := d.db
 
 	if config.Limit > 0 {
 		query = query.Limit(config.Limit)

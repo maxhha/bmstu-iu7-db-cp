@@ -68,7 +68,7 @@ func (d *Database) GetAccount(bank models.Bank) (models.BankAccount, error) {
 }
 
 func (d *bankDB) Take(config ports.BankTakeConfig) (models.Bank, error) {
-	query := &d.db
+	query := d.db
 
 	if len(config.IDs) > 0 {
 		query = query.Where("id IN ?", config.IDs)

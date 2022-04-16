@@ -13,27 +13,51 @@ type AuctionDBMock struct{ mock.Mock }
 type BankDBMock struct{ mock.Mock }
 
 type DBMock struct {
-	AccountMock  AccountDBMock
-	AuctionMock  AuctionDBMock
-	BankMock     BankDBMock
-	ProductMock  ProductDBMock
-	RoleMock     RoleDBMock
-	TokenMock    TokenDBMock
-	UserMock     UserDBMock
-	UserFormMock UserFormDBMock
+	AccountMock     AccountDBMock
+	AuctionMock     AuctionDBMock
+	BankMock        BankDBMock
+	OfferMock       OfferDBMock
+	ProductMock     ProductDBMock
+	RoleMock        RoleDBMock
+	TokenMock       TokenDBMock
+	TransactionMock TransactionDBMock
+	TxMock          TXDBMock
+	UserMock        UserDBMock
+	UserFormMock    UserFormDBMock
 }
+
+type OfferDBMock struct{ mock.Mock }
 
 type ProductDBMock struct{ mock.Mock }
 
 type RoleDBMock struct{ mock.Mock }
 
+type TXDBMock struct{ mock.Mock }
+
 type TokenDBMock struct{ mock.Mock }
+
+type TransactionDBMock struct{ mock.Mock }
 
 type UserDBMock struct{ mock.Mock }
 
 type UserFormDBMock struct{ mock.Mock }
 
 func (m *AccountDBMock) Create(account *models.Account) error {
+	args := m.Called(account)
+	return args.Error(0)
+}
+
+func (m *AccountDBMock) Get(id string) (models.Account, error) {
+	args := m.Called(id)
+	return args.Get(0).(models.Account), args.Error(1)
+}
+
+func (m *AccountDBMock) GetAvailableMoney(account models.Account) (map[models.CurrencyEnum]models.Money, error) {
+	args := m.Called(account)
+	return args.Get(0).(map[models.CurrencyEnum]models.Money), args.Error(1)
+}
+
+func (m *AccountDBMock) LockFull(account *models.Account) error {
 	args := m.Called(account)
 	return args.Error(0)
 }
@@ -61,6 +85,11 @@ func (m *AuctionDBMock) Create(auction *models.Auction) error {
 func (m *AuctionDBMock) Get(id string) (models.Auction, error) {
 	args := m.Called(id)
 	return args.Get(0).(models.Auction), args.Error(1)
+}
+
+func (m *AuctionDBMock) LockShare(auction *models.Auction) error {
+	args := m.Called(auction)
+	return args.Error(0)
 }
 
 func (m *AuctionDBMock) Pagination(first *int, after *string, filter *models.AuctionsFilter) (models.AuctionsConnection, error) {
@@ -105,6 +134,10 @@ func (m *DBMock) Bank() BankDB {
 	return &m.BankMock
 }
 
+func (m *DBMock) Offer() OfferDB {
+	return &m.OfferMock
+}
+
 func (m *DBMock) Product() ProductDB {
 	return &m.ProductMock
 }
@@ -117,12 +150,45 @@ func (m *DBMock) Token() TokenDB {
 	return &m.TokenMock
 }
 
+func (m *DBMock) Transaction() TransactionDB {
+	return &m.TransactionMock
+}
+
+func (m *DBMock) Tx() TXDB {
+	return &m.TxMock
+}
+
 func (m *DBMock) User() UserDB {
 	return &m.UserMock
 }
 
 func (m *DBMock) UserForm() UserFormDB {
 	return &m.UserFormMock
+}
+
+func (m *OfferDBMock) Create(offer *models.Offer) error {
+	args := m.Called(offer)
+	return args.Error(0)
+}
+
+func (m *OfferDBMock) Get(id string) (models.Offer, error) {
+	args := m.Called(id)
+	return args.Get(0).(models.Offer), args.Error(1)
+}
+
+func (m *OfferDBMock) Pagination(first *int, after *string, filter *models.OffersFilter) (models.OffersConnection, error) {
+	args := m.Called(first, after, filter)
+	return args.Get(0).(models.OffersConnection), args.Error(1)
+}
+
+func (m *OfferDBMock) Take(config OfferTakeConfig) (models.Offer, error) {
+	args := m.Called(config)
+	return args.Get(0).(models.Offer), args.Error(1)
+}
+
+func (m *OfferDBMock) Update(offer *models.Offer) error {
+	args := m.Called(offer)
+	return args.Error(0)
 }
 
 func (m *ProductDBMock) Create(product *models.Product) error {
@@ -160,6 +226,21 @@ func (m *RoleDBMock) Find(config RoleFindConfig) ([]models.Role, error) {
 	return args.Get(0).([]models.Role), args.Error(1)
 }
 
+func (m *TXDBMock) Commit() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *TXDBMock) DB() DB {
+	args := m.Called()
+	return args.Get(0).(DB)
+}
+
+func (m *TXDBMock) Rollback() {
+	m.Called()
+	return
+}
+
 func (m *TokenDBMock) Create(token *models.Token) error {
 	args := m.Called(token)
 	return args.Error(0)
@@ -177,6 +258,36 @@ func (m *TokenDBMock) Take(config TokenTakeConfig) (models.Token, error) {
 
 func (m *TokenDBMock) Update(token *models.Token) error {
 	args := m.Called(token)
+	return args.Error(0)
+}
+
+func (m *TransactionDBMock) Create(tr *models.Transaction) error {
+	args := m.Called(tr)
+	return args.Error(0)
+}
+
+func (m *TransactionDBMock) Find(config TransactionFindConfig) ([]models.Transaction, error) {
+	args := m.Called(config)
+	return args.Get(0).([]models.Transaction), args.Error(1)
+}
+
+func (m *TransactionDBMock) Get(id int) (models.Transaction, error) {
+	args := m.Called(id)
+	return args.Get(0).(models.Transaction), args.Error(1)
+}
+
+func (m *TransactionDBMock) Pagination(first *int, after *string, filter *models.TransactionsFilter) (models.TransactionsConnection, error) {
+	args := m.Called(first, after, filter)
+	return args.Get(0).(models.TransactionsConnection), args.Error(1)
+}
+
+func (m *TransactionDBMock) Take(config TransactionTakeConfig) (models.Transaction, error) {
+	args := m.Called(config)
+	return args.Get(0).(models.Transaction), args.Error(1)
+}
+
+func (m *TransactionDBMock) Update(tr *models.Transaction) error {
+	args := m.Called(tr)
 	return args.Error(0)
 }
 

@@ -26,17 +26,13 @@ type User {
   """
   blockedUntil: DateTime
   """
-  Available moneys
-  """
-  available: [Money!]!
-  """
-  Money that is blocked in some offers
-  """
-  blocked: [Money!]!
-  """
   User accounts
   """
-  accounts(first: Int, after: Cursor): UserAccountsConnection!
+  accounts(
+    first: Int
+    after: Cursor
+    filter: AccountsFilter = {}
+  ): UserAccountsConnection!
   """
   Auctions which user created
   """
@@ -44,7 +40,11 @@ type User {
   """
   User offers
   """
-  offers(first: Int, after: Cursor): OffersConnection!
+  offers(
+    first: Int
+    after: Cursor
+    filter: OffersFilter = {}
+  ): OffersConnection!
   """
   User products in which he is owner
   """

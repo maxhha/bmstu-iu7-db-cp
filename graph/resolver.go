@@ -31,3 +31,23 @@ func New(DB ports.DB, token ports.Token, bank ports.Bank, role ports.Role) *Reso
 
 	return &r
 }
+
+func (r *Resolver) Tx(fn func(tx ports.DB) error) error {
+	tx := r.DB.Tx()
+
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	err := fn(tx.DB())
+
+	if err == nil {
+		return tx.Commit()
+	} else {
+		tx.Rollback()
+		return err
+	}
+}

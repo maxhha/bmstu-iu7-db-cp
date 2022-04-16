@@ -64,7 +64,7 @@ func (m *{{ $name }}Mock) {{ $methodName }}({{
 	if $intr.IsMockOfMocks
 }}	return &m.{{ $methodName }}Mock{{
 	else
-}}	args := m.Called({{ 
+}}	{{if $method.Results }}args := {{ end }}m.Called({{ 
 		range $method.Parameters 
 		}}{{
 			.Name

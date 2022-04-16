@@ -11,6 +11,7 @@ type Auction struct {
 	State             AuctionState
 	ProductID         string
 	SellerID          string
+	SellerAccountID   *string
 	BuyerID           *string
 	MinAmount         *decimal.Decimal
 	Currency          CurrencyEnum `json:"currency"`
@@ -24,4 +25,14 @@ type Auction struct {
 
 func (a *Auction) IsEditable() bool {
 	return a.State == AuctionStateCreated
+}
+
+func (a *Auction) IsStarted() bool {
+	return a.State == AuctionStateStarted &&
+		time.Now().UTC().After(*a.StartedAt)
+}
+
+func (a *Auction) IsFinished() bool {
+	return a.State == AuctionStateFinished &&
+		time.Now().UTC().After(*a.FinishedAt)
 }

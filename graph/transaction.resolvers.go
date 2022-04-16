@@ -10,19 +10,7 @@ import (
 	"fmt"
 )
 
-func (r *transactionResolver) ID(ctx context.Context, obj *models.Transaction) (string, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *transactionResolver) State(ctx context.Context, obj *models.Transaction) (models.TransactionStateEnum, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *transactionResolver) Type(ctx context.Context, obj *models.Transaction) (models.TransactionTypeEnum, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *transactionResolver) Currency(ctx context.Context, obj *models.Transaction) (models.CurrencyEnum, error) {
+func (r *queryResolver) Transactions(ctx context.Context, first *int, after *string, filter *models.TransactionsFilter) (*models.TransactionsConnection, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -31,6 +19,10 @@ func (r *transactionResolver) AccountFrom(ctx context.Context, obj *models.Trans
 }
 
 func (r *transactionResolver) AccountTo(ctx context.Context, obj *models.Transaction) (models.AccountInterface, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *transactionResolver) Offer(ctx context.Context, obj *models.Transaction) (*models.Offer, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

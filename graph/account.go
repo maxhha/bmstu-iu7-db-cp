@@ -6,6 +6,18 @@ import (
 	"fmt"
 )
 
+func isAccountOwner(viewer models.User, account models.Account) error {
+	if account.Type != models.AccountTypeUser {
+		return ErrAccountTypeNotUser
+	}
+
+	if account.UserID != viewer.ID {
+		return ErrUserNotOwner
+	}
+
+	return nil
+}
+
 func (r *accountResolver) Bank(ctx context.Context, obj *models.Account) (*models.Bank, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("account is nil")

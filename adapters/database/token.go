@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm/clause"
 )
 
 type tokenDB struct{ *Database }
@@ -49,6 +50,10 @@ func (t *Token) copy(token *models.Token) {
 	t.Data = token.Data
 }
 
+var tokenFieldToColumn = map[ports.TokenField]string{
+	ports.TokenFieldCreatedAt: "created_at",
+}
+
 func (d *tokenDB) Create(token *models.Token) error {
 	if token == nil {
 		return fmt.Errorf("token is nil")
@@ -64,7 +69,7 @@ func (d *tokenDB) Create(token *models.Token) error {
 }
 
 func (d *tokenDB) Take(config ports.TokenTakeConfig) (models.Token, error) {
-	query := &d.db
+	query := d.db
 
 	if len(config.IDs) > 0 {
 		query = query.Where("id IN ?", config.IDs)
@@ -72,6 +77,22 @@ func (d *tokenDB) Take(config ports.TokenTakeConfig) (models.Token, error) {
 
 	if len(config.UserIDs) > 0 {
 		query = query.Where("user_id IN ?", config.UserIDs)
+	}
+
+	if len(config.Actions) > 0 {
+		query = query.Where("action IN ?", config.Actions)
+	}
+
+	if config.OrderBy != "" {
+		column, ok := tokenFieldToColumn[config.OrderBy]
+		if !ok {
+			return models.Token{}, fmt.Errorf("unknown field '%s'", config.OrderBy)
+		}
+
+		query = query.Order(clause.OrderByColumn{
+			Column: clause.Column{Name: column},
+			Desc:   config.OrderDesc,
+		})
 	}
 
 	token := Token{}

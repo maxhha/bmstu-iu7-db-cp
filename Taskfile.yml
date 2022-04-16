@@ -77,6 +77,7 @@ tasks:
         vars:
           ENV: dev
           IGNORE_ERROR: true
+      - portmocksgen # mocks are used in code validation
     env:
       SERVER_DOTENV: config/.server-dev.env
     vars:

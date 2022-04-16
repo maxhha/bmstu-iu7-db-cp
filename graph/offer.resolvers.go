@@ -4,125 +4,133 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
+	"auction-back/auth"
 	"auction-back/graph/generated"
 	"auction-back/models"
+	"auction-back/ports"
 	"context"
 	"fmt"
-	"time"
 )
 
-func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateOfferInput) (*models.CreateOfferResult, error) {
-	panic(fmt.Errorf("not implemented"))
-	// viewer := auth.ForViewer(ctx)
+func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateOfferInput) (*models.OfferResult, error) {
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	// if viewer == nil {
-	// 	return nil, ErrUnauthorized
-	// }
+	auction, err := r.DB.Auction().Get(input.AuctionID)
+	if err != nil {
+		return nil, fmt.Errorf("db auction get: %w", err)
+	}
 
-	// var product models.Product
+	account, err := r.DB.Account().Get(input.AccountID)
+	if err != nil {
+		return nil, fmt.Errorf("db account get: %w", err)
+	}
 
-	// result := r.DBTake(&product, "id = ?", input.ProductID)
+	if err := isAccountOwner(viewer, account); err != nil {
+		return nil, fmt.Errorf("denied: %w", err)
+	}
 
-	// if result.Error != nil {
-	// 	return nil, fmt.Errorf("db take product: %w", result.Error)
-	// }
+	if !auction.IsStarted() {
+		return nil, ErrAuctionIsNotStarted
+	}
 
-	// if !product.IsOnMarket {
-	// 	return nil, fmt.Errorf("product is not on market")
-	// }
+	if auction.SellerAccountID == nil {
+		return nil, fmt.Errorf("seller account id %w", ports.ErrIsNil)
+	}
 
-	// id, err := shortid.Generate()
+	offer := models.Offer{
+		AuctionID: auction.ID,
+		UserID:    viewer.ID,
+	}
 
-	// if err != nil {
-	// 	return nil, fmt.Errorf("shortid: %w", err)
-	// }
+	err = r.Tx(func(tx ports.DB) error {
+		if err := tx.Auction().LockShare(&auction); err != nil {
+			return fmt.Errorf("db auction lock share: %w", err)
+		}
 
-	// offer := db.Offer{
-	// 	ID:         id,
-	// 	Amount:     input.Amount,
-	// 	ProductID:  input.ProductID,
-	// 	Product:    product,
-	// 	ConsumerID: viewer.ID,
-	// 	Consumer:   *viewer,
-	// }
+		if err := tx.Account().LockFull(&account); err != nil {
+			return fmt.Errorf("db auction lock full: %w", err)
+		}
 
-	// err = r.DBTransaction(func(tx *gorm.DB) error {
-	// 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(viewer, "id = ?", viewer.ID).Error; err != nil {
-	// 		return err
-	// 	}
+		if auction.IsFinished() {
+			return ErrAuctionIsFinished
+		}
 
-	// 	if viewer.Available < input.Amount {
-	// 		return fmt.Errorf("not enough amount")
-	// 	}
+		// TODO: create fee transaction
+		buyTransaction := models.Transaction{
+			Type:          models.TransactionTypeBuy,
+			Currency:      auction.Currency,
+			Amount:        input.Amount, // TODO: calculate by bank transfer table
+			AccountFromID: account.ID,
+			AccountToID:   *auction.SellerAccountID,
+			OfferID:       offer.ID,
+		}
 
-	// 	// FIXME: presicion
-	// 	viewer.Available = viewer.Available - input.Amount
+		moneys, err := tx.Account().GetAvailableMoney(account)
+		if err != nil {
+			return fmt.Errorf("db account get available money: %w", err)
+		}
 
-	// 	if err := tx.Save(&viewer).Error; err != nil {
-	// 		return err
-	// 	}
+		money, exists := moneys[auction.Currency]
+		if !exists {
+			return fmt.Errorf("%w: %s", ErrNoCurrency, auction.Currency)
+		}
 
-	// 	if err := tx.Save(&offer).Error; err != nil {
-	// 		return err
-	// 	}
+		if money.Amount.LessThan(buyTransaction.Amount) {
+			return fmt.Errorf(
+				"%w: need %s but have %s",
+				ErrNotAnoughMoney,
+				buyTransaction.Amount.String(),
+				money.Amount.String(),
+			)
+		}
 
-	// 	return nil
-	// })
+		if err := tx.Offer().Create(&offer); err != nil {
+			return fmt.Errorf("db offer create: %w", err)
+		}
 
-	// if err != nil {
-	// 	return nil, fmt.Errorf("db save: %w", err)
-	// }
+		buyTransaction.OfferID = offer.ID
 
-	// o, err := (&models.Offer{}).From(&offer)
+		if err := tx.Transaction().Create(&buyTransaction); err != nil {
+			return fmt.Errorf("db transaction create: %w", err)
+		}
 
-	// if err != nil {
-	// 	return nil, err
-	// }
+		return nil
+	})
 
-	// return &models.CreateOfferResult{
-	// 	Offer: o,
-	// }, nil
+	if err != nil {
+		return nil, fmt.Errorf("tx: %w", err)
+	}
+
+	return &models.OfferResult{Offer: &offer}, nil
 }
 
-func (r *mutationResolver) RemoveOffer(ctx context.Context, input models.RemoveOfferInput) (*models.RemoveOfferResult, error) {
-	panic(fmt.Errorf("not implemented"))
-	// viewer := auth.ForViewer(ctx)
+func (r *offerResolver) User(ctx context.Context, obj *models.Offer) (*models.User, error) {
+	if obj == nil {
+		return nil, nil
+	}
 
-	// if viewer == nil {
-	// 	return nil, ErrUnauthorized
-	// }
+	user, err := r.DB.User().Get(obj.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("db user get: %w", err)
+	}
 
-	// offer := db.Offer{}
-
-	// if err := r.DBTake(&offer, "id = ?", input.OfferID).Error; err != nil {
-	// 	return nil, fmt.Errorf("db take: %w", err)
-	// }
-
-	// if offer.ConsumerID != viewer.ID {
-	// 	return nil, fmt.Errorf("denied")
-	// }
-
-	// o, err := (&models.Offer{}).From(&offer)
-
-	// if err != nil {
-	// 	return nil, fmt.Errorf("convert: %w", err)
-	// }
-
-	// if err := o.RemoveOffer(); err != nil {
-	// 	return nil, fmt.Errorf("offer remove: %w", err)
-	// }
-
-	// return &models.RemoveOfferResult{
-	// 	Status: "success",
-	// }, nil
+	return &user, nil
 }
 
-func (r *offerResolver) State(ctx context.Context, obj *models.Offer) (models.OfferStateEnum, error) {
-	panic(fmt.Errorf("not implemented"))
-}
+func (r *offerResolver) Auction(ctx context.Context, obj *models.Offer) (*models.Auction, error) {
+	if obj == nil {
+		return nil, nil
+	}
 
-func (r *offerResolver) FailReason(ctx context.Context, obj *models.Offer) (*string, error) {
-	panic(fmt.Errorf("not implemented"))
+	auction, err := r.DB.Auction().Get(obj.AuctionID)
+	if err != nil {
+		return nil, fmt.Errorf("db user get: %w", err)
+	}
+
+	return &auction, nil
 }
 
 func (r *offerResolver) Moneys(ctx context.Context, obj *models.Offer) ([]*models.Money, error) {
@@ -133,38 +141,16 @@ func (r *offerResolver) Transactions(ctx context.Context, obj *models.Offer) ([]
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *queryResolver) Offers(ctx context.Context, first *int, after *string, filter *models.OffersFilter) (*models.OffersConnection, error) {
+	connection, err := r.DB.Offer().Pagination(first, after, filter)
+	if err != nil {
+		return nil, fmt.Errorf("db offer pagination: %w", err)
+	}
+
+	return &connection, nil
+}
+
 // Offer returns generated.OfferResolver implementation.
 func (r *Resolver) Offer() generated.OfferResolver { return &offerResolver{r} }
 
 type offerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *offerResolver) User(ctx context.Context, obj *models.Offer) (*models.User, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-func (r *offerResolver) Product(ctx context.Context, obj *models.Offer) (*models.Product, error) {
-	panic(fmt.Errorf("not implemented"))
-	// if obj.DB.Product.ID == obj.DB.ProductID {
-	// 	return (&models.Product{}).From(&obj.DB.Product)
-	// }
-
-	// product := models.Product{}
-	// result := r.DBTake(&product, "id = ?", obj.DB.ProductID)
-
-	// if result.Error != nil {
-	// 	return nil, fmt.Errorf("db take: %w", result.Error)
-	// }
-
-	// return (&models.Product{}).From(&product)
-}
-func (r *offerResolver) CreatedAt(ctx context.Context, obj *models.Offer) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-func (r *offerResolver) DeleteOnSell(ctx context.Context, obj *models.Offer) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
-}

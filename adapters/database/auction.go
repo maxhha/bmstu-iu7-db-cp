@@ -8,6 +8,7 @@ import (
 
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type auctionDB struct{ *Database }
@@ -19,6 +20,7 @@ type Auction struct {
 	State             models.AuctionState `gorm:"default:'CREATED';"`
 	ProductID         string
 	SellerID          string
+	SellerAccountID   *string
 	BuyerID           *string
 	MinAmount         *decimal.Decimal
 	Currency          models.CurrencyEnum
@@ -36,6 +38,7 @@ func (a *Auction) into() models.Auction {
 		State:             a.State,
 		ProductID:         a.ProductID,
 		SellerID:          a.SellerID,
+		SellerAccountID:   a.SellerAccountID,
 		BuyerID:           a.BuyerID,
 		Currency:          a.Currency,
 		MinAmount:         a.MinAmount,
@@ -57,6 +60,7 @@ func (a *Auction) copy(auction *models.Auction) {
 	a.State = auction.State
 	a.ProductID = auction.ProductID
 	a.SellerID = auction.SellerID
+	a.SellerAccountID = auction.SellerAccountID
 	a.BuyerID = auction.BuyerID
 	a.Currency = auction.Currency
 	a.ScheduledStartAt = auction.ScheduledStartAt
@@ -188,4 +192,23 @@ func (d *auctionDB) Pagination(first *int, after *string, filter *models.Auction
 		},
 		Edges: edges,
 	}, nil
+}
+
+func (d *auctionDB) LockShare(auction *models.Auction) error {
+	if auction == nil {
+		return ports.ErrAuctionIsNil
+	}
+	obj := Auction{}
+	err := d.db.Clauses(clause.Locking{
+		Strength: "SHARE",
+		Table:    clause.Table{Name: clause.CurrentTable},
+	}).
+		Take(&obj, "id = ?", auction.ID).
+		Error
+	if err != nil {
+		return convertError(err)
+	}
+
+	*auction = obj.into()
+	return nil
 }

@@ -40,6 +40,10 @@ func (r *auctionResolver) Seller(ctx context.Context, obj *models.Auction) (*mod
 	return &user, nil
 }
 
+func (r *auctionResolver) SellerAccount(ctx context.Context, obj *models.Auction) (*models.UserAccount, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *auctionResolver) Buyer(ctx context.Context, obj *models.Auction) (*models.User, error) {
 	if obj == nil || obj.BuyerID == nil {
 		return nil, nil
@@ -51,6 +55,10 @@ func (r *auctionResolver) Buyer(ctx context.Context, obj *models.Auction) (*mode
 	}
 
 	return &user, nil
+}
+
+func (r *auctionResolver) Offers(ctx context.Context, obj *models.Auction, first *int, after *string, filter *models.OffersFilter) (*models.OffersConnection, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *mutationResolver) CreateAuction(ctx context.Context, input models.ProductInput) (*models.AuctionResult, error) {
@@ -126,6 +134,7 @@ func (r *mutationResolver) UpdateAuction(ctx context.Context, input models.Updat
 	}
 
 	auction.Currency = input.Currency
+	auction.SellerAccountID = input.SellerAccountID
 	auction.MinAmount = input.MinAmount
 	auction.ScheduledStartAt = input.ScheduledStartAt
 	auction.ScheduledFinishAt = input.ScheduledFinishAt
@@ -182,9 +191,5 @@ func (r *Resolver) Auction() generated.AuctionResolver { return &auctionResolver
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
-// Query returns generated.QueryResolver implementation.
-func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
-
 type auctionResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }

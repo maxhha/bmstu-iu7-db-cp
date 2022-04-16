@@ -18,6 +18,10 @@ type Auction {
   """
   seller: User!
   """
+  Account to which all offer transactions would come
+  """
+  sellerAccount: UserAccount
+  """
   Product buyer
   """
   buyer: User
@@ -45,6 +49,14 @@ type Auction {
   Real time of auction end
   """
   finishedAt: DateTime
+  """
+  Offers for the auction
+  """
+  offers(
+    first: Int
+    after: Cursor
+    filter: OffersFilter = {}
+  ): OffersConnection!
 }
 
 type AuctionsConnectionEdge {
@@ -83,6 +95,7 @@ type AuctionResult {
 input UpdateAuctionInput {
   auctionId: ID!
   currency: CurrencyEnum!
+  sellerAccountId: ID
   minAmount: Float
   scheduledStartAt: DateTime
   scheduledFinishAt: DateTime

@@ -1,33 +1,49 @@
-enum OfferStateEnum {
-  CREATED,
-  CANCELLED,
-  TRANSFERRING_MONEY,
-  TRANSFER_MONEY_FAILED,
-  TRANSFERRING_PRODUCT,
-  TRANSFER_PRODUCT_FAILED,
-  SUCCEEDED,
-  RETURNING_MONEY,
-  RETURN_MONEY_FAILED,
-  MONEY_RETURNED
+enum OfferState {
+  CREATED
+  CANCELLED
+  ACCEPTED
+  SUCCEEDED
+  FAILED
 }
+
+# enum OfferStateEnum {
+#   CREATED
+#   CANCELLED
+#   TRANSFERRING_MONEY
+#   TRANSFER_MONEY_FAILED
+#   TRANSFERRING_PRODUCT
+#   TRANSFER_PRODUCT_FAILED
+#   SUCCEEDED
+#   RETURNING_MONEY
+#   RETURN_MONEY_FAILED
+#   MONEY_RETURNED
+# }
 
 type Offer {
   id: ID!
-  """Current offer state"""
-  state: OfferStateEnum!
-  """Reason of fail for *_FAILED states"""
-  failReason: String
-  """User created this offer"""
+  """
+  Current offer state
+  """
+  state: OfferState!
+  """
+  User created this offer
+  """
   user: User!
-  """Product for which this offer was created"""
-  product: Product!
-  """Total moneys offered"""
+  """
+  Auction for which this offer was created
+  """
+  auction: Auction!
+  """
+  Total moneys offered
+  """
   moneys: [Money!]!
-  """Offer creation time"""
+  """
+  Offer creation time
+  """
   createdAt: DateTime!
-  """If set to true, the offer will be removed after the product is sold"""
-  deleteOnSell: Boolean!
-  """Transactions of this offer"""
+  """
+  Transactions of this offer
+  """
   transactions: [Transaction!]!
 }
 
@@ -42,23 +58,36 @@ type OffersConnection {
 }
 
 input CreateOfferInput {
-  productId: ID!
+  auctionId: ID!
+  accountId: ID!
   amount: Float!
 }
 
-type CreateOfferResult {
+type OfferResult {
   offer: Offer!
 }
 
-input RemoveOfferInput {
-  offerId: ID!
+input OffersFilter {
+  IDs: [ID!] = []
+  states: [OfferState!] = []
+  userIDs: [ID!] = []
+  auctionIDs: [ID!] = []
 }
 
-type RemoveOfferResult {
-  status: String!
+extend type Query {
+  """
+  ALl offers
+  """
+  offers(
+    first: Int
+    after: Cursor
+    filter: OffersFilter = {}
+  ): OffersConnection! @hasRole(role: MANAGER)
 }
 
 extend type Mutation {
-  createOffer(input: CreateOfferInput!): CreateOfferResult!
-  removeOffer(input: RemoveOfferInput!): RemoveOfferResult!
+  """
+  Create offer for auction
+  """
+  createOffer(input: CreateOfferInput!): OfferResult!
 }

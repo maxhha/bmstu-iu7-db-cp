@@ -330,15 +330,7 @@ func (r *userResolver) BlockedUntil(ctx context.Context, obj *models.User) (*tim
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) Available(ctx context.Context, obj *models.User) ([]*models.Money, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *userResolver) Blocked(ctx context.Context, obj *models.User) ([]*models.Money, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *int, after *string) (*models.UserAccountsConnection, error) {
+func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *int, after *string, filter *models.AccountsFilter) (*models.UserAccountsConnection, error) {
 	viewer, err := auth.ForViewer(ctx)
 	if err != nil {
 		return nil, err
@@ -384,20 +376,35 @@ func (r *userResolver) Auctions(ctx context.Context, obj *models.User, first *in
 	return &conn, nil
 }
 
-func (r *userResolver) Offers(ctx context.Context, obj *models.User, first *int, after *string) (*models.OffersConnection, error) {
-	panic(fmt.Errorf("not implemented"))
-	// viewer, err := auth.ForViewer(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
+func (r *userResolver) Offers(ctx context.Context, obj *models.User, first *int, after *string, filter *models.OffersFilter) (*models.OffersConnection, error) {
+	if obj == nil {
+		return nil, nil
+	}
 
-	// if viewer.ID != obj.ID {
-	// 	return nil, fmt.Errorf("denied")
-	// }
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	// query := r.DB.Where("consumer_id = ?", obj.ID).Order("id")
+	if err := r.isOwnerOrManager(viewer, obj); err != nil {
+		return nil, fmt.Errorf("denied: %w", err)
+	}
 
-	// return OfferPagination(query, first, after)
+	if filter == nil {
+		filter = &models.OffersFilter{}
+	}
+
+	if len(filter.UserIDs) > 0 {
+		return nil, fmt.Errorf("userIDs must be empty")
+	}
+
+	filter.UserIDs = []string{obj.ID}
+	connection, err := r.DB.Offer().Pagination(first, after, filter)
+	if err != nil {
+		return nil, fmt.Errorf("db offer pagination: %w", err)
+	}
+
+	return &connection, nil
 }
 
 func (r *userResolver) Products(ctx context.Context, obj *models.User, first *int, after *string) (*models.ProductsConnection, error) {
