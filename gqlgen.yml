@@ -56,7 +56,8 @@ models:
       - github.com/99designs/gqlgen/graphql.Int32
   DateTime:
     model:
-      - auction-back/models.DateTime
+      - auction-back/models.Time
+      - auction-back/models.NullTime
   Float:
     model:
       - auction-back/models.Decimal

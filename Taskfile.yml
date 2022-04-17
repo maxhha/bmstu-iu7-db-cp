@@ -108,6 +108,16 @@ tasks:
     generates:
       - ports/*_mock.go
 
+  gormdbopsgen:
+    desc: Generates gorm operations for models
+    cmds:
+      - go generate -run "/codegen/gormdbops/main.go" ./...
+    sources:
+      - adapters/database/*.go
+      - codegen/gormdbops/*
+    generates:
+      - adapters/database/*_gen.go
+
   filter-cover:
     desc: Filters generated files from coverage output
     cmds:

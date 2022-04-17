@@ -6,9 +6,13 @@ import (
 )
 
 type Bank struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt sql.NullTime
+	ID                   string
+	Name                 string
+	Bic                  string
+	CorrespondentAccount string
+	Inn                  string
+	Kpp                  string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	DeletedAt            sql.NullTime
 }

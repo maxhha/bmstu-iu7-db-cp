@@ -107,19 +107,29 @@ func (m *AuctionDBMock) Update(auction *models.Auction) error {
 	return args.Error(0)
 }
 
+func (m *BankDBMock) Create(bank *models.Bank) error {
+	args := m.Called(bank)
+	return args.Error(0)
+}
+
 func (m *BankDBMock) Get(id string) (models.Bank, error) {
 	args := m.Called(id)
 	return args.Get(0).(models.Bank), args.Error(1)
 }
 
-func (m *BankDBMock) GetAccount(bank models.Bank) (models.BankAccount, error) {
-	args := m.Called(bank)
-	return args.Get(0).(models.BankAccount), args.Error(1)
+func (m *BankDBMock) Pagination(first *int, after *string, filter *models.BanksFilter) (models.BanksConnection, error) {
+	args := m.Called(first, after, filter)
+	return args.Get(0).(models.BanksConnection), args.Error(1)
 }
 
 func (m *BankDBMock) Take(config BankTakeConfig) (models.Bank, error) {
 	args := m.Called(config)
 	return args.Get(0).(models.Bank), args.Error(1)
+}
+
+func (m *BankDBMock) Update(bank *models.Bank) error {
+	args := m.Called(bank)
+	return args.Error(0)
 }
 
 func (m *DBMock) Account() AccountDB {

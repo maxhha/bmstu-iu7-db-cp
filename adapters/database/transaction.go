@@ -227,13 +227,13 @@ func (d *transactionDB) Update(form *models.Transaction) error {
 }
 
 func (d *transactionDB) Pagination(first *int, after *string, filter *models.TransactionsFilter) (models.TransactionsConnection, error) {
-	query := d.filter(d.db.Model(&UserForm{}), filter)
+	query := d.filter(d.db.Model(&Transaction{}), filter)
 	query, err := paginationQueryByCreatedAtDesc(query, first, after)
 	if err != nil {
 		return models.TransactionsConnection{}, fmt.Errorf("pagination: %w", err)
 	}
 
-	var objs []models.Transaction
+	var objs []Transaction
 	if err := query.Find(&objs).Error; err != nil {
 		return models.TransactionsConnection{}, fmt.Errorf("find: %w", err)
 	}
@@ -255,7 +255,7 @@ func (d *transactionDB) Pagination(first *int, after *string, filter *models.Tra
 	edges := make([]*models.TransactionsConnectionEdge, 0, len(objs))
 
 	for _, obj := range objs {
-		node := obj
+		node := obj.into()
 
 		edges = append(edges, &models.TransactionsConnectionEdge{
 			Cursor: fmt.Sprintf("%d", node.ID),

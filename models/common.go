@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"time"
@@ -11,7 +12,7 @@ import (
 
 const dateTimeLayout = `2006-01-02T15:04:05.000Z07:00`
 
-func MarshalDateTime(t time.Time) graphql.Marshaler {
+func MarshalTime(t time.Time) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
 		w.Write([]byte(`"`))
 		w.Write([]byte(t.UTC().Format(dateTimeLayout)))
@@ -19,7 +20,7 @@ func MarshalDateTime(t time.Time) graphql.Marshaler {
 	})
 }
 
-func UnmarshalDateTime(v interface{}) (time.Time, error) {
+func UnmarshalTime(v interface{}) (time.Time, error) {
 	str, ok := v.(string)
 
 	if !ok {
@@ -69,4 +70,29 @@ func UnmarshalDecimal(v interface{}) (decimal.Decimal, error) {
 	}
 
 	return decimal.Decimal{}, fmt.Errorf("fail convert to float or int %#v", v)
+}
+
+func MarshalNullTime(t sql.NullTime) graphql.Marshaler {
+	if t.Valid {
+		return MarshalTime(t.Time)
+	} else {
+		return graphql.Null
+	}
+}
+
+func UnmarshalNullTime(v interface{}) (sql.NullTime, error) {
+	if v == nil {
+		return sql.NullTime{}, nil
+	}
+
+	time, err := UnmarshalTime(v)
+
+	if err != nil {
+		return sql.NullTime{}, err
+	}
+
+	return sql.NullTime{
+		Time:  time,
+		Valid: true,
+	}, nil
 }

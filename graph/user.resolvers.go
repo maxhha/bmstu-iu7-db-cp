@@ -12,7 +12,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 )
 
 func (r *mutationResolver) Register(ctx context.Context) (*models.TokenResult, error) {
@@ -324,10 +323,6 @@ func (r *userResolver) FormHistory(ctx context.Context, obj *models.User, first 
 	}
 
 	return &connection, nil
-}
-
-func (r *userResolver) BlockedUntil(ctx context.Context, obj *models.User) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *int, after *string, filter *models.AccountsFilter) (*models.UserAccountsConnection, error) {

@@ -55,6 +55,33 @@ type AuctionsFilter struct {
 	ProductIDs []string       `json:"productIDs"`
 }
 
+type BankResult struct {
+	Bank *Bank `json:"bank"`
+}
+
+type BanksConnection struct {
+	PageInfo *PageInfo              `json:"pageInfo"`
+	Edges    []*BanksConnectionEdge `json:"edges"`
+}
+
+type BanksConnectionEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *Bank  `json:"node"`
+}
+
+type BanksFilter struct {
+	IDs  []string `json:"IDs"`
+	Name *string  `json:"name"`
+}
+
+type CreateBankInput struct {
+	Name                 string `json:"name"`
+	Bic                  string `json:"bic"`
+	CorrespondentAccount string `json:"correspondentAccount"`
+	Inn                  string `json:"inn"`
+	Kpp                  string `json:"kpp"`
+}
+
 type CreateOfferInput struct {
 	AuctionID string          `json:"auctionId"`
 	AccountID string          `json:"accountId"`
@@ -195,6 +222,15 @@ type UpdateAuctionInput struct {
 	MinAmount         *decimal.Decimal `json:"minAmount"`
 	ScheduledStartAt  *time.Time       `json:"scheduledStartAt"`
 	ScheduledFinishAt *time.Time       `json:"scheduledFinishAt"`
+}
+
+type UpdateBankInput struct {
+	BankID               string `json:"bankId"`
+	Name                 string `json:"name"`
+	Bic                  string `json:"bic"`
+	CorrespondentAccount string `json:"correspondentAccount"`
+	Inn                  string `json:"inn"`
+	Kpp                  string `json:"kpp"`
 }
 
 type UpdateProductInput struct {

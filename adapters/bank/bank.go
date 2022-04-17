@@ -15,9 +15,13 @@ func New(db ports.DB) BankPort {
 	return BankPort{db}
 }
 
+var bankName = "fake"
+
 func (b *BankPort) createAccount(userID string) error {
 	bank, err := b.db.Bank().Take(ports.BankTakeConfig{
-		Names: []string{"fake"},
+		Filter: &models.BanksFilter{
+			Name: &bankName,
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("db take: %w", err)

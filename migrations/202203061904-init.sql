@@ -230,7 +230,11 @@ SELECT EXISTS (
 
     CREATE TABLE banks (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        name VARCHAR UNIQUE NOT NULL,
+        name VARCHAR NOT NULL,
+        bic VARCHAR NOT NULL,
+        correspondent_account VARCHAR NOT NULL,
+        inn VARCHAR NOT NULL,
+        kpp VARCHAR NOT NULL,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
         deleted_at TIMESTAMP
@@ -238,26 +242,29 @@ SELECT EXISTS (
 
     CREATE INDEX idx_bank_indices_deleted_at ON banks(deleted_at);
 
-    CREATE TYPE account_type AS ENUM (
-      'USER',
-      'BANK'
-    );
-
-    CREATE TABLE accounts (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        type account_type NOT NULL,
-        user_id SHORTKEY,
-        bank_id UUID NOT NULL,
+    CREATE TABLE nominal_accounts (
+        ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR UNIQUE NOT NULL,
+        receiver VARCHAR NOT NULL,
+        account_number VARCHAR NOT NULL,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
         deleted_at TIMESTAMP,
+        bank_id UUID NOT NULL,
+        CONSTRAINT fk_bank FOREIGN KEY (bank_id) REFERENCES banks(id)
+    );
+
+    CREATE INDEX idx_nominal_account_indices_deleted_at ON nominal_accounts(deleted_at);
+
+    CREATE TABLE accounts (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        number VARCHAR NOT NULL,
+        user_id SHORTKEY NOT NULL,
+        nominal_account_id UUID NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
         CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
-        CONSTRAINT fk_bank FOREIGN KEY (bank_id) REFERENCES banks(id),
-        CONSTRAINT chk_type CHECK (
-            CASE WHEN type='USER'THEN user_id IS NOT NULL 
-            WHEN type='BANK' THEN user_id IS NULL
-            ELSE false
-            END)
+        CONSTRAINT fk_nominal_account FOREIGN KEY (nominal_account_id) REFERENCES nominal_accounts(id)
     );
 
     CREATE INDEX idx_account_indices_deleted_at ON accounts(deleted_at);
@@ -351,43 +358,6 @@ SELECT EXISTS (
     --     'RETURN_MONEY_FAILED',
     --     'MONEY_RETURNED'
     -- );
-
-    -- CREATE TYPE transaction_state AS ENUM (
-    --     'CREATED',
-    --     'CANCELLED',
-    --     'PROCESSING',
-    --     'ERROR',
-    --     'SUCCEEDED',
-    --     'FAILED'
-    -- );
-
-    -- CREATE TYPE transaction_type AS ENUM (
-    --     'DEPOSIT',
-    --     'BUY',
-    --     'FEE',
-    --     'WITHDRAWAL'
-    -- );
-
-    -- CREATE TABLE transactions (
-    --     id SERIAL PRIMARY KEY,
-    --     date TIMESTAMP,
-    --     state transaction_state NOT NULL DEFAULT 'CREATED',
-    --     type transaction_type NOT NULL,
-    --     currency transaction_currency NOT NULL,
-    --     amount DECIMAL(12, 2) NOT NULL,
-    --     error VARCHAR,
-    --     account_from_id UUID NOT NULL,
-    --     account_to_id UUID NOT NULL,
-    --     offer_id UUID,
-    --     created_at TIMESTAMP NOT NULL,
-    --     updated_at TIMESTAMP NOT NULL,
-    --     deleted_at TIMESTAMP,
-    --     CONSTRAINT fk_accunt_from FOREIGN KEY (account_from_id) REFERENCES accounts(id),
-    --     CONSTRAINT fk_accunt_to FOREIGN KEY (account_to_id) REFERENCES accounts(id),
-    --     CONSTRAINT fk_offer FOREIGN KEY (offer_id) REFERENCES offers(id)
-    -- );
-
-    -- CREATE INDEX idx_transaction_indices_deleted_at ON transactions(deleted_at);
 
     INSERT INTO migrations(id) VALUES (:'MIGRATION_ID');
 \endif

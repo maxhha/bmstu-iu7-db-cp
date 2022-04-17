@@ -1,8 +1,66 @@
-"""Bank that is cooperated with platform"""
+"""
+Bank that is cooperated with platform
+"""
 type Bank {
   id: ID!
-  """Name of bank"""
+  """
+  Name of bank
+  """
   name: String!
-  """Special account of that bank"""
-  account: BankAccount!
+  bic: String!
+  correspondentAccount: String!
+  inn: String!
+  kpp: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+}
+
+type BanksConnectionEdge {
+  cursor: Cursor!
+  node: Bank!
+}
+
+type BanksConnection {
+  pageInfo: PageInfo!
+  edges: [BanksConnectionEdge!]!
+}
+
+input BanksFilter {
+  IDs: [ID!] = []
+  name: String
+}
+
+type BankResult {
+  bank: Bank!
+}
+
+extend type Query {
+  """
+  All banks on platform
+  """
+  banks(first: Int, after: Cursor, filter: BanksFilter = {}): BanksConnection!
+    @hasRole(role: MANAGER)
+}
+
+input CreateBankInput {
+  name: String!
+  bic: String!
+  correspondentAccount: String!
+  inn: String!
+  kpp: String!
+}
+
+input UpdateBankInput {
+  bankId: ID!
+  name: String!
+  bic: String!
+  correspondentAccount: String!
+  inn: String!
+  kpp: String!
+}
+
+extend type Mutation {
+  createBank(input: CreateBankInput!): BankResult!
+  updateBank(input: UpdateBankInput!): BankResult!
 }

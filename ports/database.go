@@ -64,8 +64,7 @@ type UserPaginationConfig struct {
 }
 
 type BankTakeConfig struct {
-	IDs   []string
-	Names []string
+	Filter *models.BanksFilter
 }
 
 type AccountTakeConfig struct {
@@ -127,7 +126,9 @@ type AuctionDB interface {
 type BankDB interface {
 	Get(id string) (models.Bank, error)
 	Take(config BankTakeConfig) (models.Bank, error)
-	GetAccount(bank models.Bank) (models.BankAccount, error)
+	Create(bank *models.Bank) error
+	Update(bank *models.Bank) error
+	Pagination(first *int, after *string, filter *models.BanksFilter) (models.BanksConnection, error)
 }
 
 type UserDB interface {

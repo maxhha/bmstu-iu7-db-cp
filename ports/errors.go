@@ -15,5 +15,6 @@ var ErrAuctionIsNil = fmt.Errorf("auction %w", ErrIsNil)
 var ErrAccountIsNil = fmt.Errorf("account %w", ErrIsNil)
 var ErrOfferIsNil = fmt.Errorf("offer %w", ErrIsNil)
 var ErrTransactionIsNil = fmt.Errorf("transaction %w", ErrIsNil)
+var ErrBankIsNil = fmt.Errorf("bank %w", ErrIsNil)
 
 var ErrInvalidFirst = errors.New("first must be positive")
