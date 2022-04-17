@@ -82,6 +82,13 @@ type CreateBankInput struct {
 	Kpp                  string `json:"kpp"`
 }
 
+type CreateNominalAccountInput struct {
+	Name          string `json:"name"`
+	Receiver      string `json:"receiver"`
+	AccountNumber string `json:"accountNumber"`
+	BankID        string `json:"bankId"`
+}
+
 type CreateOfferInput struct {
 	AuctionID string          `json:"auctionId"`
 	AccountID string          `json:"accountId"`
@@ -112,6 +119,26 @@ type LoginInput struct {
 type MoneyInput struct {
 	Amount   decimal.Decimal `json:"amount"`
 	Currency CurrencyEnum    `json:"currency"`
+}
+
+type NominalAccountResult struct {
+	NominalAccount *NominalAccount `json:"nominalAccount"`
+}
+
+type NominalAccountsConnection struct {
+	PageInfo *PageInfo                        `json:"pageInfo"`
+	Edges    []*NominalAccountsConnectionEdge `json:"edges"`
+}
+
+type NominalAccountsConnectionEdge struct {
+	Cursor string          `json:"cursor"`
+	Node   *NominalAccount `json:"node"`
+}
+
+type NominalAccountsFilter struct {
+	IDs     []string `json:"IDs"`
+	Name    *string  `json:"name"`
+	BankIDs []string `json:"bankIDs"`
 }
 
 type OfferProductResult struct {
@@ -231,6 +258,14 @@ type UpdateBankInput struct {
 	CorrespondentAccount string `json:"correspondentAccount"`
 	Inn                  string `json:"inn"`
 	Kpp                  string `json:"kpp"`
+}
+
+type UpdateNominalAccountInput struct {
+	AccountID     string `json:"accountId"`
+	Name          string `json:"name"`
+	Receiver      string `json:"receiver"`
+	AccountNumber string `json:"accountNumber"`
+	BankID        string `json:"bankId"`
 }
 
 type UpdateProductInput struct {

@@ -43,6 +43,7 @@ type ResolverRoot interface {
 	Auction() AuctionResolver
 	BankAccount() BankAccountResolver
 	Mutation() MutationResolver
+	NominalAccount() NominalAccountResolver
 	Offer() OfferResolver
 	Product() ProductResolver
 	Query() QueryResolver
@@ -146,6 +147,7 @@ type ComplexityRoot struct {
 		ApproveUserForm         func(childComplexity int, input models.ApproveUserFormInput) int
 		CreateAuction           func(childComplexity int, input models.ProductInput) int
 		CreateBank              func(childComplexity int, input models.CreateBankInput) int
+		CreateNominalAccount    func(childComplexity int, input models.CreateNominalAccountInput) int
 		CreateOffer             func(childComplexity int, input models.CreateOfferInput) int
 		CreateProduct           func(childComplexity int) int
 		DeclainProduct          func(childComplexity int, input models.DeclineProductInput) int
@@ -162,9 +164,35 @@ type ComplexityRoot struct {
 		TakeOffProduct          func(childComplexity int, input models.ProductInput) int
 		UpdateAuction           func(childComplexity int, input models.UpdateAuctionInput) int
 		UpdateBank              func(childComplexity int, input models.UpdateBankInput) int
+		UpdateNominalAccount    func(childComplexity int, input models.UpdateNominalAccountInput) int
 		UpdateProduct           func(childComplexity int, input models.UpdateProductInput) int
 		UpdateUserDraftForm     func(childComplexity int, input models.UpdateUserDraftFormInput) int
 		UpdateUserPassword      func(childComplexity int, input models.UpdateUserPasswordInput) int
+	}
+
+	NominalAccount struct {
+		AccountNumber func(childComplexity int) int
+		Bank          func(childComplexity int) int
+		CreatedAt     func(childComplexity int) int
+		DeletedAt     func(childComplexity int) int
+		ID            func(childComplexity int) int
+		Name          func(childComplexity int) int
+		Receiver      func(childComplexity int) int
+		UpdatedAt     func(childComplexity int) int
+	}
+
+	NominalAccountResult struct {
+		NominalAccount func(childComplexity int) int
+	}
+
+	NominalAccountsConnection struct {
+		Edges    func(childComplexity int) int
+		PageInfo func(childComplexity int) int
+	}
+
+	NominalAccountsConnectionEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
 	}
 
 	Offer struct {
@@ -236,16 +264,17 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Accounts       func(childComplexity int, first *int, after *string, filter *models.AccountsFilter) int
-		Auctions       func(childComplexity int, first *int, after *string, filter *models.AuctionsFilter) int
-		Banks          func(childComplexity int, first *int, after *string, filter *models.BanksFilter) int
-		MarketProducts func(childComplexity int, first *int, after *string) int
-		Offers         func(childComplexity int, first *int, after *string, filter *models.OffersFilter) int
-		Products       func(childComplexity int, first *int, after *string, filter *models.ProductsFilter) int
-		Transactions   func(childComplexity int, first *int, after *string, filter *models.TransactionsFilter) int
-		UserForms      func(childComplexity int, first *int, after *string, filter *models.UserFormsFilter) int
-		Users          func(childComplexity int, first *int, after *string, filter *models.UsersFilter) int
-		Viewer         func(childComplexity int) int
+		Accounts        func(childComplexity int, first *int, after *string, filter *models.AccountsFilter) int
+		Auctions        func(childComplexity int, first *int, after *string, filter *models.AuctionsFilter) int
+		Banks           func(childComplexity int, first *int, after *string, filter *models.BanksFilter) int
+		MarketProducts  func(childComplexity int, first *int, after *string) int
+		NominalAccounts func(childComplexity int, first *int, after *string, filter *models.NominalAccountsFilter) int
+		Offers          func(childComplexity int, first *int, after *string, filter *models.OffersFilter) int
+		Products        func(childComplexity int, first *int, after *string, filter *models.ProductsFilter) int
+		Transactions    func(childComplexity int, first *int, after *string, filter *models.TransactionsFilter) int
+		UserForms       func(childComplexity int, first *int, after *string, filter *models.UserFormsFilter) int
+		Users           func(childComplexity int, first *int, after *string, filter *models.UsersFilter) int
+		Viewer          func(childComplexity int) int
 	}
 
 	SellProductResult struct {
@@ -384,6 +413,8 @@ type MutationResolver interface {
 	StartAuction(ctx context.Context, input models.AuctionInput) (*models.AuctionResult, error)
 	CreateBank(ctx context.Context, input models.CreateBankInput) (*models.BankResult, error)
 	UpdateBank(ctx context.Context, input models.UpdateBankInput) (*models.BankResult, error)
+	CreateNominalAccount(ctx context.Context, input models.CreateNominalAccountInput) (*models.NominalAccountResult, error)
+	UpdateNominalAccount(ctx context.Context, input models.UpdateNominalAccountInput) (*models.NominalAccountResult, error)
 	CreateOffer(ctx context.Context, input models.CreateOfferInput) (*models.OfferResult, error)
 	CreateProduct(ctx context.Context) (*models.ProductResult, error)
 	UpdateProduct(ctx context.Context, input models.UpdateProductInput) (*models.ProductResult, error)
@@ -407,6 +438,9 @@ type MutationResolver interface {
 	ApproveUserForm(ctx context.Context, input models.ApproveUserFormInput) (*models.UserFormResult, error)
 	DeclineUserForm(ctx context.Context, input models.DeclineUserFormInput) (*models.UserFormResult, error)
 }
+type NominalAccountResolver interface {
+	Bank(ctx context.Context, obj *models.NominalAccount) (*models.Bank, error)
+}
 type OfferResolver interface {
 	User(ctx context.Context, obj *models.Offer) (*models.User, error)
 	Auction(ctx context.Context, obj *models.Offer) (*models.Auction, error)
@@ -425,6 +459,7 @@ type QueryResolver interface {
 	Accounts(ctx context.Context, first *int, after *string, filter *models.AccountsFilter) (*models.AccountsConnection, error)
 	Auctions(ctx context.Context, first *int, after *string, filter *models.AuctionsFilter) (*models.AuctionsConnection, error)
 	Banks(ctx context.Context, first *int, after *string, filter *models.BanksFilter) (*models.BanksConnection, error)
+	NominalAccounts(ctx context.Context, first *int, after *string, filter *models.NominalAccountsFilter) (*models.NominalAccountsConnection, error)
 	Offers(ctx context.Context, first *int, after *string, filter *models.OffersFilter) (*models.OffersConnection, error)
 	Products(ctx context.Context, first *int, after *string, filter *models.ProductsFilter) (*models.ProductsConnection, error)
 	MarketProducts(ctx context.Context, first *int, after *string) (*models.ProductsConnection, error)
@@ -884,6 +919,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateBank(childComplexity, args["input"].(models.CreateBankInput)), true
 
+	case "Mutation.createNominalAccount":
+		if e.complexity.Mutation.CreateNominalAccount == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createNominalAccount_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateNominalAccount(childComplexity, args["input"].(models.CreateNominalAccountInput)), true
+
 	case "Mutation.createOffer":
 		if e.complexity.Mutation.CreateOffer == nil {
 			break
@@ -1061,6 +1108,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateBank(childComplexity, args["input"].(models.UpdateBankInput)), true
 
+	case "Mutation.updateNominalAccount":
+		if e.complexity.Mutation.UpdateNominalAccount == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateNominalAccount_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateNominalAccount(childComplexity, args["input"].(models.UpdateNominalAccountInput)), true
+
 	case "Mutation.updateProduct":
 		if e.complexity.Mutation.UpdateProduct == nil {
 			break
@@ -1096,6 +1155,97 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateUserPassword(childComplexity, args["input"].(models.UpdateUserPasswordInput)), true
+
+	case "NominalAccount.accountNumber":
+		if e.complexity.NominalAccount.AccountNumber == nil {
+			break
+		}
+
+		return e.complexity.NominalAccount.AccountNumber(childComplexity), true
+
+	case "NominalAccount.bank":
+		if e.complexity.NominalAccount.Bank == nil {
+			break
+		}
+
+		return e.complexity.NominalAccount.Bank(childComplexity), true
+
+	case "NominalAccount.createdAt":
+		if e.complexity.NominalAccount.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.NominalAccount.CreatedAt(childComplexity), true
+
+	case "NominalAccount.deletedAt":
+		if e.complexity.NominalAccount.DeletedAt == nil {
+			break
+		}
+
+		return e.complexity.NominalAccount.DeletedAt(childComplexity), true
+
+	case "NominalAccount.id":
+		if e.complexity.NominalAccount.ID == nil {
+			break
+		}
+
+		return e.complexity.NominalAccount.ID(childComplexity), true
+
+	case "NominalAccount.name":
+		if e.complexity.NominalAccount.Name == nil {
+			break
+		}
+
+		return e.complexity.NominalAccount.Name(childComplexity), true
+
+	case "NominalAccount.receiver":
+		if e.complexity.NominalAccount.Receiver == nil {
+			break
+		}
+
+		return e.complexity.NominalAccount.Receiver(childComplexity), true
+
+	case "NominalAccount.updatedAt":
+		if e.complexity.NominalAccount.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.NominalAccount.UpdatedAt(childComplexity), true
+
+	case "NominalAccountResult.nominalAccount":
+		if e.complexity.NominalAccountResult.NominalAccount == nil {
+			break
+		}
+
+		return e.complexity.NominalAccountResult.NominalAccount(childComplexity), true
+
+	case "NominalAccountsConnection.edges":
+		if e.complexity.NominalAccountsConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.NominalAccountsConnection.Edges(childComplexity), true
+
+	case "NominalAccountsConnection.pageInfo":
+		if e.complexity.NominalAccountsConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.NominalAccountsConnection.PageInfo(childComplexity), true
+
+	case "NominalAccountsConnectionEdge.cursor":
+		if e.complexity.NominalAccountsConnectionEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.NominalAccountsConnectionEdge.Cursor(childComplexity), true
+
+	case "NominalAccountsConnectionEdge.node":
+		if e.complexity.NominalAccountsConnectionEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.NominalAccountsConnectionEdge.Node(childComplexity), true
 
 	case "Offer.auction":
 		if e.complexity.Offer.Auction == nil {
@@ -1394,6 +1544,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.MarketProducts(childComplexity, args["first"].(*int), args["after"].(*string)), true
+
+	case "Query.nominalAccounts":
+		if e.complexity.Query.NominalAccounts == nil {
+			break
+		}
+
+		args, err := ec.field_Query_nominalAccounts_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.NominalAccounts(childComplexity, args["first"].(*int), args["after"].(*string), args["filter"].(*models.NominalAccountsFilter)), true
 
 	case "Query.offers":
 		if e.complexity.Query.Offers == nil {
@@ -2287,8 +2449,8 @@ input UpdateBankInput {
 }
 
 extend type Mutation {
-  createBank(input: CreateBankInput!): BankResult!
-  updateBank(input: UpdateBankInput!): BankResult!
+  createBank(input: CreateBankInput!): BankResult! @hasRole(role: MANAGER)
+  updateBank(input: UpdateBankInput!): BankResult! @hasRole(role: MANAGER)
 }
 `, BuiltIn: false},
 	{Name: "graph/schema/common.graphqls", Input: `scalar DateTime
@@ -2349,6 +2511,81 @@ enum RoleType {
 }
 
 directive @hasRole(role: RoleType!) on FIELD_DEFINITION
+`, BuiltIn: false},
+	{Name: "graph/schema/nominal_account.graphqls", Input: `"""
+Nominal account contains mutiple users accounts
+"""
+type NominalAccount {
+  id: String!
+  """
+  Name for nominal account to only use in platform
+  """
+  name: String!
+  receiver: String!
+  accountNumber: String!
+  """
+  Bank in which the account was created
+  """
+  bank: Bank!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+}
+
+type NominalAccountsConnectionEdge {
+  cursor: Cursor!
+  node: NominalAccount!
+}
+
+type NominalAccountsConnection {
+  pageInfo: PageInfo!
+  edges: [NominalAccountsConnectionEdge!]!
+}
+
+input NominalAccountsFilter {
+  IDs: [ID!] = []
+  name: String
+  bankIDs: [ID!] = []
+}
+
+type NominalAccountResult {
+  nominalAccount: NominalAccount!
+}
+
+extend type Query {
+  """
+  All banks on platform
+  """
+  nominalAccounts(
+    first: Int
+    after: Cursor
+    filter: NominalAccountsFilter = {}
+  ): NominalAccountsConnection! @hasRole(role: MANAGER)
+}
+
+input CreateNominalAccountInput {
+  name: String!
+  receiver: String!
+  accountNumber: String!
+  bankId: ID!
+}
+
+input UpdateNominalAccountInput {
+  accountId: ID!
+  name: String!
+  receiver: String!
+  accountNumber: String!
+  bankId: ID!
+}
+
+extend type Mutation {
+  createNominalAccount(
+    input: CreateNominalAccountInput!
+  ): NominalAccountResult! @hasRole(role: MANAGER)
+  updateNominalAccount(
+    input: UpdateNominalAccountInput!
+  ): NominalAccountResult! @hasRole(role: MANAGER)
+}
 `, BuiltIn: false},
 	{Name: "graph/schema/offer.graphqls", Input: `enum OfferState {
   CREATED
@@ -3158,6 +3395,21 @@ func (ec *executionContext) field_Mutation_createBank_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createNominalAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.CreateNominalAccountInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCreateNominalAccountInput2auctionᚑbackᚋmodelsᚐCreateNominalAccountInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createOffer_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -3345,6 +3597,21 @@ func (ec *executionContext) field_Mutation_updateBank_args(ctx context.Context, 
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNUpdateBankInput2auctionᚑbackᚋmodelsᚐUpdateBankInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateNominalAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.UpdateNominalAccountInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdateNominalAccountInput2auctionᚑbackᚋmodelsᚐUpdateNominalAccountInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3557,6 +3824,39 @@ func (ec *executionContext) field_Query_marketProducts_args(ctx context.Context,
 		}
 	}
 	args["after"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_nominalAccounts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg1, err = ec.unmarshalOCursor2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg1
+	var arg2 *models.NominalAccountsFilter
+	if tmp, ok := rawArgs["filter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+		arg2, err = ec.unmarshalONominalAccountsFilter2ᚖauctionᚑbackᚋmodelsᚐNominalAccountsFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filter"] = arg2
 	return args, nil
 }
 
@@ -5588,8 +5888,32 @@ func (ec *executionContext) _Mutation_createBank(ctx context.Context, field grap
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateBank(rctx, args["input"].(models.CreateBankInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateBank(rctx, args["input"].(models.CreateBankInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2auctionᚑbackᚋmodelsᚐRoleType(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.BankResult); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/models.BankResult`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5630,8 +5954,32 @@ func (ec *executionContext) _Mutation_updateBank(ctx context.Context, field grap
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateBank(rctx, args["input"].(models.UpdateBankInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UpdateBank(rctx, args["input"].(models.UpdateBankInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2auctionᚑbackᚋmodelsᚐRoleType(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.BankResult); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/models.BankResult`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5646,6 +5994,138 @@ func (ec *executionContext) _Mutation_updateBank(ctx context.Context, field grap
 	res := resTmp.(*models.BankResult)
 	fc.Result = res
 	return ec.marshalNBankResult2ᚖauctionᚑbackᚋmodelsᚐBankResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createNominalAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createNominalAccount_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateNominalAccount(rctx, args["input"].(models.CreateNominalAccountInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2auctionᚑbackᚋmodelsᚐRoleType(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.NominalAccountResult); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/models.NominalAccountResult`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.NominalAccountResult)
+	fc.Result = res
+	return ec.marshalNNominalAccountResult2ᚖauctionᚑbackᚋmodelsᚐNominalAccountResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateNominalAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateNominalAccount_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UpdateNominalAccount(rctx, args["input"].(models.UpdateNominalAccountInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2auctionᚑbackᚋmodelsᚐRoleType(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.NominalAccountResult); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/models.NominalAccountResult`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.NominalAccountResult)
+	fc.Result = res
+	return ec.marshalNNominalAccountResult2ᚖauctionᚑbackᚋmodelsᚐNominalAccountResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createOffer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6645,6 +7125,458 @@ func (ec *executionContext) _Mutation_declineUserForm(ctx context.Context, field
 	res := resTmp.(*models.UserFormResult)
 	fc.Result = res
 	return ec.marshalNUserFormResult2ᚖauctionᚑbackᚋmodelsᚐUserFormResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccount_id(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccount) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccount",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccount_name(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccount) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccount",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccount_receiver(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccount) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccount",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Receiver, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccount_accountNumber(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccount) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccount",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AccountNumber, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccount_bank(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccount) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccount",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.NominalAccount().Bank(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Bank)
+	fc.Result = res
+	return ec.marshalNBank2ᚖauctionᚑbackᚋmodelsᚐBank(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccount_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccount) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccount",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNDateTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccount_updatedAt(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccount) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccount",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNDateTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccount_deletedAt(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccount) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccount",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeletedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(sql.NullTime)
+	fc.Result = res
+	return ec.marshalODateTime2databaseᚋsqlᚐNullTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccountResult_nominalAccount(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccountResult) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccountResult",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NominalAccount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.NominalAccount)
+	fc.Result = res
+	return ec.marshalNNominalAccount2ᚖauctionᚑbackᚋmodelsᚐNominalAccount(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccountsConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccountsConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccountsConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2ᚖauctionᚑbackᚋmodelsᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccountsConnection_edges(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccountsConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccountsConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.NominalAccountsConnectionEdge)
+	fc.Result = res
+	return ec.marshalNNominalAccountsConnectionEdge2ᚕᚖauctionᚑbackᚋmodelsᚐNominalAccountsConnectionEdgeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccountsConnectionEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccountsConnectionEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccountsConnectionEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNCursor2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _NominalAccountsConnectionEdge_node(ctx context.Context, field graphql.CollectedField, obj *models.NominalAccountsConnectionEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NominalAccountsConnectionEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.NominalAccount)
+	fc.Result = res
+	return ec.marshalNNominalAccount2ᚖauctionᚑbackᚋmodelsᚐNominalAccount(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Offer_id(ctx context.Context, field graphql.CollectedField, obj *models.Offer) (ret graphql.Marshaler) {
@@ -8063,6 +8995,72 @@ func (ec *executionContext) _Query_banks(ctx context.Context, field graphql.Coll
 	res := resTmp.(*models.BanksConnection)
 	fc.Result = res
 	return ec.marshalNBanksConnection2ᚖauctionᚑbackᚋmodelsᚐBanksConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_nominalAccounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_nominalAccounts_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().NominalAccounts(rctx, args["first"].(*int), args["after"].(*string), args["filter"].(*models.NominalAccountsFilter))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2auctionᚑbackᚋmodelsᚐRoleType(ctx, "MANAGER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.NominalAccountsConnection); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *auction-back/models.NominalAccountsConnection`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.NominalAccountsConnection)
+	fc.Result = res
+	return ec.marshalNNominalAccountsConnection2ᚖauctionᚑbackᚋmodelsᚐNominalAccountsConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_offers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -11959,6 +12957,53 @@ func (ec *executionContext) unmarshalInputCreateBankInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateNominalAccountInput(ctx context.Context, obj interface{}) (models.CreateNominalAccountInput, error) {
+	var it models.CreateNominalAccountInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "receiver":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("receiver"))
+			it.Receiver, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "accountNumber":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountNumber"))
+			it.AccountNumber, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "bankId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bankId"))
+			it.BankID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateOfferInput(ctx context.Context, obj interface{}) (models.CreateOfferInput, error) {
 	var it models.CreateOfferInput
 	asMap := map[string]interface{}{}
@@ -12144,6 +13189,52 @@ func (ec *executionContext) unmarshalInputMoneyInput(ctx context.Context, obj in
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currency"))
 			it.Currency, err = ec.unmarshalNCurrencyEnum2auctionᚑbackᚋmodelsᚐCurrencyEnum(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNominalAccountsFilter(ctx context.Context, obj interface{}) (models.NominalAccountsFilter, error) {
+	var it models.NominalAccountsFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["IDs"]; !present {
+		asMap["IDs"] = []interface{}{}
+	}
+	if _, present := asMap["bankIDs"]; !present {
+		asMap["bankIDs"] = []interface{}{}
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "IDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("IDs"))
+			it.IDs, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "bankIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bankIDs"))
+			it.BankIDs, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -12553,6 +13644,61 @@ func (ec *executionContext) unmarshalInputUpdateBankInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kpp"))
 			it.Kpp, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateNominalAccountInput(ctx context.Context, obj interface{}) (models.UpdateNominalAccountInput, error) {
+	var it models.UpdateNominalAccountInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "accountId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountId"))
+			it.AccountID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "receiver":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("receiver"))
+			it.Receiver, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "accountNumber":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountNumber"))
+			it.AccountNumber, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "bankId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bankId"))
+			it.BankID, err = ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -13625,6 +14771,26 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createNominalAccount":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createNominalAccount(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateNominalAccount":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateNominalAccount(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createOffer":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createOffer(ctx, field)
@@ -13841,6 +15007,227 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var nominalAccountImplementors = []string{"NominalAccount"}
+
+func (ec *executionContext) _NominalAccount(ctx context.Context, sel ast.SelectionSet, obj *models.NominalAccount) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, nominalAccountImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NominalAccount")
+		case "id":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccount_id(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "name":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccount_name(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "receiver":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccount_receiver(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "accountNumber":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccount_accountNumber(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "bank":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NominalAccount_bank(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "createdAt":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccount_createdAt(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "updatedAt":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccount_updatedAt(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "deletedAt":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccount_deletedAt(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var nominalAccountResultImplementors = []string{"NominalAccountResult"}
+
+func (ec *executionContext) _NominalAccountResult(ctx context.Context, sel ast.SelectionSet, obj *models.NominalAccountResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, nominalAccountResultImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NominalAccountResult")
+		case "nominalAccount":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccountResult_nominalAccount(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var nominalAccountsConnectionImplementors = []string{"NominalAccountsConnection"}
+
+func (ec *executionContext) _NominalAccountsConnection(ctx context.Context, sel ast.SelectionSet, obj *models.NominalAccountsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, nominalAccountsConnectionImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NominalAccountsConnection")
+		case "pageInfo":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccountsConnection_pageInfo(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "edges":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccountsConnection_edges(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var nominalAccountsConnectionEdgeImplementors = []string{"NominalAccountsConnectionEdge"}
+
+func (ec *executionContext) _NominalAccountsConnectionEdge(ctx context.Context, sel ast.SelectionSet, obj *models.NominalAccountsConnectionEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, nominalAccountsConnectionEdgeImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NominalAccountsConnectionEdge")
+		case "cursor":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccountsConnectionEdge_cursor(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "node":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._NominalAccountsConnectionEdge_node(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -14590,6 +15977,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_banks(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "nominalAccounts":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_nominalAccounts(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -16597,6 +18007,11 @@ func (ec *executionContext) unmarshalNCreateBankInput2auctionᚑbackᚋmodelsᚐ
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCreateNominalAccountInput2auctionᚑbackᚋmodelsᚐCreateNominalAccountInput(ctx context.Context, v interface{}) (models.CreateNominalAccountInput, error) {
+	res, err := ec.unmarshalInputCreateNominalAccountInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreateOfferInput2auctionᚑbackᚋmodelsᚐCreateOfferInput(ctx context.Context, v interface{}) (models.CreateOfferInput, error) {
 	res, err := ec.unmarshalInputCreateOfferInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -16754,6 +18169,98 @@ func (ec *executionContext) marshalNMoney2ᚖauctionᚑbackᚋmodelsᚐMoney(ctx
 		return graphql.Null
 	}
 	return ec._Money(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNominalAccount2ᚖauctionᚑbackᚋmodelsᚐNominalAccount(ctx context.Context, sel ast.SelectionSet, v *models.NominalAccount) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._NominalAccount(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNominalAccountResult2auctionᚑbackᚋmodelsᚐNominalAccountResult(ctx context.Context, sel ast.SelectionSet, v models.NominalAccountResult) graphql.Marshaler {
+	return ec._NominalAccountResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNominalAccountResult2ᚖauctionᚑbackᚋmodelsᚐNominalAccountResult(ctx context.Context, sel ast.SelectionSet, v *models.NominalAccountResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._NominalAccountResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNominalAccountsConnection2auctionᚑbackᚋmodelsᚐNominalAccountsConnection(ctx context.Context, sel ast.SelectionSet, v models.NominalAccountsConnection) graphql.Marshaler {
+	return ec._NominalAccountsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNominalAccountsConnection2ᚖauctionᚑbackᚋmodelsᚐNominalAccountsConnection(ctx context.Context, sel ast.SelectionSet, v *models.NominalAccountsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._NominalAccountsConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNominalAccountsConnectionEdge2ᚕᚖauctionᚑbackᚋmodelsᚐNominalAccountsConnectionEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.NominalAccountsConnectionEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNominalAccountsConnectionEdge2ᚖauctionᚑbackᚋmodelsᚐNominalAccountsConnectionEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNNominalAccountsConnectionEdge2ᚖauctionᚑbackᚋmodelsᚐNominalAccountsConnectionEdge(ctx context.Context, sel ast.SelectionSet, v *models.NominalAccountsConnectionEdge) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._NominalAccountsConnectionEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNOffer2ᚖauctionᚑbackᚋmodelsᚐOffer(ctx context.Context, sel ast.SelectionSet, v *models.Offer) graphql.Marshaler {
@@ -17278,6 +18785,11 @@ func (ec *executionContext) unmarshalNUpdateAuctionInput2auctionᚑbackᚋmodels
 
 func (ec *executionContext) unmarshalNUpdateBankInput2auctionᚑbackᚋmodelsᚐUpdateBankInput(ctx context.Context, v interface{}) (models.UpdateBankInput, error) {
 	res, err := ec.unmarshalInputUpdateBankInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateNominalAccountInput2auctionᚑbackᚋmodelsᚐUpdateNominalAccountInput(ctx context.Context, v interface{}) (models.UpdateNominalAccountInput, error) {
+	res, err := ec.unmarshalInputUpdateNominalAccountInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -18152,6 +19664,14 @@ func (ec *executionContext) unmarshalOMoneyInput2ᚖauctionᚑbackᚋmodelsᚐMo
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputMoneyInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalONominalAccountsFilter2ᚖauctionᚑbackᚋmodelsᚐNominalAccountsFilter(ctx context.Context, v interface{}) (*models.NominalAccountsFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNominalAccountsFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

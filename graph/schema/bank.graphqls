@@ -61,6 +61,6 @@ input UpdateBankInput {
 }
 
 extend type Mutation {
-  createBank(input: CreateBankInput!): BankResult!
-  updateBank(input: UpdateBankInput!): BankResult!
+  createBank(input: CreateBankInput!): BankResult! @hasRole(role: MANAGER)
+  updateBank(input: UpdateBankInput!): BankResult! @hasRole(role: MANAGER)
 }

@@ -4,9 +4,9 @@ Nominal account
 interface Account {
   id: ID!
   """
-  Bank in which the account was created
+  Nominal account in which this account was created
   """
-  bank: Bank!
+  nominalAccount: NominalAccount!
   """
   Available moneys
   """

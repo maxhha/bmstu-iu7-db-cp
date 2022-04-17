@@ -1,0 +1,74 @@
+"""
+Nominal account contains mutiple users accounts
+"""
+type NominalAccount {
+  id: String!
+  """
+  Name for nominal account to only use in platform
+  """
+  name: String!
+  receiver: String!
+  accountNumber: String!
+  """
+  Bank in which the account was created
+  """
+  bank: Bank!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+}
+
+type NominalAccountsConnectionEdge {
+  cursor: Cursor!
+  node: NominalAccount!
+}
+
+type NominalAccountsConnection {
+  pageInfo: PageInfo!
+  edges: [NominalAccountsConnectionEdge!]!
+}
+
+input NominalAccountsFilter {
+  IDs: [ID!] = []
+  name: String
+  bankIDs: [ID!] = []
+}
+
+type NominalAccountResult {
+  nominalAccount: NominalAccount!
+}
+
+extend type Query {
+  """
+  All banks on platform
+  """
+  nominalAccounts(
+    first: Int
+    after: Cursor
+    filter: NominalAccountsFilter = {}
+  ): NominalAccountsConnection! @hasRole(role: MANAGER)
+}
+
+input CreateNominalAccountInput {
+  name: String!
+  receiver: String!
+  accountNumber: String!
+  bankId: ID!
+}
+
+input UpdateNominalAccountInput {
+  accountId: ID!
+  name: String!
+  receiver: String!
+  accountNumber: String!
+  bankId: ID!
+}
+
+extend type Mutation {
+  createNominalAccount(
+    input: CreateNominalAccountInput!
+  ): NominalAccountResult! @hasRole(role: MANAGER)
+  updateNominalAccount(
+    input: UpdateNominalAccountInput!
+  ): NominalAccountResult! @hasRole(role: MANAGER)
+}

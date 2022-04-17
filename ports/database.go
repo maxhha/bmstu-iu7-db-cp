@@ -97,6 +97,10 @@ type TransactionTakeConfig struct {
 	OrderDesc bool
 }
 
+type NominalAccountTakeConfig struct {
+	Filter *models.NominalAccountsFilter
+}
+
 type TransactionFindConfig struct {
 	Filter    *models.TransactionsFilter
 	OrderBy   TransactionField
@@ -185,6 +189,14 @@ type TransactionDB interface {
 	Pagination(first *int, after *string, filter *models.TransactionsFilter) (models.TransactionsConnection, error)
 }
 
+type NominalAccountDB interface {
+	Get(id string) (models.NominalAccount, error)
+	Take(config NominalAccountTakeConfig) (models.NominalAccount, error)
+	Create(account *models.NominalAccount) error
+	Update(account *models.NominalAccount) error
+	Pagination(first *int, after *string, filter *models.NominalAccountsFilter) (models.NominalAccountsConnection, error)
+}
+
 type DB interface {
 	Account() AccountDB
 	Auction() AuctionDB
@@ -196,6 +208,7 @@ type DB interface {
 	Token() TokenDB
 	Offer() OfferDB
 	Transaction() TransactionDB
+	NominalAccount() NominalAccountDB
 	Tx() TXDB
 }
 

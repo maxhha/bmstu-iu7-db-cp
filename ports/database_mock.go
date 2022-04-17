@@ -13,18 +13,21 @@ type AuctionDBMock struct{ mock.Mock }
 type BankDBMock struct{ mock.Mock }
 
 type DBMock struct {
-	AccountMock     AccountDBMock
-	AuctionMock     AuctionDBMock
-	BankMock        BankDBMock
-	OfferMock       OfferDBMock
-	ProductMock     ProductDBMock
-	RoleMock        RoleDBMock
-	TokenMock       TokenDBMock
-	TransactionMock TransactionDBMock
-	TxMock          TXDBMock
-	UserMock        UserDBMock
-	UserFormMock    UserFormDBMock
+	AccountMock        AccountDBMock
+	AuctionMock        AuctionDBMock
+	BankMock           BankDBMock
+	NominalAccountMock NominalAccountDBMock
+	OfferMock          OfferDBMock
+	ProductMock        ProductDBMock
+	RoleMock           RoleDBMock
+	TokenMock          TokenDBMock
+	TransactionMock    TransactionDBMock
+	TxMock             TXDBMock
+	UserMock           UserDBMock
+	UserFormMock       UserFormDBMock
 }
+
+type NominalAccountDBMock struct{ mock.Mock }
 
 type OfferDBMock struct{ mock.Mock }
 
@@ -144,6 +147,10 @@ func (m *DBMock) Bank() BankDB {
 	return &m.BankMock
 }
 
+func (m *DBMock) NominalAccount() NominalAccountDB {
+	return &m.NominalAccountMock
+}
+
 func (m *DBMock) Offer() OfferDB {
 	return &m.OfferMock
 }
@@ -174,6 +181,31 @@ func (m *DBMock) User() UserDB {
 
 func (m *DBMock) UserForm() UserFormDB {
 	return &m.UserFormMock
+}
+
+func (m *NominalAccountDBMock) Create(account *models.NominalAccount) error {
+	args := m.Called(account)
+	return args.Error(0)
+}
+
+func (m *NominalAccountDBMock) Get(id string) (models.NominalAccount, error) {
+	args := m.Called(id)
+	return args.Get(0).(models.NominalAccount), args.Error(1)
+}
+
+func (m *NominalAccountDBMock) Pagination(first *int, after *string, filter *models.NominalAccountsFilter) (models.NominalAccountsConnection, error) {
+	args := m.Called(first, after, filter)
+	return args.Get(0).(models.NominalAccountsConnection), args.Error(1)
+}
+
+func (m *NominalAccountDBMock) Take(config NominalAccountTakeConfig) (models.NominalAccount, error) {
+	args := m.Called(config)
+	return args.Get(0).(models.NominalAccount), args.Error(1)
+}
+
+func (m *NominalAccountDBMock) Update(account *models.NominalAccount) error {
+	args := m.Called(account)
+	return args.Error(0)
 }
 
 func (m *OfferDBMock) Create(offer *models.Offer) error {
