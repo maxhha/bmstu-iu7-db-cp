@@ -32,7 +32,7 @@ type User {
     first: Int
     after: Cursor
     filter: AccountsFilter = {}
-  ): UserAccountsConnection!
+  ): AccountsConnection!
   """
   Auctions which user created
   """

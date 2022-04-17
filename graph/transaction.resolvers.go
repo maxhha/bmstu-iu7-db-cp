@@ -14,11 +14,11 @@ func (r *queryResolver) Transactions(ctx context.Context, first *int, after *str
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *transactionResolver) AccountFrom(ctx context.Context, obj *models.Transaction) (models.AccountInterface, error) {
+func (r *transactionResolver) AccountFrom(ctx context.Context, obj *models.Transaction) (*models.Account, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *transactionResolver) AccountTo(ctx context.Context, obj *models.Transaction) (models.AccountInterface, error) {
+func (r *transactionResolver) AccountTo(ctx context.Context, obj *models.Transaction) (*models.Account, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

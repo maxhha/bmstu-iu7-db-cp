@@ -54,5 +54,17 @@ func (d *nominalAccountDB) filter(query *gorm.DB, config *models.NominalAccounts
 		return query
 	}
 
-	panic("unimplimented!")
+	if len(config.IDs) > 0 {
+		query = query.Where("id IN ?", config.IDs)
+	}
+
+	if len(config.BankIDs) > 0 {
+		query = query.Where("bank_id IN ?", config.BankIDs)
+	}
+
+	if config.Name != nil && *config.Name != "" {
+		query = query.Where("name ~ ?", config.Name)
+	}
+
+	return query
 }

@@ -65,19 +65,14 @@ func (m *AccountDBMock) LockFull(account *models.Account) error {
 	return args.Error(0)
 }
 
-func (m *AccountDBMock) Pagination(config AccountPaginationConfig) (models.AccountsConnection, error) {
-	args := m.Called(config)
+func (m *AccountDBMock) Pagination(first *int, after *string, filter *models.AccountsFilter) (models.AccountsConnection, error) {
+	args := m.Called(first, after, filter)
 	return args.Get(0).(models.AccountsConnection), args.Error(1)
 }
 
 func (m *AccountDBMock) Take(config AccountTakeConfig) (models.Account, error) {
 	args := m.Called(config)
 	return args.Get(0).(models.Account), args.Error(1)
-}
-
-func (m *AccountDBMock) UserPagination(config AccountPaginationConfig) (models.UserAccountsConnection, error) {
-	args := m.Called(config)
-	return args.Get(0).(models.UserAccountsConnection), args.Error(1)
 }
 
 func (m *AuctionDBMock) Create(auction *models.Auction) error {

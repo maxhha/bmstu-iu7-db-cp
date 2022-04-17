@@ -17,11 +17,12 @@ type AccountsConnection struct {
 }
 
 type AccountsConnectionEdge struct {
-	Cursor string           `json:"cursor"`
-	Node   AccountInterface `json:"node"`
+	Cursor string   `json:"cursor"`
+	Node   *Account `json:"node"`
 }
 
 type AccountsFilter struct {
+	UserIDs       []string    `json:"userIDs"`
 	AvailableFrom *MoneyInput `json:"availableFrom"`
 }
 
@@ -282,17 +283,6 @@ type UpdateUserDraftFormInput struct {
 type UpdateUserPasswordInput struct {
 	OldPassword *string `json:"oldPassword"`
 	Password    string  `json:"password"`
-}
-
-type UserAccountsConnection struct {
-	PageInfo *PageInfo                     `json:"pageInfo"`
-	Edges    []*UserAccountsConnectionEdge `json:"edges"`
-}
-
-// Connection with UserAccount only
-type UserAccountsConnectionEdge struct {
-	Cursor string       `json:"cursor"`
-	Node   *UserAccount `json:"node"`
 }
 
 // UserFrom with all required fields filled in

@@ -47,11 +47,11 @@ type Transaction {
   """
   From account
   """
-  accountFrom: Account!
+  accountFrom: Account
   """
   To account
   """
-  accountTo: Account!
+  accountTo: Account
   """
   Related offer
   """

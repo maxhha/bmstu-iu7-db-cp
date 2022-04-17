@@ -325,7 +325,7 @@ func (r *userResolver) FormHistory(ctx context.Context, obj *models.User, first 
 	return &connection, nil
 }
 
-func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *int, after *string, filter *models.AccountsFilter) (*models.UserAccountsConnection, error) {
+func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *int, after *string, filter *models.AccountsFilter) (*models.AccountsConnection, error) {
 	viewer, err := auth.ForViewer(ctx)
 	if err != nil {
 		return nil, err
@@ -335,15 +335,19 @@ func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *in
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 
-	config := ports.AccountPaginationConfig{
-		UserIDs: []string{obj.ID},
-		First:   first,
-		After:   after,
+	if filter == nil {
+		filter = &models.AccountsFilter{}
 	}
 
-	connection, err := r.DB.Account().UserPagination(config)
+	if len(filter.UserIDs) > 0 {
+		return nil, fmt.Errorf("userIDs filter must be empty")
+	}
+
+	filter.UserIDs = []string{obj.ID}
+
+	connection, err := r.DB.Account().Pagination(first, after, filter)
 	if err != nil {
-		return nil, fmt.Errorf("db user pagination: %w", err)
+		return nil, fmt.Errorf("db account pagination: %w", err)
 	}
 
 	return &connection, nil

@@ -10,55 +10,35 @@ import (
 	"fmt"
 )
 
-func (r *bankAccountResolver) Bank(ctx context.Context, obj *models.BankAccount) (*models.Bank, error) {
-	return r.Account().Bank(ctx, obj.AccountPtr())
-}
-
-func (r *bankAccountResolver) Available(ctx context.Context, obj *models.BankAccount) ([]*models.Money, error) {
+func (r *accountResolver) User(ctx context.Context, obj *models.Account) (*models.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *bankAccountResolver) Blocked(ctx context.Context, obj *models.BankAccount) ([]*models.Money, error) {
+func (r *accountResolver) NominalAccount(ctx context.Context, obj *models.Account) (*models.NominalAccount, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *bankAccountResolver) Transactions(ctx context.Context, obj *models.BankAccount, first *int, after *string, filter *models.TransactionsFilter) (*models.TransactionsConnection, error) {
-	return r.Account().Transactions(ctx, obj.AccountPtr(), first, after)
+func (r *accountResolver) Available(ctx context.Context, obj *models.Account) ([]*models.Money, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *accountResolver) Blocked(ctx context.Context, obj *models.Account) ([]*models.Money, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *accountResolver) Transactions(ctx context.Context, obj *models.Account, first *int, after *string, filter *models.TransactionsFilter) (*models.TransactionsConnection, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) Accounts(ctx context.Context, first *int, after *string, filter *models.AccountsFilter) (*models.AccountsConnection, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userAccountResolver) Bank(ctx context.Context, obj *models.UserAccount) (*models.Bank, error) {
-	return r.Account().Bank(ctx, obj.AccountPtr())
-}
-
-func (r *userAccountResolver) Available(ctx context.Context, obj *models.UserAccount) ([]*models.Money, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *userAccountResolver) Blocked(ctx context.Context, obj *models.UserAccount) ([]*models.Money, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *userAccountResolver) Transactions(ctx context.Context, obj *models.UserAccount, first *int, after *string, filter *models.TransactionsFilter) (*models.TransactionsConnection, error) {
-	return r.Account().Transactions(ctx, obj.AccountPtr(), first, after)
-}
-
-func (r *userAccountResolver) User(ctx context.Context, obj *models.UserAccount) (*models.User, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-// BankAccount returns generated.BankAccountResolver implementation.
-func (r *Resolver) BankAccount() generated.BankAccountResolver { return &bankAccountResolver{r} }
+// Account returns generated.AccountResolver implementation.
+func (r *Resolver) Account() generated.AccountResolver { return &accountResolver{r} }
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
-// UserAccount returns generated.UserAccountResolver implementation.
-func (r *Resolver) UserAccount() generated.UserAccountResolver { return &userAccountResolver{r} }
-
-type bankAccountResolver struct{ *Resolver }
+type accountResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-type userAccountResolver struct{ *Resolver }

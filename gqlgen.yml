@@ -64,14 +64,3 @@ models:
   Cursor:
     model:
       - github.com/99designs/gqlgen/graphql.String
-  UserAccount:
-    fields:
-      bank:
-        resolver: true
-  BankAccount:
-    fields:
-      bank:
-        resolver: true
-  Account:
-    model:
-      - auction-back/models.AccountInterface

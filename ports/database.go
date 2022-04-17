@@ -33,12 +33,6 @@ const (
 	TransactionFieldID TransactionField = "id"
 )
 
-type AccountPaginationConfig struct {
-	First   *int
-	After   *string
-	UserIDs []string
-}
-
 type ProductPaginationConfig struct {
 	Filter models.ProductsFilter
 	First  *int
@@ -68,7 +62,7 @@ type BankTakeConfig struct {
 }
 
 type AccountTakeConfig struct {
-	UserIDs []string
+	Filter *models.AccountsFilter
 }
 
 type RoleFindConfig struct {
@@ -112,8 +106,7 @@ type AccountDB interface {
 	Get(id string) (models.Account, error)
 	Take(config AccountTakeConfig) (models.Account, error)
 	Create(account *models.Account) error
-	Pagination(config AccountPaginationConfig) (models.AccountsConnection, error)
-	UserPagination(config AccountPaginationConfig) (models.UserAccountsConnection, error)
+	Pagination(first *int, after *string, filter *models.AccountsFilter) (models.AccountsConnection, error)
 	LockFull(account *models.Account) error
 	GetAvailableMoney(account models.Account) (map[models.CurrencyEnum]models.Money, error)
 }

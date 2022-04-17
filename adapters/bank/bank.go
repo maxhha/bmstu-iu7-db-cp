@@ -5,42 +5,47 @@ import (
 	"auction-back/ports"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 )
 
-type BankPort struct {
-	db ports.DB
+type BankAdapter struct {
+	db                    ports.DB
+	defaultNominalAccount string
 }
 
-func New(db ports.DB) BankPort {
-	return BankPort{db}
+func New(db ports.DB) BankAdapter {
+	defaultNominalAccount, exists := os.LookupEnv("BANK_ADAPTER_DEFAULT_NOMINAL_ACCOUNT")
+	if !exists {
+		log.Fatalln("BANK_ADAPTER_DEFAULT_NOMINAL_ACCOUNT is not set in environment variables")
+	}
+
+	return BankAdapter{db: db, defaultNominalAccount: defaultNominalAccount}
 }
 
-var bankName = "fake"
-
-func (b *BankPort) createAccount(userID string) error {
-	bank, err := b.db.Bank().Take(ports.BankTakeConfig{
-		Filter: &models.BanksFilter{
-			Name: &bankName,
+func (b *BankAdapter) createAccount(userID string) error {
+	nominalAccount, err := b.db.NominalAccount().Take(ports.NominalAccountTakeConfig{
+		Filter: &models.NominalAccountsFilter{
+			Name: &b.defaultNominalAccount,
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("db take: %w", err)
+		return fmt.Errorf("db nominal account take: %w", err)
 	}
 
 	account := models.Account{
-		Type:   models.AccountTypeUser,
-		UserID: userID,
-		BankID: bank.ID,
+		UserID:           userID,
+		NominalAccountID: nominalAccount.ID,
 	}
 
 	if err := b.db.Account().Create(&account); err != nil {
-		return fmt.Errorf("create: %w", err)
+		return fmt.Errorf("db account create: %w", err)
 	}
 
 	return nil
 }
 
-func (b *BankPort) UserFormApproved(form models.UserForm) error {
+func (b *BankAdapter) UserFormApproved(form models.UserForm) error {
 	// TODO: send request to bank for create account or update account and
 	// if account is succefully created create account in our database and inform client
 	// if account cration is rejected decline user form and inform managers
@@ -50,7 +55,9 @@ func (b *BankPort) UserFormApproved(form models.UserForm) error {
 
 	// FIXME: this code should be in bank service
 	_, err := b.db.Account().Take(ports.AccountTakeConfig{
-		UserIDs: []string{form.UserID},
+		Filter: &models.AccountsFilter{
+			UserIDs: []string{form.UserID},
+		},
 	})
 
 	if err == nil {
@@ -62,5 +69,5 @@ func (b *BankPort) UserFormApproved(form models.UserForm) error {
 		return b.createAccount(form.UserID)
 	}
 
-	return fmt.Errorf("db take: %w", err)
+	return fmt.Errorf("db account take: %w", err)
 }

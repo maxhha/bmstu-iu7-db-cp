@@ -40,7 +40,7 @@ func (r *auctionResolver) Seller(ctx context.Context, obj *models.Auction) (*mod
 	return &user, nil
 }
 
-func (r *auctionResolver) SellerAccount(ctx context.Context, obj *models.Auction) (*models.UserAccount, error) {
+func (r *auctionResolver) SellerAccount(ctx context.Context, obj *models.Auction) (*models.Account, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
