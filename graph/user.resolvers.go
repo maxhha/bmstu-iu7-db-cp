@@ -223,15 +223,7 @@ func (r *queryResolver) Viewer(ctx context.Context) (*models.User, error) {
 }
 
 func (r *queryResolver) Users(ctx context.Context, first *int, after *string, filter *models.UsersFilter) (*models.UsersConnection, error) {
-	config := ports.UserPaginationConfig{
-		First: first,
-		After: after,
-	}
-	if filter != nil {
-		config.UsersFilter = *filter
-	}
-
-	connection, err := r.DB.User().Pagination(config)
+	connection, err := r.DB.User().Pagination(first, after, filter)
 	if err != nil {
 		return nil, fmt.Errorf("db pagination: %w", err)
 	}
@@ -304,20 +296,16 @@ func (r *userResolver) FormHistory(ctx context.Context, obj *models.User, first 
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 
-	config := ports.UserFormPaginationConfig{
-		First: first,
-		After: after,
-		UserFormsFilter: models.UserFormsFilter{
-			UserID: []string{obj.ID},
-		},
+	userFormsFilter := models.UserFormsFilter{
+		UserID: []string{obj.ID},
 	}
 
 	if filter != nil {
-		config.UserFormsFilter.ID = filter.ID
-		config.UserFormsFilter.State = filter.State
+		userFormsFilter.ID = filter.ID
+		userFormsFilter.State = filter.State
 	}
 
-	connection, err := r.DB.UserForm().Pagination(config)
+	connection, err := r.DB.UserForm().Pagination(first, after, &userFormsFilter)
 	if err != nil {
 		return nil, fmt.Errorf("db pagination: %w", err)
 	}
@@ -416,15 +404,11 @@ func (r *userResolver) Products(ctx context.Context, obj *models.User, first *in
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 
-	config := ports.ProductPaginationConfig{
-		Filter: models.ProductsFilter{
-			OwnerIDs: []string{obj.ID},
-		},
-		First: first,
-		After: after,
+	filter := &models.ProductsFilter{
+		OwnerIDs: []string{obj.ID},
 	}
 
-	connection, err := r.DB.Product().Pagination(config)
+	connection, err := r.DB.Product().Pagination(first, after, filter)
 	if err != nil {
 		return nil, fmt.Errorf("db pagination: %w", err)
 	}

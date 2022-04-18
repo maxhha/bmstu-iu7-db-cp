@@ -2,7 +2,6 @@ package database
 
 import (
 	"auction-back/models"
-	"auction-back/ports"
 	"database/sql"
 	"fmt"
 	"time"
@@ -10,9 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type userDB struct{ *Database }
-
-func (d *Database) User() ports.UserDB { return &userDB{d} }
+//go:generate go run ../../codegen/gormdbops/main.go --out user_gen.go --model User --methods Get,Pagination,Create
 
 type User struct {
 	ID           string    `gorm:"default:generated();"`
@@ -40,15 +37,6 @@ func (u *User) copy(user *models.User) {
 	u.BlockedUntil = user.BlockedUntil
 }
 
-func (d *userDB) Get(id string) (models.User, error) {
-	obj := User{}
-	if err := d.db.Take(&obj, "id = ?", id).Error; err != nil {
-		return models.User{}, fmt.Errorf("take: %w", convertError(err))
-	}
-
-	return obj.into(), nil
-}
-
 func (d *userDB) LastApprovedUserForm(user models.User) (models.UserForm, error) {
 	form := UserForm{}
 	err := d.db.
@@ -63,65 +51,6 @@ func (d *userDB) LastApprovedUserForm(user models.User) (models.UserForm, error)
 	return form.into(), nil
 }
 
-func (d *userDB) Pagination(config ports.UserPaginationConfig) (models.UsersConnection, error) {
-	query := d.db.Model(&User{})
-	query, err := paginationQueryByCreatedAtDesc(query, config.First, config.After)
-	if err != nil {
-		return models.UsersConnection{}, fmt.Errorf("pagination: %w", convertError(err))
-	}
-
-	var objs []User
-	if err := query.Find(&objs).Error; err != nil {
-		return models.UsersConnection{}, fmt.Errorf("find: %w", convertError(err))
-	}
-
-	if len(objs) == 0 {
-		return models.UsersConnection{
-			PageInfo: &models.PageInfo{},
-			Edges:    make([]*models.UsersConnectionEdge, 0),
-		}, nil
-	}
-
-	hasNextPage := false
-	if config.First != nil {
-		hasNextPage = len(objs) > *config.First
-		objs = objs[:len(objs)-1]
-	}
-
-	edges := make([]*models.UsersConnectionEdge, 0, len(objs))
-	for _, obj := range objs {
-		node := obj.into()
-
-		edges = append(edges, &models.UsersConnectionEdge{
-			Cursor: obj.ID,
-			Node:   &node,
-		})
-	}
-
-	return models.UsersConnection{
-		PageInfo: &models.PageInfo{
-			HasNextPage: hasNextPage,
-			StartCursor: &objs[0].ID,
-			EndCursor:   &objs[len(objs)-1].ID,
-		},
-		Edges: edges,
-	}, nil
-}
-
-func (d *userDB) Create(user *models.User) error {
-	if user == nil {
-		return fmt.Errorf("user is nil")
-	}
-	u := User{}
-	u.copy(user)
-	if err := d.db.Create(&u).Error; err != nil {
-		return fmt.Errorf("create: %w", err)
-	}
-
-	*user = u.into()
-	return nil
-}
-
 func (d *userDB) MostRelevantUserForm(user models.User) (models.UserForm, error) {
 	form := UserForm{}
 	err := approvedOrFirstUserFormFilter(d.db).Take(&form, "user_id = ?", user.ID).Error
@@ -130,4 +59,12 @@ func (d *userDB) MostRelevantUserForm(user models.User) (models.UserForm, error)
 	}
 
 	return form.into(), nil
+}
+
+func (d *userDB) filter(query *gorm.DB, config *models.UsersFilter) *gorm.DB {
+	if config == nil {
+		return query
+	}
+
+	panic("not implimented!")
 }

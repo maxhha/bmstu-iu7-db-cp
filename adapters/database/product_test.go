@@ -78,7 +78,7 @@ func (s *ProductFilterSuite) TestFilterOwnerIDs() {
 		OwnerIDs: []string{"test-user"},
 	}
 	query := s.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return s.database.Product().(*productDB).filter(tx.Model(&Product{}), config).Find(&Product{})
+		return s.database.Product().(*productDB).filter(tx.Model(&Product{}), &config).Find(&Product{})
 	})
 
 	assert.Equal(

@@ -127,16 +127,7 @@ func (r *mutationResolver) DeclineUserForm(ctx context.Context, input models.Dec
 }
 
 func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string, filter *models.UserFormsFilter) (*models.UserFormsConnection, error) {
-	config := ports.UserFormPaginationConfig{
-		First: first,
-		After: after,
-	}
-
-	if filter != nil {
-		config.UserFormsFilter = *filter
-	}
-
-	connection, err := r.DB.UserForm().Pagination(config)
+	connection, err := r.DB.UserForm().Pagination(first, after, filter)
 	if err != nil {
 		return nil, fmt.Errorf("db pagination: %w", err)
 	}

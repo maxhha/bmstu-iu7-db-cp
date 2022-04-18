@@ -80,9 +80,11 @@ func (r *mutationResolver) CreateAuction(ctx context.Context, input models.Produ
 		return nil, fmt.Errorf("product state is not %s", models.ProductStateApproved)
 	}
 
-	auction, err := r.DB.Auction().Take(&models.AuctionsFilter{
-		SellerIDs:  []string{viewer.ID},
-		ProductIDs: []string{product.ID},
+	auction, err := r.DB.Auction().Take(ports.AuctionTakeConfig{
+		Filter: &models.AuctionsFilter{
+			SellerIDs:  []string{viewer.ID},
+			ProductIDs: []string{product.ID},
+		},
 	})
 	if err == nil {
 		if auction.State != models.AuctionStateFailed {

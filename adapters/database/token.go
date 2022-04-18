@@ -11,9 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type tokenDB struct{ *Database }
-
-func (d *Database) Token() ports.TokenDB { return &tokenDB{d} }
+//go:generate go run ../../codegen/gormdbops/main.go --out token_gen.go --model Token --methods Create,Update
 
 type Token struct {
 	ID          uint
@@ -54,20 +52,6 @@ var tokenFieldToColumn = map[ports.TokenField]string{
 	ports.TokenFieldCreatedAt: "created_at",
 }
 
-func (d *tokenDB) Create(token *models.Token) error {
-	if token == nil {
-		return fmt.Errorf("token is nil")
-	}
-	t := Token{}
-	t.copy(token)
-	if err := d.db.Create(&t).Error; err != nil {
-		return fmt.Errorf("create: %w", convertError(err))
-	}
-
-	*token = t.into()
-	return nil
-}
-
 func (d *tokenDB) Take(config ports.TokenTakeConfig) (models.Token, error) {
 	query := d.db
 
@@ -101,20 +85,6 @@ func (d *tokenDB) Take(config ports.TokenTakeConfig) (models.Token, error) {
 	}
 
 	return token.into(), nil
-}
-
-func (d *tokenDB) Update(token *models.Token) error {
-	if token == nil {
-		return fmt.Errorf("token is nil")
-	}
-
-	f := Token{}
-	f.copy(token)
-	if err := d.db.Save(&f).Error; err != nil {
-		return fmt.Errorf("save: %w", err)
-	}
-
-	return nil
 }
 
 func (d *tokenDB) GetUser(token models.Token) (models.User, error) {

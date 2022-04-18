@@ -33,18 +33,6 @@ const (
 	TransactionFieldID TransactionField = "id"
 )
 
-type ProductPaginationConfig struct {
-	Filter models.ProductsFilter
-	First  *int
-	After  *string
-}
-
-type UserFormPaginationConfig struct {
-	models.UserFormsFilter
-	First *int
-	After *string
-}
-
 type UserFormTakeConfig struct {
 	models.UserFormsFilter
 	OrderBy   UserFormField
@@ -102,6 +90,10 @@ type TransactionFindConfig struct {
 	Limit     int
 }
 
+type AuctionTakeConfig struct {
+	Filter *models.AuctionsFilter
+}
+
 type AccountDB interface {
 	Get(id string) (models.Account, error)
 	Take(config AccountTakeConfig) (models.Account, error)
@@ -113,7 +105,7 @@ type AccountDB interface {
 
 type AuctionDB interface {
 	Get(id string) (models.Auction, error)
-	Take(filter *models.AuctionsFilter) (models.Auction, error)
+	Take(config AuctionTakeConfig) (models.Auction, error)
 	Create(auction *models.Auction) error
 	Update(auction *models.Auction) error
 	Pagination(first *int, after *string, filter *models.AuctionsFilter) (models.AuctionsConnection, error)
@@ -131,7 +123,7 @@ type BankDB interface {
 type UserDB interface {
 	Get(id string) (models.User, error)
 	Create(user *models.User) error
-	Pagination(config UserPaginationConfig) (models.UsersConnection, error)
+	Pagination(first *int, after *string, filter *models.UsersFilter) (models.UsersConnection, error)
 	LastApprovedUserForm(user models.User) (models.UserForm, error)
 	MostRelevantUserForm(user models.User) (models.UserForm, error)
 }
@@ -141,7 +133,7 @@ type UserFormDB interface {
 	Take(config UserFormTakeConfig) (models.UserForm, error)
 	Create(form *models.UserForm) error
 	Update(form *models.UserForm) error
-	Pagination(config UserFormPaginationConfig) (models.UserFormsConnection, error)
+	Pagination(first *int, after *string, filter *models.UserFormsFilter) (models.UserFormsConnection, error)
 	GetLoginForm(input models.LoginInput) (models.UserForm, error)
 }
 
@@ -149,7 +141,7 @@ type ProductDB interface {
 	Get(id string) (models.Product, error)
 	Create(product *models.Product) error
 	Update(product *models.Product) error
-	Pagination(config ProductPaginationConfig) (models.ProductsConnection, error)
+	Pagination(first *int, after *string, filter *models.ProductsFilter) (models.ProductsConnection, error)
 	GetOwner(product models.Product) (models.User, error)
 	GetCreator(product models.Product) (models.User, error)
 }

@@ -2,7 +2,6 @@ package database
 
 import (
 	"auction-back/models"
-	"auction-back/ports"
 	"database/sql"
 	"fmt"
 	"time"
@@ -10,9 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type productDB struct{ *Database }
-
-func (d *Database) Product() ports.ProductDB { return &productDB{d} }
+//go:generate go run ../../codegen/gormdbops/main.go --out product_gen.go --model Product --methods Get,Update,Create,Pagination
 
 type Product struct {
 	ID            string              `gorm:"default:generated();"`
@@ -55,45 +52,11 @@ func (p *Product) copy(product *models.Product) {
 	p.DeletedAt = gorm.DeletedAt(product.DeletedAt)
 }
 
-func (d *productDB) Create(product *models.Product) error {
-	if product == nil {
-		return ports.ErrProductIsNil
-	}
-	p := Product{}
-	p.copy(product)
-	if err := d.db.Create(&p).Error; err != nil {
-		return fmt.Errorf("create: %w", convertError(err))
+func (d *productDB) filter(query *gorm.DB, config *models.ProductsFilter) *gorm.DB {
+	if config == nil {
+		return query
 	}
 
-	*product = p.into()
-	return nil
-}
-
-func (d *productDB) Get(id string) (models.Product, error) {
-	obj := Product{}
-	if err := d.db.Take(&obj, "id = ?", id).Error; err != nil {
-		return models.Product{}, fmt.Errorf("take: %w", convertError(err))
-	}
-
-	return obj.into(), nil
-}
-
-func (d *productDB) Update(product *models.Product) error {
-	if product == nil {
-		return ports.ErrProductIsNil
-	}
-
-	p := Product{}
-	p.copy(product)
-
-	if err := d.db.Save(&p).Error; err != nil {
-		return fmt.Errorf("save: %w", convertError(err))
-	}
-
-	return nil
-}
-
-func (d *productDB) filter(query *gorm.DB, config models.ProductsFilter) *gorm.DB {
 	if len(config.OwnerIDs) > 0 {
 		query = query.Joins(
 			"JOIN ( ? ) ofd ON products.id = ofd.product_id AND ofd.owner_n = 1 AND ofd.owner_id IN ?",
@@ -102,53 +65,6 @@ func (d *productDB) filter(query *gorm.DB, config models.ProductsFilter) *gorm.D
 		)
 	}
 	return query
-}
-
-func (d *productDB) Pagination(config ports.ProductPaginationConfig) (models.ProductsConnection, error) {
-	query := d.filter(d.db.Model(&Product{}), config.Filter)
-	query, err := paginationQueryByCreatedAtDesc(query, config.First, config.After)
-
-	if err != nil {
-		return models.ProductsConnection{}, fmt.Errorf("pagination: %w", err)
-	}
-
-	var products []Product
-	if err := query.Find(&products).Error; err != nil {
-		return models.ProductsConnection{}, fmt.Errorf("find: %w", convertError(err))
-	}
-
-	if len(products) == 0 {
-		return models.ProductsConnection{
-			PageInfo: &models.PageInfo{},
-			Edges:    make([]*models.ProductsConnectionEdge, 0),
-		}, nil
-	}
-
-	hasNextPage := false
-
-	if config.First != nil {
-		hasNextPage = len(products) > *config.First
-		products = products[:len(products)-1]
-	}
-
-	edges := make([]*models.ProductsConnectionEdge, 0, len(products))
-
-	for _, obj := range products {
-		node := obj.into()
-		edges = append(edges, &models.ProductsConnectionEdge{
-			Cursor: node.ID,
-			Node:   &node,
-		})
-	}
-
-	return models.ProductsConnection{
-		PageInfo: &models.PageInfo{
-			HasNextPage: hasNextPage,
-			StartCursor: &products[0].ID,
-			EndCursor:   &products[len(products)-1].ID,
-		},
-		Edges: edges,
-	}, nil
 }
 
 func (d *productDB) GetCreator(p models.Product) (models.User, error) {

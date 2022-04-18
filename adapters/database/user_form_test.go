@@ -307,7 +307,7 @@ func (s *UserFormSuite) TestFilter() {
 	for _, c := range cases {
 		query := s.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
 			return (&userFormDB{s.database}).
-				filter(c.Base(tx), c.Config).
+				filter(c.Base(tx), &c.Config).
 				Find(&UserForm{})
 		})
 
@@ -328,10 +328,11 @@ func (s *UserFormSuite) TestPagination() {
 	}
 
 	cases := []struct {
-		Name   string
-		Mock   func()
-		Config ports.UserFormPaginationConfig
-		Error  error
+		Name  string
+		Mock  func()
+		First *int
+		After *string
+		Error error
 		*models.PageInfo
 		Forms []UserForm
 	}{
@@ -342,7 +343,8 @@ func (s *UserFormSuite) TestPagination() {
 					ExpectQuery(`SELECT .* FROM "user_forms" WHERE "user_forms"\."deleted_at" IS NULL`).
 					WillReturnRows(MockRows(forms))
 			},
-			ports.UserFormPaginationConfig{},
+			nil,
+			nil,
 			nil,
 			&models.PageInfo{
 				StartCursor: &forms[0].ID,
@@ -360,9 +362,8 @@ func (s *UserFormSuite) TestPagination() {
 					)).
 					WillReturnRows(MockRows(forms[:first+1]))
 			},
-			ports.UserFormPaginationConfig{
-				First: &first,
-			},
+			&first,
+			nil,
 			nil,
 			&models.PageInfo{
 				HasNextPage: true,
@@ -378,7 +379,8 @@ func (s *UserFormSuite) TestPagination() {
 					ExpectQuery(`SELECT .* FROM "user_forms" WHERE .*`).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
-			ports.UserFormPaginationConfig{},
+			nil,
+			nil,
 			nil,
 			&models.PageInfo{},
 			[]UserForm{},
@@ -390,7 +392,8 @@ func (s *UserFormSuite) TestPagination() {
 					ExpectQuery(`SELECT .* FROM "user_forms" WHERE .*`).
 					WillReturnError(sql.ErrConnDone)
 			},
-			ports.UserFormPaginationConfig{},
+			nil,
+			nil,
 			sql.ErrConnDone,
 			nil,
 			nil,
@@ -398,7 +401,8 @@ func (s *UserFormSuite) TestPagination() {
 		{
 			"Pagination error",
 			func() {},
-			ports.UserFormPaginationConfig{First: &negfirst},
+			&negfirst,
+			nil,
 			ports.ErrInvalidFirst,
 			nil,
 			nil,
@@ -408,7 +412,7 @@ func (s *UserFormSuite) TestPagination() {
 	for _, c := range cases {
 		c.Mock()
 
-		conn, err := s.database.UserForm().Pagination(c.Config)
+		conn, err := s.database.UserForm().Pagination(c.First, c.After, nil)
 		if c.Error != nil {
 			require.ErrorIs(s.T(), err, c.Error, "[%s]", c.Name)
 			continue

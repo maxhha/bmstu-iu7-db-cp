@@ -98,9 +98,7 @@ func (s *UserPaginationSuite) TestPaginationSuccessMany() {
 		ExpectQuery(`SELECT \* FROM "users" .* ORDER BY created_at desc`).
 		WillReturnRows(MockRows(objs))
 
-	config := ports.UserPaginationConfig{}
-
-	conn, err := s.database.User().Pagination(config)
+	conn, err := s.database.User().Pagination(nil, nil, nil)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), conn.PageInfo, &models.PageInfo{
 		StartCursor: &objs[0].ID,

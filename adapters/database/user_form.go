@@ -11,9 +11,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type userFormDB struct{ *Database }
-
-func (d *Database) UserForm() ports.UserFormDB { return &userFormDB{d} }
+// TODO: check if gorm.DB.Update updates objects field UpdatedAt
+//go:generate go run ../../codegen/gormdbops/main.go --out user_form_gen.go --model UserForm --methods Get,Pagination,Update,Create
 
 type UserForm struct {
 	ID            string `gorm:"default:generated();"`
@@ -69,16 +68,11 @@ var userFormFieldToColumn = map[ports.UserFormField]string{
 	ports.UserFormFieldCreatedAt: "created_at",
 }
 
-func (d *userFormDB) Get(id string) (models.UserForm, error) {
-	form := UserForm{}
-	if err := d.db.Take(&form, "id = ?", id).Error; err != nil {
-		return models.UserForm{}, fmt.Errorf("take: %w", convertError(err))
+func (d *userFormDB) filter(query *gorm.DB, config *models.UserFormsFilter) *gorm.DB {
+	if config == nil {
+		return query
 	}
 
-	return form.into(), nil
-}
-
-func (d *userFormDB) filter(query *gorm.DB, config models.UserFormsFilter) *gorm.DB {
 	if len(config.ID) > 0 {
 		query = query.Where("id IN ?", config.ID)
 	}
@@ -94,55 +88,8 @@ func (d *userFormDB) filter(query *gorm.DB, config models.UserFormsFilter) *gorm
 	return query
 }
 
-func (d *userFormDB) Pagination(config ports.UserFormPaginationConfig) (models.UserFormsConnection, error) {
-	query := d.filter(d.db.Model(&UserForm{}), config.UserFormsFilter)
-	query, err := paginationQueryByCreatedAtDesc(query, config.First, config.After)
-	if err != nil {
-		return models.UserFormsConnection{}, fmt.Errorf("pagination: %w", err)
-	}
-
-	var objs []models.UserForm
-	if err := query.Find(&objs).Error; err != nil {
-		return models.UserFormsConnection{}, fmt.Errorf("find: %w", err)
-	}
-
-	if len(objs) == 0 {
-		return models.UserFormsConnection{
-			PageInfo: &models.PageInfo{},
-			Edges:    make([]*models.UserFormsConnectionEdge, 0),
-		}, nil
-	}
-
-	hasNextPage := false
-
-	if config.First != nil {
-		hasNextPage = len(objs) > *config.First
-		objs = objs[:len(objs)-1]
-	}
-
-	edges := make([]*models.UserFormsConnectionEdge, 0, len(objs))
-
-	for _, obj := range objs {
-		node := obj
-
-		edges = append(edges, &models.UserFormsConnectionEdge{
-			Cursor: obj.ID,
-			Node:   &node,
-		})
-	}
-
-	return models.UserFormsConnection{
-		PageInfo: &models.PageInfo{
-			HasNextPage: hasNextPage,
-			StartCursor: &objs[0].ID,
-			EndCursor:   &objs[len(objs)-1].ID,
-		},
-		Edges: edges,
-	}, nil
-}
-
 func (d *userFormDB) Take(config ports.UserFormTakeConfig) (models.UserForm, error) {
-	query := d.filter(d.db, config.UserFormsFilter)
+	query := d.filter(d.db, &config.UserFormsFilter)
 
 	if config.OrderBy != "" {
 		column, ok := userFormFieldToColumn[config.OrderBy]
@@ -162,37 +109,6 @@ func (d *userFormDB) Take(config ports.UserFormTakeConfig) (models.UserForm, err
 	}
 
 	return userForm.into(), nil
-}
-
-// TODO: check if gorm.DB.Update updates objects field UpdatedAt
-func (d *userFormDB) Update(form *models.UserForm) error {
-	if form == nil {
-		return ports.ErrUserFormIsNil
-	}
-
-	f := UserForm{}
-	f.copy(form)
-
-	if err := d.db.Save(&f).Error; err != nil {
-		return fmt.Errorf("save: %w", convertError(err))
-	}
-	*form = f.into()
-
-	return nil
-}
-
-func (d *userFormDB) Create(form *models.UserForm) error {
-	if form == nil {
-		return ports.ErrUserFormIsNil
-	}
-	f := UserForm{}
-	f.copy(form)
-	if err := d.db.Create(&f).Error; err != nil {
-		return fmt.Errorf("create: %w", convertError(err))
-	}
-
-	*form = f.into()
-	return nil
 }
 
 func approvedOrFirstUserFormFilter(query *gorm.DB) *gorm.DB {

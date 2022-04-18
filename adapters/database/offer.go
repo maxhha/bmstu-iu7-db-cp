@@ -10,9 +10,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type offerDB struct{ *Database }
-
-func (d *Database) Offer() ports.OfferDB { return &offerDB{d} }
+//go:generate go run ../../codegen/gormdbops/main.go --out offer_gen.go --model Offer --methods Get,Update,Create,Pagination
 
 type Offer struct {
 	ID        string            `gorm:"default:generated();"`
@@ -49,15 +47,6 @@ func (o *Offer) copy(offer *models.Offer) {
 	o.UserID = offer.UserID
 	o.CreatedAt = offer.CreatedAt
 	o.UpdatedAt = offer.UpdatedAt
-}
-
-func (d *offerDB) Get(id string) (models.Offer, error) {
-	obj := Offer{}
-	if err := d.db.Take(&obj, "id = ?", id).Error; err != nil {
-		return models.Offer{}, fmt.Errorf("take: %w", convertError(err))
-	}
-
-	return obj.into(), nil
 }
 
 func (d *offerDB) filter(query *gorm.DB, config *models.OffersFilter) *gorm.DB {
@@ -105,81 +94,4 @@ func (d *offerDB) Take(config ports.OfferTakeConfig) (models.Offer, error) {
 	}
 
 	return offer.into(), nil
-}
-
-func (d *offerDB) Create(offer *models.Offer) error {
-	if offer == nil {
-		return ports.ErrOfferIsNil
-	}
-
-	o := Offer{}
-	o.copy(offer)
-	if err := d.db.Create(&o).Error; err != nil {
-		return fmt.Errorf("create: %w", convertError(err))
-	}
-
-	*offer = o.into()
-	return nil
-}
-
-func (d *offerDB) Update(offer *models.Offer) error {
-	if offer == nil {
-		return ports.ErrOfferIsNil
-	}
-
-	p := Offer{}
-	p.copy(offer)
-
-	if err := d.db.Save(&p).Error; err != nil {
-		return fmt.Errorf("save: %w", convertError(err))
-	}
-
-	return nil
-}
-
-func (d *offerDB) Pagination(first *int, after *string, filter *models.OffersFilter) (models.OffersConnection, error) {
-	query := d.filter(d.db.Model(&Offer{}), filter)
-	query, err := paginationQueryByCreatedAtDesc(query, first, after)
-
-	if err != nil {
-		return models.OffersConnection{}, fmt.Errorf("pagination: %w", err)
-	}
-
-	var offers []Offer
-	if err := query.Find(&offers).Error; err != nil {
-		return models.OffersConnection{}, fmt.Errorf("find: %w", convertError(err))
-	}
-
-	if len(offers) == 0 {
-		return models.OffersConnection{
-			PageInfo: &models.PageInfo{},
-			Edges:    make([]*models.OffersConnectionEdge, 0),
-		}, nil
-	}
-
-	hasNextPage := false
-
-	if first != nil {
-		hasNextPage = len(offers) > *first
-		offers = offers[:len(offers)-1]
-	}
-
-	edges := make([]*models.OffersConnectionEdge, 0, len(offers))
-
-	for _, obj := range offers {
-		node := obj.into()
-		edges = append(edges, &models.OffersConnectionEdge{
-			Cursor: node.ID,
-			Node:   &node,
-		})
-	}
-
-	return models.OffersConnection{
-		PageInfo: &models.PageInfo{
-			HasNextPage: hasNextPage,
-			StartCursor: &offers[0].ID,
-			EndCursor:   &offers[len(offers)-1].ID,
-		},
-		Edges: edges,
-	}, nil
 }

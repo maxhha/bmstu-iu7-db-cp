@@ -7,7 +7,6 @@ import (
 	"auction-back/auth"
 	"auction-back/graph/generated"
 	"auction-back/models"
-	"auction-back/ports"
 	"context"
 	"fmt"
 )
@@ -411,16 +410,7 @@ func (r *productResolver) Offers(ctx context.Context, obj *models.Product, first
 }
 
 func (r *queryResolver) Products(ctx context.Context, first *int, after *string, filter *models.ProductsFilter) (*models.ProductsConnection, error) {
-	config := ports.ProductPaginationConfig{
-		First: first,
-		After: after,
-	}
-
-	if filter != nil {
-		config.Filter = *filter
-	}
-
-	connection, err := r.DB.Product().Pagination(config)
+	connection, err := r.DB.Product().Pagination(first, after, filter)
 	if err != nil {
 		return nil, fmt.Errorf("db pagination: %w", err)
 	}

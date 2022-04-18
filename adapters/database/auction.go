@@ -3,7 +3,6 @@ package database
 import (
 	"auction-back/models"
 	"auction-back/ports"
-	"fmt"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -11,9 +10,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type auctionDB struct{ *Database }
-
-func (d *Database) Auction() ports.AuctionDB { return &auctionDB{d} }
+//go:generate go run ../../codegen/gormdbops/main.go --out auction_gen.go --model Auction --methods Get,Update,Create,Take,Pagination
 
 type Auction struct {
 	ID                string              `gorm:"default:generated();"`
@@ -71,44 +68,6 @@ func (a *Auction) copy(auction *models.Auction) {
 	a.UpdatedAt = auction.UpdatedAt
 }
 
-func (d *auctionDB) Get(id string) (models.Auction, error) {
-	obj := Auction{}
-	if err := d.db.Take(&obj, "id = ?", id).Error; err != nil {
-		return models.Auction{}, fmt.Errorf("take: %w", convertError(err))
-	}
-
-	return obj.into(), nil
-}
-
-func (d *auctionDB) Update(auction *models.Auction) error {
-	if auction == nil {
-		return ports.ErrAuctionIsNil
-	}
-
-	a := Auction{}
-	a.copy(auction)
-
-	if err := d.db.Save(&a).Error; err != nil {
-		return fmt.Errorf("save: %w", convertError(err))
-	}
-
-	return nil
-}
-
-func (d *auctionDB) Create(auction *models.Auction) error {
-	if auction == nil {
-		return fmt.Errorf("auction is nil")
-	}
-	a := Auction{}
-	a.copy(auction)
-	if err := d.db.Create(&a).Error; err != nil {
-		return fmt.Errorf("create: %w", convertError(err))
-	}
-
-	*auction = a.into()
-	return nil
-}
-
 func (d *auctionDB) filter(query *gorm.DB, config *models.AuctionsFilter) *gorm.DB {
 	if config == nil {
 		return query
@@ -135,63 +94,6 @@ func (d *auctionDB) filter(query *gorm.DB, config *models.AuctionsFilter) *gorm.
 	}
 
 	return query
-}
-
-func (d *auctionDB) Take(filter *models.AuctionsFilter) (models.Auction, error) {
-	query := d.filter(d.db.Model(&Auction{}), filter)
-	auction := Auction{}
-	if err := query.Take(&auction).Error; err != nil {
-		return models.Auction{}, fmt.Errorf("take: %w", convertError(err))
-	}
-
-	return auction.into(), nil
-}
-
-func (d *auctionDB) Pagination(first *int, after *string, filter *models.AuctionsFilter) (models.AuctionsConnection, error) {
-	query := d.filter(d.db.Model(&Auction{}), filter)
-	query, err := paginationQueryByCreatedAtDesc(query, first, after)
-
-	if err != nil {
-		return models.AuctionsConnection{}, fmt.Errorf("pagination: %w", err)
-	}
-
-	var auctions []Auction
-	if err := query.Find(&auctions).Error; err != nil {
-		return models.AuctionsConnection{}, fmt.Errorf("find: %w", convertError(err))
-	}
-
-	if len(auctions) == 0 {
-		return models.AuctionsConnection{
-			PageInfo: &models.PageInfo{},
-			Edges:    make([]*models.AuctionsConnectionEdge, 0),
-		}, nil
-	}
-
-	hasNextPage := false
-
-	if first != nil {
-		hasNextPage = len(auctions) > *first
-		auctions = auctions[:len(auctions)-1]
-	}
-
-	edges := make([]*models.AuctionsConnectionEdge, 0, len(auctions))
-
-	for _, obj := range auctions {
-		node := obj.into()
-		edges = append(edges, &models.AuctionsConnectionEdge{
-			Cursor: node.ID,
-			Node:   &node,
-		})
-	}
-
-	return models.AuctionsConnection{
-		PageInfo: &models.PageInfo{
-			HasNextPage: hasNextPage,
-			StartCursor: &auctions[0].ID,
-			EndCursor:   &auctions[len(auctions)-1].ID,
-		},
-		Edges: edges,
-	}, nil
 }
 
 func (d *auctionDB) LockShare(auction *models.Auction) error {

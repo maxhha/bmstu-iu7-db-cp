@@ -95,8 +95,8 @@ func (m *AuctionDBMock) Pagination(first *int, after *string, filter *models.Auc
 	return args.Get(0).(models.AuctionsConnection), args.Error(1)
 }
 
-func (m *AuctionDBMock) Take(filter *models.AuctionsFilter) (models.Auction, error) {
-	args := m.Called(filter)
+func (m *AuctionDBMock) Take(config AuctionTakeConfig) (models.Auction, error) {
+	args := m.Called(config)
 	return args.Get(0).(models.Auction), args.Error(1)
 }
 
@@ -248,8 +248,8 @@ func (m *ProductDBMock) GetOwner(product models.Product) (models.User, error) {
 	return args.Get(0).(models.User), args.Error(1)
 }
 
-func (m *ProductDBMock) Pagination(config ProductPaginationConfig) (models.ProductsConnection, error) {
-	args := m.Called(config)
+func (m *ProductDBMock) Pagination(first *int, after *string, filter *models.ProductsFilter) (models.ProductsConnection, error) {
+	args := m.Called(first, after, filter)
 	return args.Get(0).(models.ProductsConnection), args.Error(1)
 }
 
@@ -348,8 +348,8 @@ func (m *UserDBMock) MostRelevantUserForm(user models.User) (models.UserForm, er
 	return args.Get(0).(models.UserForm), args.Error(1)
 }
 
-func (m *UserDBMock) Pagination(config UserPaginationConfig) (models.UsersConnection, error) {
-	args := m.Called(config)
+func (m *UserDBMock) Pagination(first *int, after *string, filter *models.UsersFilter) (models.UsersConnection, error) {
+	args := m.Called(first, after, filter)
 	return args.Get(0).(models.UsersConnection), args.Error(1)
 }
 
@@ -368,8 +368,8 @@ func (m *UserFormDBMock) GetLoginForm(input models.LoginInput) (models.UserForm,
 	return args.Get(0).(models.UserForm), args.Error(1)
 }
 
-func (m *UserFormDBMock) Pagination(config UserFormPaginationConfig) (models.UserFormsConnection, error) {
-	args := m.Called(config)
+func (m *UserFormDBMock) Pagination(first *int, after *string, filter *models.UserFormsFilter) (models.UserFormsConnection, error) {
+	args := m.Called(first, after, filter)
 	return args.Get(0).(models.UserFormsConnection), args.Error(1)
 }
 

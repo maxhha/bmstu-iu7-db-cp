@@ -11,9 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type transactionDB struct{ *Database }
-
-func (d *Database) Transaction() ports.TransactionDB { return &transactionDB{d} }
+//go:generate go run ../../codegen/gormdbops/main.go --out transaction_gen.go --model Transaction --methods Create,Update,Pagination
 
 type Transaction struct {
 	ID            int `gorm:"default:serial();"`
@@ -85,12 +83,12 @@ var transactionFieldToColumn = map[ports.TransactionField]string{
 }
 
 func (d *transactionDB) Get(id int) (models.Transaction, error) {
-	tr := Transaction{}
-	if err := d.db.Take(&tr, "id = ?", id).Error; err != nil {
+	obj := Transaction{}
+	if err := d.db.Take(&obj, "id = ?", id).Error; err != nil {
 		return models.Transaction{}, fmt.Errorf("take: %w", convertError(err))
 	}
 
-	return tr.into(), nil
+	return obj.into(), nil
 }
 
 func (d *transactionDB) filter(query *gorm.DB, config *models.TransactionsFilter) *gorm.DB {
@@ -194,84 +192,4 @@ func (d *transactionDB) Find(config ports.TransactionFindConfig) ([]models.Trans
 	}
 
 	return arr, nil
-}
-
-func (d *transactionDB) Create(transaction *models.Transaction) error {
-	if transaction == nil {
-		return ports.ErrTransactionIsNil
-	}
-	t := Transaction{}
-	t.copy(transaction)
-	if err := d.db.Create(&t).Error; err != nil {
-		return fmt.Errorf("create: %w", convertError(err))
-	}
-
-	*transaction = t.into()
-	return nil
-}
-
-func (d *transactionDB) Update(form *models.Transaction) error {
-	if form == nil {
-		return ports.ErrTransactionIsNil
-	}
-
-	f := Transaction{}
-	f.copy(form)
-
-	if err := d.db.Save(&f).Error; err != nil {
-		return fmt.Errorf("save: %w", convertError(err))
-	}
-	*form = f.into()
-
-	return nil
-}
-
-func (d *transactionDB) Pagination(first *int, after *string, filter *models.TransactionsFilter) (models.TransactionsConnection, error) {
-	query := d.filter(d.db.Model(&Transaction{}), filter)
-	query, err := paginationQueryByCreatedAtDesc(query, first, after)
-	if err != nil {
-		return models.TransactionsConnection{}, fmt.Errorf("pagination: %w", err)
-	}
-
-	var objs []Transaction
-	if err := query.Find(&objs).Error; err != nil {
-		return models.TransactionsConnection{}, fmt.Errorf("find: %w", err)
-	}
-
-	if len(objs) == 0 {
-		return models.TransactionsConnection{
-			PageInfo: &models.PageInfo{},
-			Edges:    make([]*models.TransactionsConnectionEdge, 0),
-		}, nil
-	}
-
-	hasNextPage := false
-
-	if first != nil {
-		hasNextPage = len(objs) > *first
-		objs = objs[:len(objs)-1]
-	}
-
-	edges := make([]*models.TransactionsConnectionEdge, 0, len(objs))
-
-	for _, obj := range objs {
-		node := obj.into()
-
-		edges = append(edges, &models.TransactionsConnectionEdge{
-			Cursor: fmt.Sprintf("%d", node.ID),
-			Node:   &node,
-		})
-	}
-
-	startCursor := fmt.Sprintf("%d", objs[0].ID)
-	endCursor := fmt.Sprintf("%d", objs[len(objs)-1].ID)
-
-	return models.TransactionsConnection{
-		PageInfo: &models.PageInfo{
-			HasNextPage: hasNextPage,
-			StartCursor: &startCursor,
-			EndCursor:   &endCursor,
-		},
-		Edges: edges,
-	}, nil
 }
