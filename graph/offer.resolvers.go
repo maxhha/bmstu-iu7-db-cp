@@ -28,7 +28,7 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateO
 		return nil, fmt.Errorf("db account get: %w", err)
 	}
 
-	if err := isAccountOwner(viewer, account); err != nil {
+	if err := IsAccountOwner(viewer, account); err != nil {
 		return nil, fmt.Errorf("denied: %w", err)
 	}
 

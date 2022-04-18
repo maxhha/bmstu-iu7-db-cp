@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+type RoleType string
+
+var (
+	RoleTypeManager RoleType = "Manager"
+	RoleTypeAdmin   RoleType = "Admin"
+)
+
 // TODO: add role addition and removeing
 type Role struct {
 	Type      RoleType

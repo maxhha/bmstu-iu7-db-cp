@@ -136,10 +136,6 @@ func (r *queryResolver) UserForms(ctx context.Context, first *int, after *string
 }
 
 func (r *userFormResolver) User(ctx context.Context, obj *models.UserForm) (*models.User, error) {
-	if obj == nil {
-		return nil, nil
-	}
-
 	viewer, err := auth.ForViewer(ctx)
 	if err != nil {
 		return nil, err

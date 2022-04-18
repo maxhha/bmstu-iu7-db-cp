@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"crypto/sha256"
-
-	"github.com/hashicorp/go-multierror"
 )
 
 var ErrNoPassword = errors.New("password not set")
@@ -88,24 +86,10 @@ func checkHashAndPassword(hash string, password string) bool {
 	return hash == hash2
 }
 
-func (r *userResolver) isOwnerOrManager(viewer models.User, obj *models.User) error {
-	if obj == nil {
-		return ErrUserIsNil
-	}
-
-	var errors error
-
+func IsUserOwner(viewer models.User, obj models.User) error {
 	if viewer.ID != obj.ID {
-		errors = multierror.Append(errors, ErrUserNotOwner)
-	} else {
-		return nil
+		return ErrUserNotOwner
 	}
 
-	if err := r.RolePort.HasRole(models.RoleTypeManager, viewer); err != nil {
-		errors = multierror.Append(errors, err)
-	} else {
-		return nil
-	}
-
-	return errors
+	return nil
 }

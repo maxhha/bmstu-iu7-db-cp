@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-func isProductOwner(DB ports.DB, viewer models.User, product models.Product) error {
+func IsProductOwner(DB ports.DB, viewer models.User, product models.Product) error {
 	owner, err := DB.Product().GetOwner(product)
 	if err != nil {
 		return fmt.Errorf("get owner: %w", err)
@@ -24,7 +24,7 @@ func isProductOwner(DB ports.DB, viewer models.User, product models.Product) err
 func (r *productResolver) isProductOwnerOrManager(viewer models.User, obj models.Product) error {
 	var errors error
 
-	if err := isProductOwner(r.DB, viewer, obj); err != nil {
+	if err := IsProductOwner(r.DB, viewer, obj); err != nil {
 		errors = multierror.Append(errors, err)
 	} else {
 		return nil

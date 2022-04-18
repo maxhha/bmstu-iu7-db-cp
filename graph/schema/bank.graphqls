@@ -40,7 +40,7 @@ extend type Query {
   All banks on platform
   """
   banks(first: Int, after: Cursor, filter: BanksFilter = {}): BanksConnection!
-    @hasRole(role: MANAGER)
+    @hasRole(roles: [MANAGER])
 }
 
 input CreateBankInput {
@@ -61,6 +61,6 @@ input UpdateBankInput {
 }
 
 extend type Mutation {
-  createBank(input: CreateBankInput!): BankResult! @hasRole(role: MANAGER)
-  updateBank(input: UpdateBankInput!): BankResult! @hasRole(role: MANAGER)
+  createBank(input: CreateBankInput!): BankResult! @hasRole(roles: [MANAGER])
+  updateBank(input: UpdateBankInput!): BankResult! @hasRole(roles: [MANAGER])
 }

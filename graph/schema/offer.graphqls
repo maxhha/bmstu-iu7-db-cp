@@ -82,7 +82,7 @@ extend type Query {
     first: Int
     after: Cursor
     filter: OffersFilter = {}
-  ): OffersConnection! @hasRole(role: MANAGER)
+  ): OffersConnection! @hasRole(roles: [MANAGER])
 }
 
 extend type Mutation {

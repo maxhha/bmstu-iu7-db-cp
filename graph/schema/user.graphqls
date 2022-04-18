@@ -8,11 +8,11 @@ type User {
   """
   User current personal information
   """
-  form: UserFormFilled
+  form: UserFormFilled @hasRole(roles: [USER, MANAGER])
   """
   User new personal information
   """
-  draftForm: UserForm
+  draftForm: UserForm @hasRole(roles: [OWNER, MANAGER])
   """
   User history of personal information (only for managers)
   """
@@ -20,11 +20,11 @@ type User {
     first: Int
     after: Cursor
     filter: UserFormHistoryFilter = {}
-  ): UserFormsConnection! @hasRole(role: MANAGER)
+  ): UserFormsConnection! @hasRole(roles: [MANAGER])
   """
   End date of blocking this user
   """
-  blockedUntil: DateTime
+  blockedUntil: DateTime @hasRole(roles: [OWNER, MANAGER])
   """
   User accounts
   """
@@ -32,11 +32,12 @@ type User {
     first: Int
     after: Cursor
     filter: AccountsFilter = {}
-  ): AccountsConnection!
+  ): AccountsConnection! @hasRole(roles: [OWNER, MANAGER])
   """
   Auctions which user created
   """
   auctions(first: Int, after: Cursor): AuctionsConnection!
+    @hasRole(roles: [OWNER, MANAGER])
   """
   User offers
   """
@@ -44,11 +45,12 @@ type User {
     first: Int
     after: Cursor
     filter: OffersFilter = {}
-  ): OffersConnection!
+  ): OffersConnection! @hasRole(roles: [OWNER, MANAGER])
   """
   User products in which he is owner
   """
   products(first: Int, after: Cursor): ProductsConnection!
+    @hasRole(roles: [OWNER, MANAGER])
 }
 
 type UsersConnectionEdge {
@@ -74,7 +76,7 @@ extend type Query {
   List of all users
   """
   users(first: Int, after: Cursor, filter: UsersFilter = {}): UsersConnection
-    @hasRole(role: MANAGER)
+    @hasRole(roles: [MANAGER])
 }
 
 type UserResult {

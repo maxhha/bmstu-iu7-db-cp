@@ -76,7 +76,7 @@ extend type Query {
     first: Int
     after: String
     filter: ProductsFilter
-  ): ProductsConnection! @hasRole(role: MANAGER)
+  ): ProductsConnection! @hasRole(roles: [MANAGER])
   marketProducts(first: Int, after: String): ProductsConnection!
 }
 
@@ -132,16 +132,13 @@ extend type Mutation {
   """
   Approve product
   """
-  approveProduct(input: ProductInput!): ProductResult! @hasRole(role: MANAGER)
+  approveProduct(input: ProductInput!): ProductResult!
+    @hasRole(roles: [MANAGER])
   """
   Declain product
   """
   declainProduct(input: DeclineProductInput!): ProductResult!
-    @hasRole(role: MANAGER)
-
-  offerProduct(input: ProductInput!): OfferProductResult!
-  takeOffProduct(input: ProductInput!): TakeOffProductResult!
-  sellProduct(input: ProductInput!): SellProductResult!
+    @hasRole(roles: [MANAGER])
 }
 
 type Subscription {

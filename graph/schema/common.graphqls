@@ -50,9 +50,11 @@ type PageInfo {
   endCursor: Cursor
 }
 
-enum RoleType {
-  ADMIN
+enum RoleEnum {
+  USER
+  OWNER
   MANAGER
+  ADMIN
 }
 
-directive @hasRole(role: RoleType!) on FIELD_DEFINITION
+directive @hasRole(roles: [RoleEnum!]!) on FIELD_DEFINITION

@@ -72,7 +72,7 @@ func (r *mutationResolver) CreateAuction(ctx context.Context, input models.Produ
 		return nil, fmt.Errorf("db get: %w", err)
 	}
 
-	if err := isProductOwner(r.DB, viewer, product); err != nil {
+	if err := IsProductOwner(r.DB, viewer, product); err != nil {
 		return nil, err
 	}
 
@@ -127,7 +127,7 @@ func (r *mutationResolver) UpdateAuction(ctx context.Context, input models.Updat
 		return nil, fmt.Errorf("db get: %w", err)
 	}
 
-	if err := isAuctionOwner(viewer, auction); err != nil {
+	if err := IsAuctionOwner(viewer, auction); err != nil {
 		return nil, err
 	}
 
@@ -159,7 +159,7 @@ func (r *mutationResolver) StartAuction(ctx context.Context, input models.Auctio
 		return nil, fmt.Errorf("db get: %w", err)
 	}
 
-	if err := isAuctionOwner(viewer, auction); err != nil {
+	if err := IsAuctionOwner(viewer, auction); err != nil {
 		return nil, err
 	}
 

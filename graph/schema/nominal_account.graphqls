@@ -46,7 +46,7 @@ extend type Query {
     first: Int
     after: Cursor
     filter: NominalAccountsFilter = {}
-  ): NominalAccountsConnection! @hasRole(role: MANAGER)
+  ): NominalAccountsConnection! @hasRole(roles: [MANAGER])
 }
 
 input CreateNominalAccountInput {
@@ -67,8 +67,8 @@ input UpdateNominalAccountInput {
 extend type Mutation {
   createNominalAccount(
     input: CreateNominalAccountInput!
-  ): NominalAccountResult! @hasRole(role: MANAGER)
+  ): NominalAccountResult! @hasRole(roles: [MANAGER])
   updateNominalAccount(
     input: UpdateNominalAccountInput!
-  ): NominalAccountResult! @hasRole(role: MANAGER)
+  ): NominalAccountResult! @hasRole(roles: [MANAGER])
 }

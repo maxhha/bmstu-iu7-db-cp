@@ -1,13 +1,9 @@
 package role
 
 import (
-	"auction-back/auth"
 	"auction-back/models"
 	"auction-back/ports"
-	"context"
 	"fmt"
-
-	"github.com/99designs/gqlgen/graphql"
 )
 
 type RolePort struct {
@@ -16,22 +12,6 @@ type RolePort struct {
 
 func New(db ports.DB) RolePort {
 	return RolePort{db}
-}
-
-func (r *RolePort) Handler() func(ctx context.Context, obj interface{}, next graphql.Resolver, role models.RoleType) (res interface{}, err error) {
-	return func(ctx context.Context, obj interface{}, next graphql.Resolver, role models.RoleType) (res interface{}, err error) {
-		viewer, err := auth.ForViewer(ctx)
-
-		if err != nil {
-			return nil, err
-		}
-
-		if err := r.HasRole(role, viewer); err != nil {
-			return nil, err
-		}
-
-		return next(ctx)
-	}
 }
 
 func (r *RolePort) HasRole(roleType models.RoleType, viewer models.User) error {

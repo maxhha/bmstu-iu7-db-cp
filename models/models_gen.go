@@ -285,18 +285,6 @@ type UpdateUserPasswordInput struct {
 	Password    string  `json:"password"`
 }
 
-// UserFrom with all required fields filled in
-type UserFormFilled struct {
-	// User email
-	Email string `json:"email"`
-	// User phone
-	Phone string `json:"phone"`
-	// User name
-	Name string `json:"name"`
-	// User default currency
-	Currency CurrencyEnum `json:"currency"`
-}
-
 type UserFormHistoryFilter struct {
 	State []UserFormState `json:"state"`
 	ID    []string        `json:"id"`
@@ -522,44 +510,48 @@ func (e ProductState) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
-type RoleType string
+type RoleEnum string
 
 const (
-	RoleTypeAdmin   RoleType = "ADMIN"
-	RoleTypeManager RoleType = "MANAGER"
+	RoleEnumUser    RoleEnum = "USER"
+	RoleEnumOwner   RoleEnum = "OWNER"
+	RoleEnumManager RoleEnum = "MANAGER"
+	RoleEnumAdmin   RoleEnum = "ADMIN"
 )
 
-var AllRoleType = []RoleType{
-	RoleTypeAdmin,
-	RoleTypeManager,
+var AllRoleEnum = []RoleEnum{
+	RoleEnumUser,
+	RoleEnumOwner,
+	RoleEnumManager,
+	RoleEnumAdmin,
 }
 
-func (e RoleType) IsValid() bool {
+func (e RoleEnum) IsValid() bool {
 	switch e {
-	case RoleTypeAdmin, RoleTypeManager:
+	case RoleEnumUser, RoleEnumOwner, RoleEnumManager, RoleEnumAdmin:
 		return true
 	}
 	return false
 }
 
-func (e RoleType) String() string {
+func (e RoleEnum) String() string {
 	return string(e)
 }
 
-func (e *RoleType) UnmarshalGQL(v interface{}) error {
+func (e *RoleEnum) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
 	}
 
-	*e = RoleType(str)
+	*e = RoleEnum(str)
 	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid RoleType", str)
+		return fmt.Errorf("%s is not a valid RoleEnum", str)
 	}
 	return nil
 }
 
-func (e RoleType) MarshalGQL(w io.Writer) {
+func (e RoleEnum) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

@@ -34,9 +34,12 @@ func Init() *gin.Engine {
 	bankAdapter := bank.New(&db)
 	roleAdapter := role.New(&db)
 
+	ownerCheckers := newOwnerCheckers()
+	roleCheckers := newRoleCheckers(&roleAdapter, ownerCheckers)
+
 	resolver := graph.New(&db, tokenAdapter, &bankAdapter, &roleAdapter)
 	config := generated.Config{Resolvers: resolver}
-	config.Directives.HasRole = roleAdapter.Handler()
+	config.Directives.HasRole = hasRoleDirective(roleCheckers)
 	schema := generated.NewExecutableSchema(config)
 
 	r := gin.Default()

@@ -187,7 +187,6 @@ func (r *mutationResolver) UpdateUserPassword(ctx context.Context, input models.
 
 func (r *mutationResolver) UpdateUserDraftForm(ctx context.Context, input models.UpdateUserDraftFormInput) (*models.UserResult, error) {
 	viewer, err := auth.ForViewer(ctx)
-
 	if err != nil {
 		return nil, err
 	}
@@ -232,15 +231,6 @@ func (r *queryResolver) Users(ctx context.Context, first *int, after *string, fi
 }
 
 func (r *userResolver) Form(ctx context.Context, obj *models.User) (*models.UserFormFilled, error) {
-	viewer, err := auth.ForViewer(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := r.isOwnerOrManager(viewer, obj); err != nil {
-		return nil, fmt.Errorf("denied: %w", err)
-	}
-
 	form, err := r.DB.User().LastApprovedUserForm(*obj)
 	if errors.Is(err, ports.ErrRecordNotFound) {
 		return nil, nil
@@ -254,15 +244,6 @@ func (r *userResolver) Form(ctx context.Context, obj *models.User) (*models.User
 }
 
 func (r *userResolver) DraftForm(ctx context.Context, obj *models.User) (*models.UserForm, error) {
-	viewer, err := auth.ForViewer(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := r.isOwnerOrManager(viewer, obj); err != nil {
-		return nil, fmt.Errorf("denied: %w", err)
-	}
-
 	form, err := r.DB.UserForm().Take(ports.UserFormTakeConfig{
 		OrderBy:   ports.UserFormFieldCreatedAt,
 		OrderDesc: true,
@@ -287,15 +268,6 @@ func (r *userResolver) DraftForm(ctx context.Context, obj *models.User) (*models
 }
 
 func (r *userResolver) FormHistory(ctx context.Context, obj *models.User, first *int, after *string, filter *models.UserFormHistoryFilter) (*models.UserFormsConnection, error) {
-	viewer, err := auth.ForViewer(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := r.isOwnerOrManager(viewer, obj); err != nil {
-		return nil, fmt.Errorf("denied: %w", err)
-	}
-
 	userFormsFilter := models.UserFormsFilter{
 		UserID: []string{obj.ID},
 	}
@@ -314,15 +286,6 @@ func (r *userResolver) FormHistory(ctx context.Context, obj *models.User, first 
 }
 
 func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *int, after *string, filter *models.AccountsFilter) (*models.AccountsConnection, error) {
-	viewer, err := auth.ForViewer(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := r.isOwnerOrManager(viewer, obj); err != nil {
-		return nil, fmt.Errorf("denied: %w", err)
-	}
-
 	if filter == nil {
 		filter = &models.AccountsFilter{}
 	}
@@ -342,15 +305,6 @@ func (r *userResolver) Accounts(ctx context.Context, obj *models.User, first *in
 }
 
 func (r *userResolver) Auctions(ctx context.Context, obj *models.User, first *int, after *string) (*models.AuctionsConnection, error) {
-	viewer, err := auth.ForViewer(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := r.isOwnerOrManager(viewer, obj); err != nil {
-		return nil, fmt.Errorf("denied: %w", err)
-	}
-
 	filter := models.AuctionsFilter{
 		SellerIDs: []string{obj.ID},
 	}
@@ -364,19 +318,6 @@ func (r *userResolver) Auctions(ctx context.Context, obj *models.User, first *in
 }
 
 func (r *userResolver) Offers(ctx context.Context, obj *models.User, first *int, after *string, filter *models.OffersFilter) (*models.OffersConnection, error) {
-	if obj == nil {
-		return nil, nil
-	}
-
-	viewer, err := auth.ForViewer(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := r.isOwnerOrManager(viewer, obj); err != nil {
-		return nil, fmt.Errorf("denied: %w", err)
-	}
-
 	if filter == nil {
 		filter = &models.OffersFilter{}
 	}
@@ -395,15 +336,6 @@ func (r *userResolver) Offers(ctx context.Context, obj *models.User, first *int,
 }
 
 func (r *userResolver) Products(ctx context.Context, obj *models.User, first *int, after *string) (*models.ProductsConnection, error) {
-	viewer, err := auth.ForViewer(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := r.isOwnerOrManager(viewer, obj); err != nil {
-		return nil, fmt.Errorf("denied: %w", err)
-	}
-
 	filter := &models.ProductsFilter{
 		OwnerIDs: []string{obj.ID},
 	}

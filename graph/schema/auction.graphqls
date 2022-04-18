@@ -85,7 +85,7 @@ extend type Query {
     first: Int
     after: Cursor
     filter: AuctionsFilter
-  ): AuctionsConnection! @hasRole(role: MANAGER)
+  ): AuctionsConnection! @hasRole(roles: [MANAGER])
 }
 
 type AuctionResult {

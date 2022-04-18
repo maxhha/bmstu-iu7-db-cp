@@ -53,5 +53,5 @@ extend type Query {
     first: Int
     after: Cursor
     filter: AccountsFilter = {}
-  ): AccountsConnection! @hasRole(role: MANAGER)
+  ): AccountsConnection! @hasRole(roles: [MANAGER])
 }

@@ -23,12 +23,22 @@ type UserForm struct {
 	DeletedAt     sql.NullTime
 }
 
+// UserFrom with all required fields filled in
+type UserFormFilled struct {
+	UserForm *UserForm
+	Email    string
+	Phone    string
+	Name     string
+	Currency CurrencyEnum
+}
+
 func (f *UserForm) IsEditable() bool {
 	return f.State == UserFormStateCreated || f.State == UserFormStateDeclained
 }
 
 func (f *UserFormFilled) From(form *UserForm) (*UserFormFilled, error) {
 	var err error
+	f.UserForm = form
 
 	if form.Email == nil {
 		err = multierror.Append(err, fmt.Errorf("no email"))

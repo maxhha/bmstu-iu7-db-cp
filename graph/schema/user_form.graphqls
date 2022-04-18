@@ -43,19 +43,19 @@ type UserFormFilled {
   """
   User email
   """
-  email: String!
+  email: String! @hasRole(roles: [OWNER, MANAGER])
   """
   User phone
   """
-  phone: String!
+  phone: String! @hasRole(roles: [OWNER, MANAGER])
   """
   User name
   """
-  name: String!
+  name: String! @hasRole(roles: [USER, MANAGER])
   """
   User default currency
   """
-  currency: CurrencyEnum!
+  currency: CurrencyEnum! @hasRole(roles: [USER, MANAGER])
 }
 
 type UserFormsConnectionEdge {
@@ -82,7 +82,7 @@ extend type Query {
     first: Int
     after: Cursor
     filter: UserFormsFilter = {}
-  ): UserFormsConnection! @hasRole(role: MANAGER)
+  ): UserFormsConnection! @hasRole(roles: [MANAGER])
 }
 
 input ApproveUserFormInput {
@@ -112,10 +112,10 @@ extend type Mutation {
   Approve user form
   """
   approveUserForm(input: ApproveUserFormInput!): UserFormResult!
-    @hasRole(role: MANAGER)
+    @hasRole(roles: [MANAGER])
   """
   Decline user form
   """
   declineUserForm(input: DeclineUserFormInput!): UserFormResult!
-    @hasRole(role: MANAGER)
+    @hasRole(roles: [MANAGER])
 }
