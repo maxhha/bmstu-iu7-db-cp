@@ -1,4 +1,4 @@
-package server
+package token
 
 import (
 	"auction-back/adapters/token_sender"

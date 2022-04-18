@@ -1,4 +1,4 @@
-package token_mock
+package mock
 
 import (
 	"auction-back/models"

@@ -1,96 +1,39 @@
 package token
 
 import (
-	"auction-back/models"
+	"auction-back/adapters/token/mock"
+	"auction-back/adapters/token/prod"
 	"auction-back/ports"
-	"database/sql"
-	"fmt"
-	"time"
-
-	"github.com/hashicorp/go-multierror"
+	"log"
+	"os"
 )
 
-type TokenPort struct {
-	db      ports.DB
-	senders []ports.TokenSender
-}
-
-func New(db ports.DB, senders []ports.TokenSender) TokenPort {
-	return TokenPort{db, senders}
-}
-
-func (t *TokenPort) send(token models.Token) error {
-	var errors error
-	hasNotifier := false
-
-	for _, n := range t.senders {
-		sent, err := n.Send(token)
-
-		if err != nil {
-			hasNotifier = true
-			errors = multierror.Append(
-				errors,
-				fmt.Errorf("%s send: %w", n.Name(), err),
-			)
-		} else if sent {
-			hasNotifier = true
+var creators = map[string]func(db ports.DB) ports.Token{
+	"PROD": func(db ports.DB) ports.Token {
+		senders := []ports.TokenSender{
+			emailTokenSender(db),
+			phoneTokenSender(db),
 		}
-	}
 
-	if !hasNotifier {
-		errors = multierror.Append(
-			errors,
-			fmt.Errorf("acton %s does not have any notifier", token.Action),
-		)
-	}
-
-	return errors
+		tokenAdapter := prod.New(db, senders)
+		return &tokenAdapter
+	},
+	"MOCK": func(db ports.DB) ports.Token {
+		tokenAdapter := mock.New(db)
+		return &tokenAdapter
+	},
 }
 
-func (t *TokenPort) Create(action models.TokenAction, viewer models.User, data map[string]interface{}) error {
-	token := models.Token{
-		ExpiresAt: time.Now().UTC().Add(time.Hour * time.Duration(1)),
-		Action:    action,
-		Data:      data,
-		UserID:    viewer.ID,
+func New(db ports.DB) ports.Token {
+	tokenAdapterName, ok := os.LookupEnv("TOKEN_ADAPTER")
+	if !ok || tokenAdapterName == "" {
+		tokenAdapterName = "PROD"
 	}
 
-	if err := t.db.Token().Create(&token); err != nil {
-		return fmt.Errorf("create: %w", err)
+	creator, exists := creators[tokenAdapterName]
+	if !exists {
+		log.Fatalf("Unknown TOKEN_ADAPTER = '%s'\n", tokenAdapterName)
 	}
 
-	if err := t.send(token); err != nil {
-		return fmt.Errorf("send: %w", err)
-	}
-
-	return nil
-}
-
-func (t *TokenPort) Activate(action models.TokenAction, token_code string, viewer models.User) (models.Token, error) {
-	token, err := t.db.Token().Take(ports.TokenTakeConfig{
-		IDs:     []string{token_code},
-		UserIDs: []string{viewer.ID},
-	})
-	if err != nil {
-		return token, fmt.Errorf("db take: %w", err)
-	}
-
-	if token.Action != action {
-		return token, fmt.Errorf("action not match")
-	}
-
-	if token.ActivatedAt.Valid {
-		return token, fmt.Errorf("already activated")
-	}
-
-	token.ActivatedAt = sql.NullTime{
-		Time:  time.Now().UTC(),
-		Valid: true,
-	}
-
-	if err := t.db.Token().Update(&token); err != nil {
-		return token, fmt.Errorf("save: %w", err)
-	}
-
-	return token, nil
+	return creator(db)
 }
