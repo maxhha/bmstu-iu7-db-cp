@@ -2,7 +2,7 @@ version: "3"
 # https://taskfile.dev/#/installation
 
 tasks:
-  gqlgen:
+  gen:gql:
     desc: Generate code for GraphQL schema
     cmds:
       - go run github.com/99designs/gqlgen generate
@@ -16,7 +16,7 @@ tasks:
       - graph/**/*.resolvers.go
       - graph/generated/generated.go
 
-  gqlgen:it:
+  it:gen:gql:
     desc: Generate code for GraphQL schema in integration test
     dir: integration_test
     cmds:
@@ -27,7 +27,7 @@ tasks:
     generates:
       - src/query/index.ts
 
-  grpcgen:
+  gen:grpc:
     desc: Generate code for grpc
     cmds:
       - PATH=$PATH:$(go env GOPATH)/bin protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative grpc/**/*.proto
@@ -77,7 +77,7 @@ tasks:
         vars:
           ENV: dev
           IGNORE_ERROR: true
-      - portmocksgen # mocks are used in code validation
+      - gen:portmocks # mocks are used in code validation
     env:
       SERVER_DOTENV: config/.server-dev.env
     vars:
@@ -97,7 +97,7 @@ tasks:
     status:
       - test -d out
 
-  portmocksgen:
+  gen:portmocks:
     desc: Generates mocks for ports interfaces
     cmds:
       - go generate -run "/codegen/portmocks/main.go" ./...
@@ -108,7 +108,7 @@ tasks:
     generates:
       - ports/*_mock.go
 
-  gormdbopsgen:
+  gen:gormdbops:
     desc: Generates gorm operations for models
     cmds:
       - go generate -run "/codegen/gormdbops/main.go" ./...
@@ -132,7 +132,7 @@ tasks:
     desc: Get code coverage by unit tests
     deps:
       - dir:out
-      - portmocksgen
+      - gen:portmocks
     vars:
       TMPOUT: ./out/unit-coverage.tmp.out
       OUT: ./out/unit-coverage.out
