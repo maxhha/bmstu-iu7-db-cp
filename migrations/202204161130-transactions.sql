@@ -63,8 +63,8 @@ SELECT EXISTS (
         currency currency NOT NULL,
         amount DECIMAL(12, 2) NOT NULL CHECK (amount > 0),
         error VARCHAR,
-        account_from_id UUID NOT NULL,
-        account_to_id UUID NOT NULL,
+        account_from_id UUID,
+        account_to_id UUID,
         offer_id UUID,
         created_at TIMESTAMP NOT NULL,
         updated_at TIMESTAMP NOT NULL,
@@ -72,6 +72,38 @@ SELECT EXISTS (
         CONSTRAINT fk_accunt_from FOREIGN KEY (account_from_id) REFERENCES accounts(id),
         CONSTRAINT fk_accunt_to FOREIGN KEY (account_to_id) REFERENCES accounts(id),
         CONSTRAINT fk_offer FOREIGN KEY (offer_id) REFERENCES offers(id),
+        CONSTRAINT chk_account_from CHECK (
+            CASE WHEN type IN ('DEPOSIT') 
+                THEN account_from_id IS NULL 
+            WHEN type IN (
+                'CURRENCY_CONVERTION',
+                'RETURN',
+                'FEE_RETURN',
+                'BUY',
+                'FEE_BUY',
+                'WITHDRAWAL',
+                'FEE_WITHDRAWAL'
+            )
+                THEN account_from_id IS NOT NULL
+            ELSE false
+            END
+        ),
+        CONSTRAINT chk_account_to CHECK (
+            CASE WHEN type IN ('WITHDRAWAL') 
+                THEN account_to_id IS NULL 
+            WHEN type IN (
+                'DEPOSIT',
+                'CURRENCY_CONVERTION',
+                'RETURN',
+                'FEE_RETURN',
+                'BUY',
+                'FEE_BUY',
+                'FEE_WITHDRAWAL'
+            )
+                THEN account_to_id IS NOT NULL
+            ELSE false
+            END
+        ),
         CONSTRAINT chk_offer CHECK (
             CASE WHEN type IN ('DEPOSIT', 'CURRENCY_CONVERTION') 
                 THEN offer_id IS NULL 

@@ -14,9 +14,9 @@ type Transaction struct {
 	Currency      CurrencyEnum
 	Amount        decimal.Decimal
 	Error         *string
-	AccountFromID string
-	AccountToID   string
-	OfferID       string
+	AccountFromID *string
+	AccountToID   *string
+	OfferID       *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 	DeletedAt     *time.Time

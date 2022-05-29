@@ -8,8 +8,8 @@ import (
 type RoleType string
 
 var (
-	RoleTypeManager RoleType = "Manager"
-	RoleTypeAdmin   RoleType = "Admin"
+	RoleTypeManager RoleType = "MANAGER"
+	RoleTypeAdmin   RoleType = "ADMIN"
 )
 
 // TODO: add role addition and removeing

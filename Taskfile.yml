@@ -51,6 +51,15 @@ tasks:
     cmds:
       - (docker logs -f auction-mock-notifier-{{.ENV}}-1 | sed 's/^/[NOTIFIER] /') &
 
+  build:mock_bank:
+    desc: Builds image of mock_bank service
+    sources:
+      - services/mock_bank/*
+    vars:
+      DOCKERCOMPOSE: ./config/docker-compose.{{.ENV}}.yml
+    cmds:
+      - docker-compose -f {{.DOCKERCOMPOSE}} build mock-bank-{{.ENV}}
+
   restart:migration:
     desc: Restarts migration container
     cmds:
@@ -66,11 +75,37 @@ tasks:
     status:
       - test "$(docker network inspect auction_backend-dev)" != "[]"
 
+  dev:down:
+    desc: Removes all dev containers
+    vars:
+      DOCKERCOMPOSE: config/docker-compose.dev.yml
+    cmds:
+      - docker-compose -f {{.DOCKERCOMPOSE}} down
+
+  dev:mock_bank:
+    desc: Starts dev mock_bank
+    deps:
+      - task: create:dev-network
+      - task: restart:migration
+        vars:
+          ENV: dev
+          IGNORE_ERROR: true
+    dotenv: ./config/.mock-bank.env
+    vars:
+      DOCKERCOMPOSE: config/docker-compose.dev.yml
+    cmds:
+      - docker-compose -f {{.DOCKERCOMPOSE}} up -d
+      - defer: docker-compose -f {{.DOCKERCOMPOSE}} stop
+      - go run services/mock_bank/*.go
+
   dev:
     desc: Start dev server
     deps:
       - task: create:dev-network
       - task: build:mock_notifier
+        vars:
+          ENV: dev
+      - task: build:mock_bank
         vars:
           ENV: dev
       - task: restart:migration
@@ -152,6 +187,9 @@ tasks:
     deps:
       - dir:out
       - task: build:mock_notifier
+        vars:
+          ENV: test
+      - task: build:mock_bank
         vars:
           ENV: test
     env:

@@ -41,5 +41,16 @@ services:
     networks:
       - backend-test
 
+  mock-bank-test:
+    extends:
+      file: docker-compose.yml
+      service: mock-bank
+    depends_on:
+      db-test:
+        condition: service_healthy
+    env_file: .mock-bank-test.env
+    networks:
+      - backend-test
+
 networks:
   backend-test:

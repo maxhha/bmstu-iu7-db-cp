@@ -63,9 +63,9 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateO
 			Type:          models.TransactionTypeBuy,
 			Currency:      auction.Currency,
 			Amount:        input.Amount, // TODO: calculate by bank transfer table
-			AccountFromID: account.ID,
-			AccountToID:   *auction.SellerAccountID,
-			OfferID:       offer.ID,
+			AccountFromID: &account.ID,
+			AccountToID:   auction.SellerAccountID,
+			OfferID:       &offer.ID,
 		}
 
 		moneys, err := tx.Account().GetAvailableMoney(account)
@@ -91,7 +91,7 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateO
 			return fmt.Errorf("db offer create: %w", err)
 		}
 
-		buyTransaction.OfferID = offer.ID
+		buyTransaction.OfferID = &offer.ID
 
 		if err := tx.Transaction().Create(&buyTransaction); err != nil {
 			return fmt.Errorf("db transaction create: %w", err)

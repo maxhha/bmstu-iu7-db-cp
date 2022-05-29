@@ -32,6 +32,14 @@ services:
 
   mock-notifier:
     build:
-      dockerfile: ../services/mock_notifier/Dockerfile
+      dockerfile: services/mock_notifier/Dockerfile
+      context: ../
     ports:
       - 3000:3000
+
+  mock-bank:
+    build:
+      dockerfile: services/mock_bank/Dockerfile
+      context: ../
+    ports:
+      - 8081:8080
