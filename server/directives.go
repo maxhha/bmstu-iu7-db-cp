@@ -16,7 +16,6 @@ func hasRoleDirective(roleChecker map[models.RoleEnum]RoleChecker) func(ctx cont
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("roles = %v\n", roles)
 
 		var errors error
 		for _, role := range roles {
@@ -32,7 +31,6 @@ func hasRoleDirective(roleChecker map[models.RoleEnum]RoleChecker) func(ctx cont
 			}
 		}
 
-		fmt.Printf("end errors: %v\n", errors)
 		return nil, fmt.Errorf("denied: %w", errors)
 	}
 }

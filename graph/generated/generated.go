@@ -68,6 +68,10 @@ type ComplexityRoot struct {
 		User           func(childComplexity int) int
 	}
 
+	AccountResult struct {
+		Account func(childComplexity int) int
+	}
+
 	AccountsConnection struct {
 		Edges    func(childComplexity int) int
 		PageInfo func(childComplexity int) int
@@ -146,6 +150,7 @@ type ComplexityRoot struct {
 		ApproveSetUserEmail     func(childComplexity int, input models.TokenInput) int
 		ApproveSetUserPhone     func(childComplexity int, input models.TokenInput) int
 		ApproveUserForm         func(childComplexity int, input models.ApproveUserFormInput) int
+		CreateAccount           func(childComplexity int, input models.CreateAccountInput) int
 		CreateAuction           func(childComplexity int, input models.ProductInput) int
 		CreateBank              func(childComplexity int, input models.CreateBankInput) int
 		CreateNominalAccount    func(childComplexity int, input models.CreateNominalAccountInput) int
@@ -388,6 +393,7 @@ type AuctionResolver interface {
 	Offers(ctx context.Context, obj *models.Auction, first *int, after *string, filter *models.OffersFilter) (*models.OffersConnection, error)
 }
 type MutationResolver interface {
+	CreateAccount(ctx context.Context, input models.CreateAccountInput) (*models.AccountResult, error)
 	CreateAuction(ctx context.Context, input models.ProductInput) (*models.AuctionResult, error)
 	UpdateAuction(ctx context.Context, input models.UpdateAuctionInput) (*models.AuctionResult, error)
 	StartAuction(ctx context.Context, input models.AuctionInput) (*models.AuctionResult, error)
@@ -535,6 +541,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Account.User(childComplexity), true
+
+	case "AccountResult.account":
+		if e.complexity.AccountResult.Account == nil {
+			break
+		}
+
+		return e.complexity.AccountResult.Account(childComplexity), true
 
 	case "AccountsConnection.edges":
 		if e.complexity.AccountsConnection.Edges == nil {
@@ -878,6 +891,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ApproveUserForm(childComplexity, args["input"].(models.ApproveUserFormInput)), true
+
+	case "Mutation.createAccount":
+		if e.complexity.Mutation.CreateAccount == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createAccount_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateAccount(childComplexity, args["input"].(models.CreateAccountInput)), true
 
 	case "Mutation.createAuction":
 		if e.complexity.Mutation.CreateAuction == nil {
@@ -2061,6 +2086,10 @@ input AccountsFilter {
   availableFrom: MoneyInput
 }
 
+type AccountResult {
+  account: Account!
+}
+
 extend type Query {
   """
   All accounts
@@ -2070,6 +2099,14 @@ extend type Query {
     after: Cursor
     filter: AccountsFilter = {}
   ): AccountsConnection! @hasRole(roles: [MANAGER])
+}
+
+input CreateAccountInput {
+  nominalAccountID: ID!
+}
+
+extend type Mutation {
+  createAccount(input: CreateAccountInput!): AccountResult!
 }
 `, BuiltIn: false},
 	{Name: "graph/schema/auction.graphqls", Input: `enum AuctionState {
@@ -2370,7 +2407,7 @@ extend type Query {
     first: Int
     after: Cursor
     filter: NominalAccountsFilter = {}
-  ): NominalAccountsConnection! @hasRole(roles: [MANAGER])
+  ): NominalAccountsConnection! @hasRole(roles: [USER])
 }
 
 input CreateNominalAccountInput {
@@ -3166,6 +3203,21 @@ func (ec *executionContext) field_Mutation_approveUserForm_args(ctx context.Cont
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNApproveUserFormInput2auctionᚑbackᚋmodelsᚐApproveUserFormInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.CreateAccountInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCreateAccountInput2auctionᚑbackᚋmodelsᚐCreateAccountInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4224,6 +4276,41 @@ func (ec *executionContext) _Account_transactions(ctx context.Context, field gra
 	res := resTmp.(*models.TransactionsConnection)
 	fc.Result = res
 	return ec.marshalNTransactionsConnection2ᚖauctionᚑbackᚋmodelsᚐTransactionsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AccountResult_account(ctx context.Context, field graphql.CollectedField, obj *models.AccountResult) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AccountResult",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Account, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Account)
+	fc.Result = res
+	return ec.marshalNAccount2ᚖauctionᚑbackᚋmodelsᚐAccount(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AccountsConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *models.AccountsConnection) (ret graphql.Marshaler) {
@@ -5537,6 +5624,48 @@ func (ec *executionContext) _Money_currency(ctx context.Context, field graphql.C
 	res := resTmp.(models.CurrencyEnum)
 	fc.Result = res
 	return ec.marshalNCurrencyEnum2auctionᚑbackᚋmodelsᚐCurrencyEnum(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createAccount_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateAccount(rctx, args["input"].(models.CreateAccountInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.AccountResult)
+	fc.Result = res
+	return ec.marshalNAccountResult2ᚖauctionᚑbackᚋmodelsᚐAccountResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createAuction(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -8701,7 +8830,7 @@ func (ec *executionContext) _Query_nominalAccounts(ctx context.Context, field gr
 			return ec.resolvers.Query().NominalAccounts(rctx, args["first"].(*int), args["after"].(*string), args["filter"].(*models.NominalAccountsFilter))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			roles, err := ec.unmarshalNRoleEnum2ᚕauctionᚑbackᚋmodelsᚐRoleEnumᚄ(ctx, []interface{}{"MANAGER"})
+			roles, err := ec.unmarshalNRoleEnum2ᚕauctionᚑbackᚋmodelsᚐRoleEnumᚄ(ctx, []interface{}{"USER"})
 			if err != nil {
 				return nil, err
 			}
@@ -12490,6 +12619,29 @@ func (ec *executionContext) unmarshalInputBanksFilter(ctx context.Context, obj i
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateAccountInput(ctx context.Context, obj interface{}) (models.CreateAccountInput, error) {
+	var it models.CreateAccountInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "nominalAccountID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nominalAccountID"))
+			it.NominalAccountID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateBankInput(ctx context.Context, obj interface{}) (models.CreateBankInput, error) {
 	var it models.CreateBankInput
 	asMap := map[string]interface{}{}
@@ -13660,6 +13812,37 @@ func (ec *executionContext) _Account(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var accountResultImplementors = []string{"AccountResult"}
+
+func (ec *executionContext) _AccountResult(ctx context.Context, sel ast.SelectionSet, obj *models.AccountResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, accountResultImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AccountResult")
+		case "account":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._AccountResult_account(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var accountsConnectionImplementors = []string{"AccountsConnection"}
 
 func (ec *executionContext) _AccountsConnection(ctx context.Context, sel ast.SelectionSet, obj *models.AccountsConnection) graphql.Marshaler {
@@ -14316,6 +14499,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "createAccount":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createAccount(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createAuction":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createAuction(ctx, field)
@@ -17053,6 +17246,20 @@ func (ec *executionContext) marshalNAccount2ᚖauctionᚑbackᚋmodelsᚐAccount
 	return ec._Account(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAccountResult2auctionᚑbackᚋmodelsᚐAccountResult(ctx context.Context, sel ast.SelectionSet, v models.AccountResult) graphql.Marshaler {
+	return ec._AccountResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAccountResult2ᚖauctionᚑbackᚋmodelsᚐAccountResult(ctx context.Context, sel ast.SelectionSet, v *models.AccountResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._AccountResult(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAccountsConnection2auctionᚑbackᚋmodelsᚐAccountsConnection(ctx context.Context, sel ast.SelectionSet, v models.AccountsConnection) graphql.Marshaler {
 	return ec._AccountsConnection(ctx, sel, &v)
 }
@@ -17346,6 +17553,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNCreateAccountInput2auctionᚑbackᚋmodelsᚐCreateAccountInput(ctx context.Context, v interface{}) (models.CreateAccountInput, error) {
+	res, err := ec.unmarshalInputCreateAccountInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNCreateBankInput2auctionᚑbackᚋmodelsᚐCreateBankInput(ctx context.Context, v interface{}) (models.CreateBankInput, error) {

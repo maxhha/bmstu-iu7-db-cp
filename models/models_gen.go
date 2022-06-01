@@ -11,6 +11,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type AccountResult struct {
+	Account *Account `json:"account"`
+}
+
 type AccountsConnection struct {
 	PageInfo *PageInfo                 `json:"pageInfo"`
 	Edges    []*AccountsConnectionEdge `json:"edges"`
@@ -73,6 +77,10 @@ type BanksConnectionEdge struct {
 type BanksFilter struct {
 	IDs  []string `json:"IDs"`
 	Name *string  `json:"name"`
+}
+
+type CreateAccountInput struct {
+	NominalAccountID string `json:"nominalAccountID"`
 }
 
 type CreateBankInput struct {

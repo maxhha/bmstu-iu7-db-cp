@@ -5,41 +5,32 @@ import (
 	"auction-back/ports"
 	"errors"
 	"fmt"
-	"log"
-	"os"
 )
 
 type BankAdapter struct {
-	db                    ports.DB
-	defaultNominalAccount string
+	db ports.DB
 }
 
 func New(db ports.DB) BankAdapter {
-	defaultNominalAccount, exists := os.LookupEnv("BANK_ADAPTER_DEFAULT_NOMINAL_ACCOUNT")
-	if !exists {
-		log.Fatalln("BANK_ADAPTER_DEFAULT_NOMINAL_ACCOUNT is not set in environment variables")
-	}
-
-	return BankAdapter{db: db, defaultNominalAccount: defaultNominalAccount}
+	return BankAdapter{db: db}
 }
 
-func (b *BankAdapter) createAccount(userID string) error {
-	nominalAccount, err := b.db.NominalAccount().Take(ports.NominalAccountTakeConfig{
-		Filter: &models.NominalAccountsFilter{
-			Name: &b.defaultNominalAccount,
-		},
-	})
+func (b *BankAdapter) createAccounts(userID string) error {
+	nominalAccounts, err := b.db.NominalAccount().Find(ports.NominalAccountFindConfig{})
 	if err != nil {
-		return fmt.Errorf("db nominal account take: %w", err)
+		return fmt.Errorf("db.NominalAccount().Find: %w", err)
 	}
 
-	account := models.Account{
-		UserID:           userID,
-		NominalAccountID: nominalAccount.ID,
-	}
+	for _, nominalAccount := range nominalAccounts {
+		// TODO: call bank service for account creation
+		account := models.Account{
+			UserID:           userID,
+			NominalAccountID: nominalAccount.ID,
+		}
 
-	if err := b.db.Account().Create(&account); err != nil {
-		return fmt.Errorf("db account create: %w", err)
+		if err := b.db.Account().Create(&account); err != nil {
+			return fmt.Errorf("db account create: %w", err)
+		}
 	}
 
 	return nil
@@ -49,9 +40,6 @@ func (b *BankAdapter) UserFormApproved(form models.UserForm) error {
 	// TODO: send request to bank for create account or update account and
 	// if account is succefully created create account in our database and inform client
 	// if account cration is rejected decline user form and inform managers
-
-	// IDEA: create service for each bank. Using config from env or from UserForm
-	// select bank services to call.
 
 	// FIXME: this code should be in bank service
 	_, err := b.db.Account().Take(ports.AccountTakeConfig{
@@ -66,7 +54,7 @@ func (b *BankAdapter) UserFormApproved(form models.UserForm) error {
 	}
 
 	if errors.Is(err, ports.ErrRecordNotFound) {
-		return b.createAccount(form.UserID)
+		return b.createAccounts(form.UserID)
 	}
 
 	return fmt.Errorf("db account take: %w", err)

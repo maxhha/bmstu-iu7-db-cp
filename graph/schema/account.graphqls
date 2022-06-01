@@ -45,6 +45,10 @@ input AccountsFilter {
   availableFrom: MoneyInput
 }
 
+type AccountResult {
+  account: Account!
+}
+
 extend type Query {
   """
   All accounts
@@ -54,4 +58,12 @@ extend type Query {
     after: Cursor
     filter: AccountsFilter = {}
   ): AccountsConnection! @hasRole(roles: [MANAGER])
+}
+
+input CreateAccountInput {
+  nominalAccountID: ID!
+}
+
+extend type Mutation {
+  createAccount(input: CreateAccountInput!): AccountResult!
 }

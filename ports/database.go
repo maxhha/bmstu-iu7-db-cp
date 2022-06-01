@@ -83,6 +83,10 @@ type NominalAccountTakeConfig struct {
 	Filter *models.NominalAccountsFilter
 }
 
+type NominalAccountFindConfig struct {
+	Filter *models.NominalAccountsFilter
+}
+
 type TransactionFindConfig struct {
 	Filter    *models.TransactionsFilter
 	OrderBy   TransactionField
@@ -177,6 +181,7 @@ type TransactionDB interface {
 type NominalAccountDB interface {
 	Get(id string) (models.NominalAccount, error)
 	Take(config NominalAccountTakeConfig) (models.NominalAccount, error)
+	Find(config NominalAccountFindConfig) ([]models.NominalAccount, error)
 	Create(account *models.NominalAccount) error
 	Update(account *models.NominalAccount) error
 	Pagination(first *int, after *string, filter *models.NominalAccountsFilter) (models.NominalAccountsConnection, error)

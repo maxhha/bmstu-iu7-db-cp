@@ -2,7 +2,9 @@ package database
 
 import (
 	"auction-back/models"
+	"auction-back/ports"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -67,4 +69,20 @@ func (d *nominalAccountDB) filter(query *gorm.DB, config *models.NominalAccounts
 	}
 
 	return query
+}
+
+func (d *nominalAccountDB) Find(config ports.NominalAccountFindConfig) ([]models.NominalAccount, error) {
+	query := d.filter(d.db, config.Filter)
+
+	var objs []NominalAccount
+	if err := query.Find(&objs).Error; err != nil {
+		return nil, fmt.Errorf("find: %w", convertError(err))
+	}
+
+	arr := make([]models.NominalAccount, 0, len(objs))
+	for _, obj := range objs {
+		arr = append(arr, obj.into())
+	}
+
+	return arr, nil
 }

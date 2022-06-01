@@ -190,8 +190,4 @@ func (r *queryResolver) Auctions(ctx context.Context, first *int, after *string,
 // Auction returns generated.AuctionResolver implementation.
 func (r *Resolver) Auction() generated.AuctionResolver { return &auctionResolver{r} }
 
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
 type auctionResolver struct{ *Resolver }
-type mutationResolver struct{ *Resolver }

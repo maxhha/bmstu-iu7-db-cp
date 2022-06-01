@@ -46,7 +46,7 @@ extend type Query {
     first: Int
     after: Cursor
     filter: NominalAccountsFilter = {}
-  ): NominalAccountsConnection! @hasRole(roles: [MANAGER])
+  ): NominalAccountsConnection! @hasRole(roles: [USER])
 }
 
 input CreateNominalAccountInput {

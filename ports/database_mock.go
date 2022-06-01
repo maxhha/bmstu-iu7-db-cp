@@ -183,6 +183,11 @@ func (m *NominalAccountDBMock) Create(account *models.NominalAccount) error {
 	return args.Error(0)
 }
 
+func (m *NominalAccountDBMock) Find(config NominalAccountFindConfig) ([]models.NominalAccount, error) {
+	args := m.Called(config)
+	return args.Get(0).([]models.NominalAccount), args.Error(1)
+}
+
 func (m *NominalAccountDBMock) Get(id string) (models.NominalAccount, error) {
 	args := m.Called(id)
 	return args.Get(0).(models.NominalAccount), args.Error(1)

@@ -46,7 +46,7 @@ func (a *Account) copy(account *models.Account) {
 }
 
 func (d *accountDB) filter(query *gorm.DB, config *models.AccountsFilter) *gorm.DB {
-	if config != nil {
+	if config == nil {
 		return query
 	}
 
