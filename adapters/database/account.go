@@ -4,9 +4,9 @@ import (
 	"auction-back/models"
 	"auction-back/ports"
 	"database/sql"
+	"fmt"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -80,65 +80,57 @@ func (d *accountDB) LockFull(account *models.Account) error {
 	return nil
 }
 
-// var countingTransactionStates = []models.TransactionState{
-// 	models.TransactionStateSucceeded,
-// 	models.TransactionStateProcessing,
-// 	models.TransactionStateError,
-// }
+var countingTransactionStates = []models.TransactionState{
+	models.TransactionStateSucceeded,
+	models.TransactionStateProcessing,
+	models.TransactionStateError,
+}
 
-// func (d *accountDB) availableMoneyQuery(query *gorm.DB) *gorm.DB {
-// 	toTrs := d.db.Model(&Transaction{}).
-// 		Select("currency, account_to_id as account_id, amount").
-// 		Joins(
-// 			"JOIN ( ? ) a ON account_to_id = a.id AND transaction.state IN ?",
-// 			query.Session(&gorm.Session{Initialized: true}).Model(&Account{}),
-// 			countingTransactionStates,
-// 		)
+func (d *accountDB) availableMoneyQuery(query *gorm.DB) *gorm.DB {
+	toTrs := d.db.Model(&Transaction{}).
+		Select("currency, account_to_id as account_id, amount").
+		Joins(
+			"JOIN ( ? ) a ON account_to_id = a.id AND transactions.state IN ?",
+			query.Session(&gorm.Session{Initialized: true}).Model(&Account{}),
+			countingTransactionStates,
+		)
 
-// 	fromTrs := d.db.Model(&Transaction{}).
-// 		Select("currency, account_from_id as account_id, -amount").
-// 		Joins(
-// 			"JOIN ( ? ) a ON account_from_id = a.id AND ( state IN ? OR ( type IN ? AND state IN ? ) )",
-// 			query.Session(&gorm.Session{Initialized: true}).Model(&Account{}),
-// 			countingTransactionStates,
-// 			[]models.TransactionType{
-// 				models.TransactionTypeBuy,
-// 				// TODO: Add models.TransactionTypeBuyFee
-// 			},
-// 			[]models.TransactionState{
-// 				models.TransactionStateCreated,
-// 			},
-// 		)
+	fromTrs := d.db.Model(&Transaction{}).
+		Select("currency, account_from_id as account_id, -amount as amount").
+		Joins(
+			"JOIN ( ? ) a ON account_from_id = a.id AND ( transactions.state IN ? OR ( transactions.type IN ? AND transactions.state IN ? ) )",
+			query.Session(&gorm.Session{Initialized: true}).Model(&Account{}),
+			countingTransactionStates,
+			[]models.TransactionType{
+				models.TransactionTypeBuy,
+				// TODO: Add models.TransactionTypeBuyFee
+			},
+			[]models.TransactionState{
+				models.TransactionStateCreated,
+			},
+		)
 
-// 	allTrs := d.db.Raw("? UNION ALL ?", fromTrs, toTrs)
+	allTrs := d.db.Raw("? UNION ALL ?", fromTrs, toTrs)
 
-// 	moneyQuery := d.db.
-// 		Select("a.currency, a.account_id, SUM(a.amount) as amount").
-// 		Table("? a", allTrs).
-// 		Group("a.currency, a.account_id")
+	moneyQuery := d.db.
+		Select("trs.currency, trs.account_id, SUM(trs.amount) as amount").
+		Table("( ? ) trs", allTrs).
+		Group("trs.currency, trs.account_id")
 
-// 	return moneyQuery
-// }
+	return moneyQuery
+}
 
 func (d *accountDB) GetAvailableMoney(account models.Account) (map[models.CurrencyEnum]models.Money, error) {
-	// TODO: Test this
-	// query := d.availableMoneyQuery(d.db.Model(&Account{}).Where("id = ?", account.ID))
+	query := d.availableMoneyQuery(d.db.Model(&Account{}).Where("id = ?", account.ID))
 
-	// var moneys []models.Money
-	// if err := query.Scan(&moneys).Error; err != nil {
-	// 	return nil, fmt.Errorf("scan: %w", err)
-	// }
+	var moneys []models.Money
+	if err := query.Scan(&moneys).Error; err != nil {
+		return nil, fmt.Errorf("scan: %w", err)
+	}
 
-	// moneysMap := make(map[models.CurrencyEnum]models.Money, len(moneys))
-	// for _, m := range moneys {
-	// 	moneysMap[m.Currency] = m
-	// }
-
-	// return moneysMap, nil
-	moneysMap := make(map[models.CurrencyEnum]models.Money, 1)
-	moneysMap[models.CurrencyEnumRub] = models.Money{
-		Currency: models.CurrencyEnumRub,
-		Amount:   decimal.NewFromFloatWithExponent(100, -2),
+	moneysMap := make(map[models.CurrencyEnum]models.Money, len(moneys))
+	for _, m := range moneys {
+		moneysMap[m.Currency] = m
 	}
 
 	return moneysMap, nil

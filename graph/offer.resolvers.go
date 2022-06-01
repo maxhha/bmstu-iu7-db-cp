@@ -9,6 +9,7 @@ import (
 	"auction-back/models"
 	"auction-back/ports"
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -58,6 +59,37 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateO
 			return ErrAuctionIsFinished
 		}
 
+		previousOffer, err := tx.Offer().Take(ports.OfferTakeConfig{
+			Filter: &models.OffersFilter{
+				AuctionIDs: []string{auction.ID},
+				UserIDs:    []string{viewer.ID},
+			},
+		})
+
+		fmt.Printf("previousOffer = %#v\n", previousOffer)
+
+		if err == nil {
+			previousOfferTransactions, err := tx.Transaction().Find(ports.TransactionFindConfig{
+				Filter: &models.TransactionsFilter{
+					OfferIDs: []string{previousOffer.ID},
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("tx.Transaction().Find(previousOfferTransactions): %w", err)
+			}
+			fmt.Printf("previousOfferTransactions = %#v\n", previousOfferTransactions)
+
+			for i := 0; i < len(previousOfferTransactions); i++ {
+				previousOfferTransactions[i].State = models.TransactionStateCancelled
+				err = tx.Transaction().Update(&previousOfferTransactions[i])
+				if err != nil {
+					return fmt.Errorf("tx.Transaction().Update(&previousOfferTransactions[i]): %w", err)
+				}
+			}
+		} else if !errors.Is(err, ports.ErrRecordNotFound) {
+			return fmt.Errorf("tx.Offer().Take(previous offer): %w", err)
+		}
+
 		// TODO: create fee transaction
 		buyTransaction := models.Transaction{
 			Type:          models.TransactionTypeBuy,
@@ -65,7 +97,6 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateO
 			Amount:        input.Amount, // TODO: calculate by bank transfer table
 			AccountFromID: &account.ID,
 			AccountToID:   auction.SellerAccountID,
-			OfferID:       &offer.ID,
 		}
 
 		moneys, err := tx.Account().GetAvailableMoney(account)

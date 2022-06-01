@@ -19,7 +19,18 @@ func (r *accountResolver) NominalAccount(ctx context.Context, obj *models.Accoun
 }
 
 func (r *accountResolver) Available(ctx context.Context, obj *models.Account) ([]*models.Money, error) {
-	panic(fmt.Errorf("not implemented"))
+	currencyMap, err := r.DB.Account().GetAvailableMoney(*obj)
+	if err != nil {
+		return nil, fmt.Errorf("DB.Account().GetAvailableMoney: %w", err)
+	}
+
+	result := make([]*models.Money, 0, len(currencyMap))
+
+	for _, m := range currencyMap {
+		result = append(result, &m)
+	}
+
+	return result, nil
 }
 
 func (r *accountResolver) Blocked(ctx context.Context, obj *models.Account) ([]*models.Money, error) {
