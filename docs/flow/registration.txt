@@ -1,75 +1,75 @@
 // Powered by https://swimlanes.io
 title: Регистрация пользователя
 
-order: Client, Server, Manager
+order: Пользователь, Сервер, Менеджер
 
 _: **1. Создание гостя**
 
-Client -> Server: `register`
+Пользователь -> Сервер: `register`
 
 note:
-**regitster** создает нового User в базе данных.
+**regitster** создает нового пользователя в базе данных.
 
-_Запись гостя удалится из бд через 4 часа, если он окончательно не зарегистрируется_
+_Запись гостя удалится из БД через 4 часа, если он окончательно не зарегистрируется_
 
-Client <- Server: JWT token
+Пользователь <- Сервер: JWT
 
 _: **2. Заполнение анкеты**
 
-Client -> Server: `requestSetUserEmail`
+Пользователь -> Сервер: `requestSetUserEmail`
 
-Server --> Client: Send token to email
+Сервер --> Пользователь: Отправка токена на почту
 
-Client -> Server: `approveSetUserEmail(token)`
+Пользователь -> Сервер: `approveSetUserEmail(token)`
 
 note:
 Создает пустую анкету, если ее ранее не было и устанвливает в ней переданную почту.
 
-Server -> Client: Updated UserForm
+Сервер -> Пользователь: Измененная анкета
 
 --: Аналогично для `requestSetUserPhone`
 
-Client -> Server: `updateUserPassword`
+Пользователь -> Сервер: `updateUserPassword`
 
 note:
 Установка начального пароля
 
-Server -> Client: Updated UserForm
+Сервер -> Пользователь: Измененная анкета
 
-Client -> Server: `updateUserDraftForm`
+Пользователь -> Сервер: `updateUserDraftForm`
 
 note:
 Заполняет все поля анкеты, которые не требуют проверки через токен. 
 
-Server -> Client: Updated UserForm
+Сервер -> Пользователь: Измененная анкета
 
 _: **3. Модерация анкеты**
 
-Client -> Server: `requestModerateUserForm`
+Пользователь -> Сервер: `requestModerateUserForm`
 
-Client <-- Server: Send token over email or phone
-Client -> Server: `approveModerateUserForm(token)`
-Client <- Server: Updated UserForm
+Пользователь <-- Сервер: Отправка токена на телефон
+Пользователь -> Сервер: `approveModerateUserForm(token)`
+Пользователь <- Сервер: Измененная анкета
 
 ...: Менеджер приступил к подтвержению анкет
 
-Manager <- Server: userForms
+Менеджер <- Сервер: `userForms`
 
 if: Анкета заполнена правильно
 
-Manager -> Server: `approveUserForm`
+Менеджер -> Сервер: `approveUserForm`
 
 note:
 После подтверждения отправляется заявка в банк на создание аккаунта.
 
-Server --> Client: Send email
-Server --> Manager: Updated UserForm
+Сервер --> Пользователь: Отправка уведомления на почту
+Сервер --> Менеджер: Измененная анкета
 
 else: В анкете существуют ошибки или неточности
 
-Manager -> Server: `declineUserForm`
-Server --> Client: Send email
-Server --> Manager: Updated UserForm
+Менеджер -> Сервер: `declineUserForm`
+Сервер --> Пользователь: Отправить уведомление на почту
+Сервер --> Менеджер: Измененная анкета
 
 ...: Клиент должен изменить информацию в анкете и отправить ее на повторную модерацию
 
