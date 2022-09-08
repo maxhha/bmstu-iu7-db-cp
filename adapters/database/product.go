@@ -57,6 +57,10 @@ func (d *productDB) filter(query *gorm.DB, config *models.ProductsFilter) *gorm.
 		return query
 	}
 
+	if len(config.State) > 0 {
+		query = query.Where("state IN ?", config.State)
+	}
+
 	if len(config.OwnerIDs) > 0 {
 		query = query.Joins(
 			"JOIN ( ? ) ofd ON products.id = ofd.product_id AND ofd.owner_n = 1 AND ofd.owner_id IN ?",
@@ -64,6 +68,7 @@ func (d *productDB) filter(query *gorm.DB, config *models.ProductsFilter) *gorm.
 			config.OwnerIDs,
 		)
 	}
+
 	return query
 }
 

@@ -1,0 +1,24 @@
+enum DealStateEnum {
+  TRANSFERRING_MONEY
+  TRANSFER_MONEY_FAILED
+  TRANSFERRING_PRODUCT
+  TRANSFER_PRODUCT_FAILED
+  SUCCEEDED
+  RETURNING_MONEY
+  RETURN_MONEY_FAILED
+  MONEY_RETURNED
+}
+
+type DealState {
+  id: String!
+  state: DealStateEnum!
+  creator: User
+  offer: Offer!
+  comment: String
+  createdAt: DateTime
+}
+
+input DealStateFilter {
+  creatorIDs: [ID!]!
+  offerIDs: [ID!]!
+}

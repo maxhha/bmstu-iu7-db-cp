@@ -92,8 +92,7 @@ SELECT EXISTS (
     CREATE TABLE users (
         id SHORTKEY PRIMARY KEY,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        deleted_at TIMESTAMP,
-        blocked_until TIMESTAMP
+        deleted_at TIMESTAMP
     );
 
     -- generate shortkey for each insert
@@ -109,13 +108,14 @@ SELECT EXISTS (
     );
 
     CREATE TABLE roles (
+        id SERIAL PRIMARY KEY,
         type role_type NOT NULL,
         user_id SHORTKEY NOT NULL,
-        issuer_id SHORTKEY NOT NULL,
+        issuer_id SHORTKEY,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         deleted_at TIMESTAMP,
-        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id), -- TODO add on delete behevior
-        CONSTRAINT fk_issuer FOREIGN KEY (issuer_id) REFERENCES users(id) -- TODO add on delete behevior
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_issuer FOREIGN KEY (issuer_id) REFERENCES users(id) ON DELETE SET NULL
     );
 
     CREATE INDEX indx_role_indices_pk ON roles(type, user_id, deleted_at);
@@ -147,13 +147,12 @@ SELECT EXISTS (
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
         deleted_at TIMESTAMP,
-        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) -- TODO add on delete behevior
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
     CREATE INDEX idx_user_form_indices_deleted_at ON user_forms(deleted_at);
 
     -- remove expired guests record
-    -- FIXME: change to 0 0 * * * and add VACUUM
     SELECT cron.schedule('*/5 * * * *', $$
         DELETE FROM users
         WHERE 
@@ -185,7 +184,6 @@ SELECT EXISTS (
     );
 
     -- delete expired and not activated tokens
-    -- FIXME: change to 0 0 * * * and add VACUUM
     SELECT cron.schedule('*/5 * * * *', $$DELETE FROM tokens WHERE expires_at < NOW() AND activated_at IS NULL$$);
 
     CREATE OR REPLACE FUNCTION token_generate()
@@ -333,31 +331,13 @@ SELECT EXISTS (
         )
     );
 
-    -- CREATE TABLE product_images (
-    --     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    --     filename VARCHAR NOT NULL,
-    --     path VARCHAR NOT NULL,
-    --     product_id UUID NOT NULL,
-    --     created_at TIMESTAMP NOT NULL,
-    --     updated_at TIMESTAMP NOT NULL,
-    --     deleted_at TIMESTAMP,
-    --     CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
-    -- );
-
-    -- CREATE INDEX idx_product_image_indices_deleted_at ON product_images(deleted_at);
-
-    -- CREATE TYPE offer_state AS ENUM (
-    --     'CREATED',
-    --     'CANCELLED',
-    --     'TRANSFERRING_MONEY',
-    --     'TRANSFER_MONEY_FAILED',
-    --     'TRANSFERRING_PRODUCT',
-    --     'TRANSFER_PRODUCT_FAILED',
-    --     'SUCCEEDED',
-    --     'RETURNING_MONEY',
-    --     'RETURN_MONEY_FAILED',
-    --     'MONEY_RETURNED'
-    -- );
+    CREATE TABLE product_images (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        filename VARCHAR NOT NULL,
+        path VARCHAR NOT NULL,
+        product_id UUID NOT NULL,
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
 
     INSERT INTO migrations(id) VALUES (:'MIGRATION_ID');
 \endif

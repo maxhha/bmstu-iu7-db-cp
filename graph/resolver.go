@@ -17,9 +17,10 @@ type Resolver struct {
 	TokenPort  ports.Token
 	BankPort   ports.Bank
 	RolePort   ports.Role
+	DealerPort ports.Dealer
 }
 
-func New(DB ports.DB, token ports.Token, bank ports.Bank, role ports.Role) *Resolver {
+func New(DB ports.DB, token ports.Token, bank ports.Bank, role ports.Role, dealer ports.Dealer) *Resolver {
 	r := Resolver{
 		DB:         DB,
 		Market:     make(map[string]chan *models.Product),
@@ -27,6 +28,7 @@ func New(DB ports.DB, token ports.Token, bank ports.Bank, role ports.Role) *Reso
 		TokenPort:  token,
 		BankPort:   bank,
 		RolePort:   role,
+		DealerPort: dealer,
 	}
 
 	return &r

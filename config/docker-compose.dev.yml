@@ -6,6 +6,8 @@ services:
       file: docker-compose.yml
       service: db
     env_file: .db-dev.env
+    volumes:
+      - /tmp/auction-back/data:/var/lib/postgresql/data:rw
     ports:
       - 5432:5432
     networks:
@@ -50,6 +52,17 @@ services:
       db-dev:
         condition: service_healthy
     env_file: .mock-bank-dev.env
+    networks:
+      - backend-dev
+  
+  mock-dealer-dev:
+    extends:
+      file: docker-compose.yml
+      service: mock-dealer
+    depends_on:
+      db-dev:
+        condition: service_healthy
+    env_file: .mock-dealer-dev.env
     networks:
       - backend-dev
 

@@ -1,0 +1,43 @@
+            -- We haven't EXITed yet, so return to the top of the LOOP
+            -- and try again.
+        END LOOP;
+
+        -- NEW and OLD are available in TRIGGER PROCEDURES.
+        -- NEW is the mutated row that will actually be INSERTed.
+        -- We're replacing id, regardless of what it was before
+        -- with our key variable.
+        NEW.id = key;
+
+        RETURN NEW;
+    END
+    $$ language 'plpgsql';
+
+    -- represents only user id
+    CREATE TABLE users (
+        id SHORTKEY PRIMARY KEY,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP
+    );
+
+    -- generate shortkey for each insert
+    CREATE TRIGGER trgr_users_genid 
+        BEFORE INSERT ON users FOR EACH ROW
+        EXECUTE PROCEDURE shortkey_generate();
+
+    CREATE INDEX idx_user_indices_deleted_at ON users(deleted_at);
+
+    CREATE TYPE role_type AS ENUM (
+        'MANAGER',
+        'ADMIN'
+    );
+
+    CREATE TABLE roles (
+        id SERIAL PRIMARY KEY,
+        type role_type NOT NULL,
+        user_id SHORTKEY NOT NULL,
+        issuer_id SHORTKEY,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_issuer FOREIGN KEY (issuer_id) REFERENCES users(id) ON DELETE SET NULL
+    );

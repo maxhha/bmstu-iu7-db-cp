@@ -20,7 +20,7 @@ type User {
     first: Int
     after: Cursor
     filter: UserFormHistoryFilter = {}
-  ): UserFormsConnection! @hasRole(roles: [MANAGER])
+  ): UserFormsConnection! @hasRole(roles: [OWNER, MANAGER])
   """
   End date of blocking this user
   """

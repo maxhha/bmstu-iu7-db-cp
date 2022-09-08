@@ -19,5 +19,6 @@ var ErrTransactionIsNil = fmt.Errorf("transaction %w", ErrIsNil)
 var ErrBankIsNil = fmt.Errorf("bank %w", ErrIsNil)
 var ErrNominalAccountIsNil = fmt.Errorf("nominal account %w", ErrIsNil)
 var ErrTokenIsNil = fmt.Errorf("token %w", ErrIsNil)
+var ErrDealStateIsNil = fmt.Errorf("deal state %w", ErrIsNil)
 
 var ErrInvalidFirst = errors.New("first must be positive")

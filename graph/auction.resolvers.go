@@ -12,6 +12,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 func (r *auctionResolver) Product(ctx context.Context, obj *models.Auction) (*models.Product, error) {
@@ -41,7 +43,15 @@ func (r *auctionResolver) Seller(ctx context.Context, obj *models.Auction) (*mod
 }
 
 func (r *auctionResolver) SellerAccount(ctx context.Context, obj *models.Auction) (*models.Account, error) {
-	panic(fmt.Errorf("not implemented"))
+	if obj.SellerAccountID == nil {
+		return nil, nil
+	}
+	acc, err := r.DB.Account().Get(*obj.SellerAccountID)
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.Account().Get: %w", err)
+	}
+
+	return &acc, nil
 }
 
 func (r *auctionResolver) Buyer(ctx context.Context, obj *models.Auction) (*models.User, error) {
@@ -57,8 +67,34 @@ func (r *auctionResolver) Buyer(ctx context.Context, obj *models.Auction) (*mode
 	return &user, nil
 }
 
+func (r *auctionResolver) TopOffer(ctx context.Context, obj *models.Auction) (*models.Offer, error) {
+	offer, err := r.DB.Auction().GetTopOffer(*obj)
+	if err != nil {
+		if errors.Is(err, ports.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("r.DB.Auction().GetTopOffer: %w", err)
+	}
+
+	return &offer, nil
+}
+
 func (r *auctionResolver) Offers(ctx context.Context, obj *models.Auction, first *int, after *string, filter *models.OffersFilter) (*models.OffersConnection, error) {
-	panic(fmt.Errorf("not implemented"))
+	if filter == nil {
+		filter = &models.OffersFilter{}
+	}
+
+	if len(filter.AuctionIDs) > 0 {
+		return nil, fmt.Errorf("auctionIDs must be empty")
+	}
+
+	filter.AuctionIDs = []string{obj.ID}
+	connection, err := r.DB.Offer().Pagination(first, after, filter)
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.Offer().Pagination: %w", err)
+	}
+
+	return &connection, nil
 }
 
 func (r *mutationResolver) CreateAuction(ctx context.Context, input models.ProductInput) (*models.AuctionResult, error) {
@@ -178,10 +214,136 @@ func (r *mutationResolver) StartAuction(ctx context.Context, input models.Auctio
 	return &models.AuctionResult{Auction: &auction}, nil
 }
 
+func (r *mutationResolver) ApproveOwnerAcceptedMoney(ctx context.Context, input models.AuctionInput) (*models.AuctionResult, error) {
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	auction, err := r.DB.Auction().Get(input.AuctionID)
+	if err != nil {
+		return nil, fmt.Errorf("db get: %w", err)
+	}
+
+	if err := IsAuctionOwner(viewer, auction); err != nil {
+		return nil, err
+	}
+
+	offer, err := r.DB.Offer().Take(ports.OfferTakeConfig{
+		Filter: &models.OffersFilter{
+			States:     []models.OfferState{models.OfferStateAccepted},
+			AuctionIDs: []string{input.AuctionID},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.Offer().Take: %w", err)
+	}
+
+	err = r.DealerPort.OwnerAccept(offer.ID, &viewer.ID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("r.DealerPort.OwnerAccept: %w", err)
+	}
+
+	return &models.AuctionResult{
+		Auction: &auction,
+	}, nil
+}
+
+func (r *mutationResolver) ApproveReceiveProduct(ctx context.Context, input models.AuctionInput) (bool, error) {
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	offer, err := r.DB.Offer().Take(ports.OfferTakeConfig{Filter: &models.OffersFilter{
+		AuctionIDs: []string{input.AuctionID},
+		UserIDs:    []string{viewer.ID},
+		States:     []models.OfferState{models.OfferStateAccepted},
+	}})
+	if err != nil {
+		return false, fmt.Errorf("r.DB.Offer().Find: %w", err)
+	}
+
+	err = r.DealerPort.BuyerAccept(offer.ID, &viewer.ID)
+	if err != nil {
+		return false, fmt.Errorf("r.DealerPort.BuyerAccept: %w", err)
+	}
+
+	return true, nil
+}
+
 func (r *queryResolver) Auctions(ctx context.Context, first *int, after *string, filter *models.AuctionsFilter) (*models.AuctionsConnection, error) {
 	connection, err := r.DB.Auction().Pagination(first, after, filter)
 	if err != nil {
 		return nil, fmt.Errorf("db pagination: %w", err)
+	}
+
+	return &connection, nil
+}
+
+func (r *queryResolver) RunningAuctions(ctx context.Context, first *int, after *string, filter *models.AuctionsFilter) (*models.AuctionsConnection, error) {
+	if filter == nil {
+		filter = &models.AuctionsFilter{}
+	}
+
+	var errs error
+
+	if len(filter.States) > 0 {
+		errs = multierror.Append(errs, fmt.Errorf("states must be empty"))
+	}
+
+	if filter.StartedAt == nil {
+		filter.StartedAt = &models.DateTimeRange{}
+	}
+
+	if filter.StartedAt.To != nil {
+		errs = multierror.Append(errs, fmt.Errorf("startedAt.to must be empty"))
+	}
+
+	if errs != nil {
+		return nil, errs
+	}
+
+	filter.States = []models.AuctionState{models.AuctionStateStarted}
+	now := time.Now()
+	filter.StartedAt.To = &now
+
+	connection, err := r.DB.Auction().Pagination(first, after, filter)
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.Auction().Pagination: %w", err)
+	}
+
+	return &connection, nil
+}
+
+func (r *queryResolver) ScheduledAuctions(ctx context.Context, first *int, after *string, filter *models.AuctionsFilter) (*models.AuctionsConnection, error) {
+	if filter == nil {
+		filter = &models.AuctionsFilter{}
+	}
+
+	var errs error
+
+	if len(filter.States) > 0 {
+		errs = multierror.Append(errs, fmt.Errorf("states must be empty"))
+	}
+
+	if filter.ScheduledStartAt != nil {
+		errs = multierror.Append(errs, fmt.Errorf("scheduledStartAt must be empty"))
+	}
+
+	if errs != nil {
+		return nil, errs
+	}
+
+	filter.States = []models.AuctionState{models.AuctionStateCreated}
+	now := time.Now()
+	filter.ScheduledStartAt = &models.DateTimeRange{
+		From: &now,
+	}
+
+	connection, err := r.DB.Auction().Pagination(first, after, filter)
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.Auction().Pagination: %w", err)
 	}
 
 	return &connection, nil

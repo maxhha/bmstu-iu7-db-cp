@@ -8,6 +8,16 @@ import (
 
 type BankMock struct{ mock.Mock }
 
+func (m *BankMock) CreateAccount(userID string, nominalAccountID string) (models.Account, error) {
+	args := m.Called(userID, nominalAccountID)
+	return args.Get(0).(models.Account), args.Error(1)
+}
+
+func (m *BankMock) ProcessTransactions(transacions []models.Transaction) error {
+	args := m.Called(transacions)
+	return args.Error(0)
+}
+
 func (m *BankMock) UserFormApproved(form models.UserForm) error {
 	args := m.Called(form)
 	return args.Error(0)

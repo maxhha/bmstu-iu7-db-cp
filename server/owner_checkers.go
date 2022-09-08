@@ -38,10 +38,20 @@ func userFormFilledOwnerChecker(viewer models.User, obj interface{}) error {
 	return graph.IsUserFormOwner(viewer, *userForm.UserForm)
 }
 
+func offerOwnerChecker(viewer models.User, obj interface{}) error {
+	offer, ok := obj.(*models.Offer)
+	if !ok {
+		return fmt.Errorf("%w to Offer", ErrFailConvert)
+	}
+
+	return graph.IsOfferOwner(viewer, *offer)
+}
+
 func newOwnerCheckers() map[string]OwnerChecker {
 	return map[string]OwnerChecker{
 		"User":           userOwnerChecker,
 		"UserForm":       userFormOwnerChecker,
 		"UserFormFilled": userFormFilledOwnerChecker,
+		"Offer":          offerOwnerChecker,
 	}
 }

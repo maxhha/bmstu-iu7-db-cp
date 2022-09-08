@@ -16,6 +16,7 @@ type DBMock struct {
 	AccountMock        AccountDBMock
 	AuctionMock        AuctionDBMock
 	BankMock           BankDBMock
+	DealStateMock      DealStateDBMock
 	NominalAccountMock NominalAccountDBMock
 	OfferMock          OfferDBMock
 	ProductMock        ProductDBMock
@@ -26,6 +27,8 @@ type DBMock struct {
 	UserMock           UserDBMock
 	UserFormMock       UserFormDBMock
 }
+
+type DealStateDBMock struct{ mock.Mock }
 
 type NominalAccountDBMock struct{ mock.Mock }
 
@@ -60,6 +63,11 @@ func (m *AccountDBMock) GetAvailableMoney(account models.Account) (map[models.Cu
 	return args.Get(0).(map[models.CurrencyEnum]models.Money), args.Error(1)
 }
 
+func (m *AccountDBMock) GetBlockedMoney(account models.Account) (map[models.CurrencyEnum]models.Money, error) {
+	args := m.Called(account)
+	return args.Get(0).(map[models.CurrencyEnum]models.Money), args.Error(1)
+}
+
 func (m *AccountDBMock) LockFull(account *models.Account) error {
 	args := m.Called(account)
 	return args.Error(0)
@@ -80,9 +88,19 @@ func (m *AuctionDBMock) Create(auction *models.Auction) error {
 	return args.Error(0)
 }
 
+func (m *AuctionDBMock) FindAndSetFinish(config FindAndSetFinishConfig) ([]models.Auction, error) {
+	args := m.Called(config)
+	return args.Get(0).([]models.Auction), args.Error(1)
+}
+
 func (m *AuctionDBMock) Get(id string) (models.Auction, error) {
 	args := m.Called(id)
 	return args.Get(0).(models.Auction), args.Error(1)
+}
+
+func (m *AuctionDBMock) GetTopOffer(auction models.Auction) (models.Offer, error) {
+	args := m.Called(auction)
+	return args.Get(0).(models.Offer), args.Error(1)
 }
 
 func (m *AuctionDBMock) LockShare(auction *models.Auction) error {
@@ -142,6 +160,10 @@ func (m *DBMock) Bank() BankDB {
 	return &m.BankMock
 }
 
+func (m *DBMock) DealState() DealStateDB {
+	return &m.DealStateMock
+}
+
 func (m *DBMock) NominalAccount() NominalAccountDB {
 	return &m.NominalAccountMock
 }
@@ -176,6 +198,26 @@ func (m *DBMock) User() UserDB {
 
 func (m *DBMock) UserForm() UserFormDB {
 	return &m.UserFormMock
+}
+
+func (m *DealStateDBMock) Create(dealState *models.DealState) error {
+	args := m.Called(dealState)
+	return args.Error(0)
+}
+
+func (m *DealStateDBMock) Find(config DealStateFindConfig) ([]models.DealState, error) {
+	args := m.Called(config)
+	return args.Get(0).([]models.DealState), args.Error(1)
+}
+
+func (m *DealStateDBMock) Get(id string) (models.DealState, error) {
+	args := m.Called(id)
+	return args.Get(0).(models.DealState), args.Error(1)
+}
+
+func (m *DealStateDBMock) GetLast(offerId string) (models.DealState, error) {
+	args := m.Called(offerId)
+	return args.Get(0).(models.DealState), args.Error(1)
 }
 
 func (m *NominalAccountDBMock) Create(account *models.NominalAccount) error {
@@ -213,9 +255,19 @@ func (m *OfferDBMock) Create(offer *models.Offer) error {
 	return args.Error(0)
 }
 
+func (m *OfferDBMock) Find(config OfferFindConfig) ([]models.Offer, error) {
+	args := m.Called(config)
+	return args.Get(0).([]models.Offer), args.Error(1)
+}
+
 func (m *OfferDBMock) Get(id string) (models.Offer, error) {
 	args := m.Called(id)
 	return args.Get(0).(models.Offer), args.Error(1)
+}
+
+func (m *OfferDBMock) GetMoney(offer models.Offer) (map[models.CurrencyEnum]models.Money, error) {
+	args := m.Called(offer)
+	return args.Get(0).(map[models.CurrencyEnum]models.Money), args.Error(1)
 }
 
 func (m *OfferDBMock) Pagination(first *int, after *string, filter *models.OffersFilter) (models.OffersConnection, error) {

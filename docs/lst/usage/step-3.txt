@@ -1,0 +1,17 @@
+$ gq $URL -H 'Content-Type: application/json' -q '
+mutation {
+  login(input: {
+    username: "test@example.com",
+    password: "12345"
+  }) {
+    token
+  }
+}'
+Executing query... done
+{
+  "data": {
+    "login": {
+      "token": "eyJhbG...zHi8ik"
+    }
+  }
+}

@@ -4,6 +4,7 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
+	"auction-back/auth"
 	"auction-back/graph/generated"
 	"auction-back/models"
 	"context"
@@ -11,42 +12,74 @@ import (
 )
 
 func (r *accountResolver) User(ctx context.Context, obj *models.Account) (*models.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	user, err := r.DB.User().Get(obj.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.User(): %w", err)
+	}
+
+	return &user, nil
 }
 
 func (r *accountResolver) NominalAccount(ctx context.Context, obj *models.Account) (*models.NominalAccount, error) {
-	panic(fmt.Errorf("not implemented"))
+	acc, err := r.DB.NominalAccount().Get(obj.NominalAccountID)
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.NominalAccount().Get: %w", err)
+	}
+
+	return &acc, nil
 }
 
 func (r *accountResolver) Available(ctx context.Context, obj *models.Account) ([]*models.Money, error) {
-	currencyMap, err := r.DB.Account().GetAvailableMoney(*obj)
+	money, err := r.DB.Account().GetAvailableMoney(*obj)
 	if err != nil {
 		return nil, fmt.Errorf("DB.Account().GetAvailableMoney: %w", err)
 	}
 
-	result := make([]*models.Money, 0, len(currencyMap))
-
-	for _, m := range currencyMap {
-		result = append(result, &m)
-	}
-
-	return result, nil
+	return moneyMapToArray(money), nil
 }
 
 func (r *accountResolver) Blocked(ctx context.Context, obj *models.Account) ([]*models.Money, error) {
-	panic(fmt.Errorf("not implemented"))
+	money, err := r.DB.Account().GetBlockedMoney(*obj)
+	if err != nil {
+		return nil, fmt.Errorf("DB.Account().GetBlockedMoney: %w", err)
+	}
+
+	return moneyMapToArray(money), nil
 }
 
 func (r *accountResolver) Transactions(ctx context.Context, obj *models.Account, first *int, after *string, filter *models.TransactionsFilter) (*models.TransactionsConnection, error) {
-	panic(fmt.Errorf("not implemented"))
+	if filter == nil {
+		filter = &models.TransactionsFilter{}
+	}
+
+	filter.AccountIDs = []string{obj.ID}
+
+	trs, err := r.DB.Transaction().Pagination(first, after, filter)
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.Transaction().Pagination: %w", err)
+	}
+
+	return &trs, nil
 }
 
 func (r *mutationResolver) CreateAccount(ctx context.Context, input models.CreateAccountInput) (*models.AccountResult, error) {
-	panic(fmt.Errorf("not implemented"))
+	viewer, err := auth.ForViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := r.BankPort.CreateAccount(viewer.ID, input.NominalAccountID)
+	return &models.AccountResult{
+		Account: &account,
+	}, nil
 }
 
 func (r *queryResolver) Accounts(ctx context.Context, first *int, after *string, filter *models.AccountsFilter) (*models.AccountsConnection, error) {
-	panic(fmt.Errorf("not implemented"))
+	conn, err := r.DB.Account().Pagination(first, after, filter)
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.Account().Pagination: %w", err)
+	}
+	return &conn, nil
 }
 
 // Account returns generated.AccountResolver implementation.

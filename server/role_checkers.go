@@ -28,12 +28,13 @@ func ownerRoleChecker(ownerChecker map[string]OwnerChecker) RoleChecker {
 		t := reflect.TypeOf(obj)
 
 		if t.Kind() != reflect.Ptr {
-			return fmt.Errorf("%w: %#v", ErrUnexpectObjectType, obj)
+			return fmt.Errorf("%w: obj is not ptr", ErrUnexpectObjectType)
 		}
 
-		checker, exists := ownerChecker[t.Elem().Name()]
+		name := t.Elem().Name()
+		checker, exists := ownerChecker[name]
 		if !exists {
-			return fmt.Errorf("%w: %#v", ErrUnexpectObjectType, obj)
+			return fmt.Errorf("%w: \"%s\"", ErrUnexpectObjectType, name)
 		}
 
 		return checker(viewer, obj)

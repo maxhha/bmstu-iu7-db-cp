@@ -16,5 +16,5 @@ type GraphSuite struct {
 }
 
 func (s *GraphSuite) SetupTest() {
-	s.resolver = New(&s.DB, &s.TokenMock, &s.BankMock, &s.RoleMock)
+	s.resolver = New(&s.DB, &s.TokenMock, &s.BankMock, &s.RoleMock, nil)
 }

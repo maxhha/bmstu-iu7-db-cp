@@ -57,5 +57,6 @@ func (d *bankDB) filter(query *gorm.DB, config *models.BanksFilter) *gorm.DB {
 		return query
 	}
 
-	panic("unimplimented!")
+	// panic("unimplimented!")
+	return query
 }

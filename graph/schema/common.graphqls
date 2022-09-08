@@ -57,4 +57,4 @@ enum RoleEnum {
   ADMIN
 }
 
-directive @hasRole(roles: [RoleEnum!]!) on FIELD_DEFINITION
+directive @hasRole(roles: [RoleEnum!]) on FIELD_DEFINITION

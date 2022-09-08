@@ -16,6 +16,8 @@ SELECT EXISTS (
     \set BANKGATE_PASSWORD `echo $BANKGATE_PASSWORD`
     \set VIEWER_USER `echo $VIEWER_USER`
     \set VIEWER_PASSWORD `echo $VIEWER_PASSWORD`
+    \set DEALER_USER `echo $DEALER_USER`
+    \set DEALER_PASSWORD `echo $DEALER_PASSWORD`
 
     \set exit_error false
 
@@ -55,6 +57,18 @@ SELECT EXISTS (
         \set exit_error true
     \endif
 
+    SELECT (:'DEALER_USER' = '') as is_not_empty \gset
+    \if :is_not_empty
+        \warn 'DEALER_USER is empty'
+        \set exit_error true
+    \endif
+
+    SELECT (:'DEALER_PASSWORD' = '') as is_not_empty \gset
+    \if :is_not_empty
+        \warn 'DEALER_PASSWORD is empty'
+        \set exit_error true
+    \endif
+
     \if :exit_error 
         DO $$
         BEGIN
@@ -77,6 +91,12 @@ SELECT EXISTS (
 
     CREATE ROLE :BANKGATE_USER
         WITH LOGIN PASSWORD :'BANKGATE_PASSWORD';
+
+    CREATE ROLE :DEALER_USER
+        WITH LOGIN PASSWORD :'DEALER_PASSWORD';
+    GRANT SELECT, UPDATE
+        ON auctions
+        TO :DEALER_USER;
 
     INSERT INTO migrations(id) VALUES (:'MIGRATION_ID');
 \endif

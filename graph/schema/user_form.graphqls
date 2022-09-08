@@ -51,11 +51,11 @@ type UserFormFilled {
   """
   User name
   """
-  name: String! @hasRole(roles: [USER, MANAGER])
+  name: String!
   """
   User default currency
   """
-  currency: CurrencyEnum! @hasRole(roles: [USER, MANAGER])
+  currency: CurrencyEnum! @hasRole(roles: [OWNER, MANAGER])
 }
 
 type UserFormsConnectionEdge {

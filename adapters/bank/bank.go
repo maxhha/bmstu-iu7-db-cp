@@ -5,6 +5,8 @@ import (
 	"auction-back/ports"
 	"errors"
 	"fmt"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 type BankAdapter struct {
@@ -22,14 +24,9 @@ func (b *BankAdapter) createAccounts(userID string) error {
 	}
 
 	for _, nominalAccount := range nominalAccounts {
-		// TODO: call bank service for account creation
-		account := models.Account{
-			UserID:           userID,
-			NominalAccountID: nominalAccount.ID,
-		}
-
-		if err := b.db.Account().Create(&account); err != nil {
-			return fmt.Errorf("db account create: %w", err)
+		_, err := b.CreateAccount(userID, nominalAccount.ID)
+		if err != nil {
+			return fmt.Errorf("b.CreateAccount: %w", err)
 		}
 	}
 
@@ -58,4 +55,33 @@ func (b *BankAdapter) UserFormApproved(form models.UserForm) error {
 	}
 
 	return fmt.Errorf("db account take: %w", err)
+}
+
+func (b *BankAdapter) CreateAccount(userID string, nominalAccountID string) (models.Account, error) {
+	// TODO: call bank service for account creation
+	account := models.Account{
+		UserID:           userID,
+		NominalAccountID: nominalAccountID,
+	}
+
+	if err := b.db.Account().Create(&account); err != nil {
+		return account, fmt.Errorf("db account create: %w", err)
+	}
+
+	return account, nil
+}
+
+func (b *BankAdapter) ProcessTransactions(transacions []models.Transaction) error {
+	var errs error
+
+	for _, transaction := range transacions {
+		if transaction.State == models.TransactionStateCreated || transaction.State == models.TransactionStateError {
+			transaction.State = models.TransactionStateProcessing
+			if err := b.db.Transaction().Update(&transaction); err != nil {
+				errs = multierror.Append(errs, fmt.Errorf("b.db.Transaction().Update(id=%d): %w", transaction.ID, err))
+			}
+		}
+	}
+
+	return errs
 }

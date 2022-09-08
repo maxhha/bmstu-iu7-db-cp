@@ -93,3 +93,11 @@ func IsUserOwner(viewer models.User, obj models.User) error {
 
 	return nil
 }
+
+func IsOfferOwner(viewer models.User, obj models.Offer) error {
+	if viewer.ID != obj.UserID {
+		return ErrUserNotOwner
+	}
+
+	return nil
+}

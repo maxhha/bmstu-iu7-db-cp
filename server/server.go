@@ -3,6 +3,7 @@ package server
 import (
 	"auction-back/adapters/bank"
 	"auction-back/adapters/database"
+	"auction-back/adapters/dealer"
 	"auction-back/adapters/role"
 	"auction-back/adapters/token"
 	"auction-back/auth"
@@ -33,11 +34,12 @@ func Init() *gin.Engine {
 	tokenAdapter := token.New(&db)
 	bankAdapter := bank.New(&db)
 	roleAdapter := role.New(&db)
+	deakerAdapter := dealer.New("http://localhost:8082")
 
 	ownerCheckers := newOwnerCheckers()
 	roleCheckers := newRoleCheckers(&roleAdapter, ownerCheckers)
 
-	resolver := graph.New(&db, tokenAdapter, &bankAdapter, &roleAdapter)
+	resolver := graph.New(&db, tokenAdapter, &bankAdapter, &roleAdapter, &deakerAdapter)
 	config := generated.Config{Resolvers: resolver}
 	config.Directives.HasRole = hasRoleDirective(roleCheckers)
 	schema := generated.NewExecutableSchema(config)

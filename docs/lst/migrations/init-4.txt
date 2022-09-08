@@ -1,0 +1,44 @@
+    CREATE INDEX indx_role_indices_pk ON roles(type, user_id, deleted_at);
+
+    CREATE TYPE user_form_state AS ENUM (
+        'CREATED',
+        'MODERATING',
+        'APPROVED',
+        'DECLAINED'
+    );
+
+    CREATE TYPE currency AS ENUM (
+        'RUB',
+        'EUR',
+        'USD'
+    );
+
+    -- represents user data
+    CREATE TABLE user_forms (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id SHORTKEY NOT NULL,
+        state user_form_state NOT NULL DEFAULT 'CREATED',
+        name VARCHAR,
+        password VARCHAR,
+        phone VARCHAR,
+        email VARCHAR,
+        currency currency,
+        declain_reason TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX idx_user_form_indices_deleted_at ON user_forms(deleted_at);
+
+    -- remove expired guests record
+    SELECT cron.schedule('*/5 * * * *', $$
+        DELETE FROM users
+        WHERE 
+            created_at < NOW() - interval '4 hour'
+            AND id NOT IN (
+                SELECT user_id
+                FROM user_forms
+            )
+    $$);

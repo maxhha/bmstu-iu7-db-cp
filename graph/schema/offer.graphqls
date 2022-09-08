@@ -6,19 +6,6 @@ enum OfferState {
   FAILED
 }
 
-# enum OfferStateEnum {
-#   CREATED
-#   CANCELLED
-#   TRANSFERRING_MONEY
-#   TRANSFER_MONEY_FAILED
-#   TRANSFERRING_PRODUCT
-#   TRANSFER_PRODUCT_FAILED
-#   SUCCEEDED
-#   RETURNING_MONEY
-#   RETURN_MONEY_FAILED
-#   MONEY_RETURNED
-# }
-
 type Offer {
   id: ID!
   """
@@ -44,7 +31,8 @@ type Offer {
   """
   Transactions of this offer
   """
-  transactions: [Transaction!]!
+  transactions: [Transaction!]! @hasRole(roles: USER)
+  dealHistory: [DealState!]! @hasRole(roles: USER)
 }
 
 type OffersConnectionEdge {

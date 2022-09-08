@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func Connect() Database {
@@ -17,6 +18,7 @@ func Connect() Database {
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		NowFunc: func() time.Time { return time.Now().UTC() },
+		Logger:  logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		log.Fatalln("Failed to connect to database!")

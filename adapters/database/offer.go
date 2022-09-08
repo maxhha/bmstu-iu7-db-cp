@@ -95,3 +95,56 @@ func (d *offerDB) Take(config ports.OfferTakeConfig) (models.Offer, error) {
 
 	return offer.into(), nil
 }
+
+func (d *offerDB) moneyQuery(query *gorm.DB) *gorm.DB {
+	moneyQuery := d.db.Model(&Transaction{}).
+		Select("currency, offer_id, auction_id, SUM(amount) as amount").
+		Joins("JOIN ( ? ) o ON o.id = offer_id AND type = ?", query, models.TransactionTypeBuy).
+		Group("currency, offer_id, auction_id")
+
+	return moneyQuery
+}
+
+func (d *offerDB) offersNumberedQuery(query *gorm.DB) *gorm.DB {
+	query = d.moneyQuery(query)
+
+	offersNumbered := d.db.Table("( ? ) as ofd", query)
+
+	offersNumbered = offersNumbered.Select(
+		"*, ROW_NUMBER() OVER(PARTITION BY ofd.auction_id ORDER BY ofd.amount DESC) as offer_n",
+	)
+
+	return offersNumbered
+}
+
+func (d *offerDB) GetMoney(offer models.Offer) (map[models.CurrencyEnum]models.Money, error) {
+	query := d.moneyQuery(d.db.Model(&Offer{}).Where("id = ?", offer.ID))
+
+	var moneys []models.Money
+	if err := query.Scan(&moneys).Error; err != nil {
+		return nil, fmt.Errorf("scan: %w", err)
+	}
+
+	moneysMap := make(map[models.CurrencyEnum]models.Money, len(moneys))
+	for _, m := range moneys {
+		moneysMap[m.Currency] = m
+	}
+
+	return moneysMap, nil
+}
+
+func (d *offerDB) Find(config ports.OfferFindConfig) ([]models.Offer, error) {
+	query := d.filter(d.db, config.Filter)
+
+	var objs []Offer
+	if err := query.Find(&objs).Error; err != nil {
+		return nil, fmt.Errorf("find: %w", convertError(err))
+	}
+
+	arr := make([]models.Offer, 0, len(objs))
+	for _, obj := range objs {
+		arr = append(arr, obj.into())
+	}
+
+	return arr, nil
+}

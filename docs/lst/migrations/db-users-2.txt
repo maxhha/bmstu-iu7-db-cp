@@ -1,0 +1,43 @@
+    SELECT (:'BANKGATE_PASSWORD' = '') as is_not_empty \gset
+    \if :is_not_empty
+        \warn 'BANKGATE_PASSWORD is empty'
+        \set exit_error true
+    \endif
+
+    SELECT (:'VIEWER_USER' = '') as is_not_empty \gset
+    \if :is_not_empty
+        \warn 'VIEWER_USER is empty'
+        \set exit_error true
+    \endif
+
+    SELECT (:'VIEWER_PASSWORD' = '') as is_not_empty \gset
+    \if :is_not_empty
+        \warn 'VIEWER_PASSWORD is empty'
+        \set exit_error true
+    \endif
+
+    SELECT (:'DEALER_USER' = '') as is_not_empty \gset
+    \if :is_not_empty
+        \warn 'DEALER_USER is empty'
+        \set exit_error true
+    \endif
+
+    SELECT (:'DEALER_PASSWORD' = '') as is_not_empty \gset
+    \if :is_not_empty
+        \warn 'DEALER_PASSWORD is empty'
+        \set exit_error true
+    \endif
+
+    \if :exit_error 
+        DO $$
+        BEGIN
+        RAISE EXCEPTION 'all required environment variables must not be empty';
+        END;
+        $$;
+    \endif
+
+    CREATE ROLE :SERVER_USER
+        WITH LOGIN PASSWORD :'SERVER_PASSWORD';
+    GRANT SELECT, INSERT, UPDATE 
+        ON ALL TABLES IN SCHEMA public
+        TO :SERVER_USER;

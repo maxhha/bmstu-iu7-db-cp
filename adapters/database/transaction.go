@@ -111,7 +111,7 @@ func (d *transactionDB) filter(query *gorm.DB, config *models.TransactionsFilter
 	}
 
 	if len(config.States) > 0 {
-		query = query.Where("state IN ?", config.States)
+		query = query.Where("transactions.state IN ?", config.States)
 	}
 
 	if len(config.Types) > 0 {
@@ -132,6 +132,10 @@ func (d *transactionDB) filter(query *gorm.DB, config *models.TransactionsFilter
 
 	if len(config.OfferIDs) > 0 {
 		query = query.Where("offer_id IN ?", config.OfferIDs)
+	}
+
+	if len(config.AuctionIDs) > 0 {
+		query = query.Joins("JOIN offers ON offers.id = transactions.offer_id AND offers.auction_id IN ?", config.AuctionIDs)
 	}
 
 	return query

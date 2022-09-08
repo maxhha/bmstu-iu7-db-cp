@@ -20,7 +20,7 @@ type Auction {
   """
   Account to which all offer transactions would come
   """
-  sellerAccount: Account
+  sellerAccount: Account # @hasRole(roles: USER)
   """
   Product buyer
   """
@@ -50,6 +50,10 @@ type Auction {
   """
   finishedAt: DateTime
   """
+  The greatest offer
+  """
+  topOffer: Offer
+  """
   Offers for the auction
   """
   offers(
@@ -75,6 +79,8 @@ input AuctionsFilter {
   sellerIDs: [String!] = []
   buyerIDs: [String!] = []
   productIDs: [String!] = []
+  startedAt: DateTimeRange = {}
+  scheduledStartAt: DateTimeRange = {}
 }
 
 extend type Query {
@@ -86,6 +92,18 @@ extend type Query {
     after: Cursor
     filter: AuctionsFilter
   ): AuctionsConnection! @hasRole(roles: [MANAGER])
+
+  runningAuctions(
+    first: Int
+    after: Cursor
+    filter: AuctionsFilter
+  ): AuctionsConnection!
+
+  scheduledAuctions(
+    first: Int
+    after: Cursor
+    filter: AuctionsFilter
+  ): AuctionsConnection!
 }
 
 type AuctionResult {
@@ -118,4 +136,12 @@ extend type Mutation {
   Starts auction manually
   """
   startAuction(input: AuctionInput!): AuctionResult!
+  """
+  Owner accepted money
+  """
+  approveOwnerAcceptedMoney(input: AuctionInput!): AuctionResult!
+  """
+  Accept product
+  """
+  approveReceiveProduct(input: AuctionInput!): Boolean!
 }

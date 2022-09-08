@@ -98,6 +98,21 @@ type AuctionTakeConfig struct {
 	Filter *models.AuctionsFilter
 }
 
+type DealStateFindConfig struct {
+	Filter *models.DealStateFilter
+	Limit  int
+}
+
+type FindAndSetFinishConfig struct {
+	Filter               *models.AuctionsFilter
+	DefaultDuration      string
+	TimeGapFromLastOffer string
+}
+
+type OfferFindConfig struct {
+	Filter *models.OffersFilter
+}
+
 type AccountDB interface {
 	Get(id string) (models.Account, error)
 	Take(config AccountTakeConfig) (models.Account, error)
@@ -105,6 +120,7 @@ type AccountDB interface {
 	Pagination(first *int, after *string, filter *models.AccountsFilter) (models.AccountsConnection, error)
 	LockFull(account *models.Account) error
 	GetAvailableMoney(account models.Account) (map[models.CurrencyEnum]models.Money, error)
+	GetBlockedMoney(account models.Account) (map[models.CurrencyEnum]models.Money, error)
 }
 
 type AuctionDB interface {
@@ -114,6 +130,8 @@ type AuctionDB interface {
 	Update(auction *models.Auction) error
 	Pagination(first *int, after *string, filter *models.AuctionsFilter) (models.AuctionsConnection, error)
 	LockShare(auction *models.Auction) error
+	FindAndSetFinish(config FindAndSetFinishConfig) ([]models.Auction, error)
+	GetTopOffer(auction models.Auction) (models.Offer, error)
 }
 
 type BankDB interface {
@@ -164,9 +182,11 @@ type TokenDB interface {
 type OfferDB interface {
 	Get(id string) (models.Offer, error)
 	Take(config OfferTakeConfig) (models.Offer, error)
+	Find(config OfferFindConfig) ([]models.Offer, error)
 	Create(offer *models.Offer) error
 	Update(offer *models.Offer) error
 	Pagination(first *int, after *string, filter *models.OffersFilter) (models.OffersConnection, error)
+	GetMoney(offer models.Offer) (map[models.CurrencyEnum]models.Money, error)
 }
 
 type TransactionDB interface {
@@ -187,6 +207,13 @@ type NominalAccountDB interface {
 	Pagination(first *int, after *string, filter *models.NominalAccountsFilter) (models.NominalAccountsConnection, error)
 }
 
+type DealStateDB interface {
+	Get(id string) (models.DealState, error)
+	Find(config DealStateFindConfig) ([]models.DealState, error)
+	Create(dealState *models.DealState) error
+	GetLast(offerId string) (models.DealState, error)
+}
+
 type DB interface {
 	Account() AccountDB
 	Auction() AuctionDB
@@ -199,6 +226,7 @@ type DB interface {
 	Offer() OfferDB
 	Transaction() TransactionDB
 	NominalAccount() NominalAccountDB
+	DealState() DealStateDB
 	Tx() TXDB
 }
 

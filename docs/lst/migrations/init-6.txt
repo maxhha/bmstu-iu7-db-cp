@@ -1,0 +1,44 @@
+            EXECUTE qry || key::TEXT INTO found;
+
+            IF found IS NULL THEN
+                EXIT;
+            END IF;
+        END LOOP;
+
+        NEW.id = key;
+
+        RETURN NEW;
+    END
+    $$ LANGUAGE 'plpgsql';
+
+    CREATE TRIGGER trgr_tokens_genid
+        BEFORE INSERT ON tokens FOR EACH ROW 
+        EXECUTE PROCEDURE token_generate();
+
+    CREATE TABLE banks (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR NOT NULL,
+        bic VARCHAR NOT NULL,
+        correspondent_account VARCHAR NOT NULL,
+        inn VARCHAR NOT NULL,
+        kpp VARCHAR NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP
+    );
+
+    CREATE INDEX idx_bank_indices_deleted_at ON banks(deleted_at);
+
+    CREATE TABLE nominal_accounts (
+        ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR UNIQUE NOT NULL,
+        receiver VARCHAR NOT NULL,
+        account_number VARCHAR NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
+        bank_id UUID NOT NULL,
+        CONSTRAINT fk_bank FOREIGN KEY (bank_id) REFERENCES banks(id)
+    );
+
+    CREATE INDEX idx_nominal_account_indices_deleted_at ON nominal_accounts(deleted_at);

@@ -2,6 +2,7 @@ enum TransactionState {
   CREATED
   CANCELLED
   PROCESSING
+  NEW
   ERROR
   SUCCEEDED
   FAILED
@@ -43,15 +44,15 @@ type Transaction {
   """
   Error message for state = ERROR or FAILED
   """
-  error: String
+  error: String # @hasRole(roles: [OWNER, MANAGER])
   """
   From account
   """
-  accountFrom: Account
+  accountFrom: Account # @hasRole(roles: USER)
   """
   To account
   """
-  accountTo: Account
+  accountTo: Account #  @hasRole(roles: USER)
   """
   Related offer
   """
@@ -77,6 +78,11 @@ input TransactionsFilter {
   accountFormIDs: [ID!] = []
   accountToIDs: [ID!] = []
   offerIDs: [ID!] = []
+  auctionIDs: [ID!] = []
+  """
+  Account in from or to field
+  """
+  accountIDs: [ID!] = []
 }
 
 extend type Query {

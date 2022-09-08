@@ -27,7 +27,7 @@ type Account {
     first: Int
     after: Cursor
     filter: TransactionsFilter = {}
-  ): TransactionsConnection!
+  ): TransactionsConnection! # @hasRole(roles: [OWNER, MANAGER])
 }
 
 type AccountsConnectionEdge {

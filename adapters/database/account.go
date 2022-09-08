@@ -55,7 +55,7 @@ func (d *accountDB) filter(query *gorm.DB, config *models.AccountsFilter) *gorm.
 	}
 
 	if config.AvailableFrom != nil {
-		panic("unimplimented!")
+		// panic("unimplimented!")
 	}
 
 	return query
@@ -120,8 +120,46 @@ func (d *accountDB) availableMoneyQuery(query *gorm.DB) *gorm.DB {
 	return moneyQuery
 }
 
+func (d *accountDB) blockedMoneyQuery(query *gorm.DB) *gorm.DB {
+	fromTrs := d.db.Model(&Transaction{}).
+		Select("currency, account_from_id as account_id, -amount as amount").
+		Joins(
+			"JOIN ( ? ) a ON account_from_id = a.id AND transactions.type IN ? AND transactions.state IN ?",
+			query.Session(&gorm.Session{Initialized: true}).Model(&Account{}),
+			[]models.TransactionType{
+				models.TransactionTypeBuy,
+			},
+			[]models.TransactionState{
+				models.TransactionStateCreated,
+			},
+		)
+
+	moneyQuery := d.db.
+		Select("trs.currency, trs.account_id, SUM(trs.amount) as amount").
+		Table("( ? ) trs", fromTrs).
+		Group("trs.currency, trs.account_id")
+
+	return moneyQuery
+}
+
 func (d *accountDB) GetAvailableMoney(account models.Account) (map[models.CurrencyEnum]models.Money, error) {
 	query := d.availableMoneyQuery(d.db.Model(&Account{}).Where("id = ?", account.ID))
+
+	var moneys []models.Money
+	if err := query.Scan(&moneys).Error; err != nil {
+		return nil, fmt.Errorf("scan: %w", err)
+	}
+
+	moneysMap := make(map[models.CurrencyEnum]models.Money, len(moneys))
+	for _, m := range moneys {
+		moneysMap[m.Currency] = m
+	}
+
+	return moneysMap, nil
+}
+
+func (d *accountDB) GetBlockedMoney(account models.Account) (map[models.CurrencyEnum]models.Money, error) {
+	query := d.blockedMoneyQuery(d.db.Model(&Account{}).Where("id = ?", account.ID))
 
 	var moneys []models.Money
 	if err := query.Scan(&moneys).Error; err != nil {

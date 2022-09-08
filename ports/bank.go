@@ -6,4 +6,6 @@ import "auction-back/models"
 
 type Bank interface {
 	UserFormApproved(form models.UserForm) error
+	CreateAccount(userID string, nominalAccountID string) (models.Account, error)
+	ProcessTransactions(transacions []models.Transaction) error
 }

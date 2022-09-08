@@ -12,18 +12,16 @@ import (
 //go:generate go run ../../codegen/gormdbops/main.go --out user_gen.go --model User --methods Get,Pagination,Create
 
 type User struct {
-	ID           string    `gorm:"default:generated();"`
-	CreatedAt    time.Time `gorm:"default:now();"`
-	DeletedAt    gorm.DeletedAt
-	BlockedUntil sql.NullTime
+	ID        string    `gorm:"default:generated();"`
+	CreatedAt time.Time `gorm:"default:now();"`
+	DeletedAt gorm.DeletedAt
 }
 
 func (u *User) into() models.User {
 	return models.User{
-		ID:           u.ID,
-		CreatedAt:    u.CreatedAt,
-		DeletedAt:    sql.NullTime(u.DeletedAt),
-		BlockedUntil: u.BlockedUntil,
+		ID:        u.ID,
+		CreatedAt: u.CreatedAt,
+		DeletedAt: sql.NullTime(u.DeletedAt),
 	}
 }
 
@@ -34,7 +32,6 @@ func (u *User) copy(user *models.User) {
 	u.ID = user.ID
 	u.CreatedAt = user.CreatedAt
 	u.DeletedAt = gorm.DeletedAt(user.DeletedAt)
-	u.BlockedUntil = user.BlockedUntil
 }
 
 func (d *userDB) LastApprovedUserForm(user models.User) (models.UserForm, error) {
@@ -66,5 +63,9 @@ func (d *userDB) filter(query *gorm.DB, config *models.UsersFilter) *gorm.DB {
 		return query
 	}
 
-	panic("not implimented!")
+	if len(config.ID) > 0 {
+		query = query.Where("id IN ?", config.ID)
+	}
+
+	return query
 }

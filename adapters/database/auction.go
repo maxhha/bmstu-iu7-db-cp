@@ -3,6 +3,7 @@ package database
 import (
 	"auction-back/models"
 	"auction-back/ports"
+	"fmt"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -48,24 +49,25 @@ func (a *Auction) into() models.Auction {
 	}
 }
 
-func (a *Auction) copy(auction *models.Auction) {
-	if auction == nil {
+func (a *Auction) copy(obj *models.Auction) {
+	if obj == nil {
 		return
 	}
 
-	a.ID = auction.ID
-	a.State = auction.State
-	a.ProductID = auction.ProductID
-	a.SellerID = auction.SellerID
-	a.SellerAccountID = auction.SellerAccountID
-	a.BuyerID = auction.BuyerID
-	a.Currency = auction.Currency
-	a.ScheduledStartAt = auction.ScheduledStartAt
-	a.ScheduledFinishAt = auction.ScheduledFinishAt
-	a.StartedAt = auction.StartedAt
-	a.FinishedAt = auction.FinishedAt
-	a.CreatedAt = auction.CreatedAt
-	a.UpdatedAt = auction.UpdatedAt
+	a.ID = obj.ID
+	a.State = obj.State
+	a.ProductID = obj.ProductID
+	a.SellerID = obj.SellerID
+	a.SellerAccountID = obj.SellerAccountID
+	a.BuyerID = obj.BuyerID
+	a.Currency = obj.Currency
+	a.MinAmount = obj.MinAmount
+	a.ScheduledStartAt = obj.ScheduledStartAt
+	a.ScheduledFinishAt = obj.ScheduledFinishAt
+	a.StartedAt = obj.StartedAt
+	a.FinishedAt = obj.FinishedAt
+	a.CreatedAt = obj.CreatedAt
+	a.UpdatedAt = obj.UpdatedAt
 }
 
 func (d *auctionDB) filter(query *gorm.DB, config *models.AuctionsFilter) *gorm.DB {
@@ -93,6 +95,26 @@ func (d *auctionDB) filter(query *gorm.DB, config *models.AuctionsFilter) *gorm.
 		query = query.Where("state IN ?", config.States)
 	}
 
+	if config.ScheduledStartAt != nil {
+		if config.StartedAt.From != nil {
+			query = query.Where("started_at >= ?", config.StartedAt.From)
+		}
+
+		if config.StartedAt.To != nil {
+			query = query.Where("started_at < ?", config.StartedAt.To)
+		}
+	}
+
+	if config.ScheduledStartAt != nil {
+		if config.ScheduledStartAt.From != nil {
+			query = query.Where("scheduled_start_at >= ?", config.ScheduledStartAt.From)
+		}
+
+		if config.ScheduledStartAt.To != nil {
+			query = query.Where("scheduled_start_at < ?", config.ScheduledStartAt.To)
+		}
+	}
+
 	return query
 }
 
@@ -113,4 +135,64 @@ func (d *auctionDB) LockShare(auction *models.Auction) error {
 
 	*auction = obj.into()
 	return nil
+}
+
+func (d *auctionDB) forFinishAuctionsQuery(tx *gorm.DB, time_gap string, default_duration string) *gorm.DB {
+	return tx.Clauses(clause.Locking{
+		Strength: "UPDATE",
+		Table:    clause.Table{Name: clause.CurrentTable},
+	}).
+		Where("state = ?", models.AuctionStateStarted).
+		Where("NOW() - ?::interval > ( SELECT COALESCE(MAX(offers.created_at), auctions.started_at) FROM offers WHERE offers.auction_id = auctions.id )", time_gap).
+		Where("NOW() > COALESCE(auctions.scheduled_finish_at, auctions.started_at + ?::interval)", default_duration)
+}
+
+func (d *auctionDB) FindAndSetFinish(config ports.FindAndSetFinishConfig) ([]models.Auction, error) {
+	var auctions []models.Auction
+
+	err := d.db.Transaction(func(tx *gorm.DB) error {
+		var objs []Auction
+		query := d.filter(tx, config.Filter)
+		query = d.forFinishAuctionsQuery(query, config.TimeGapFromLastOffer, config.DefaultDuration)
+		err := query.Find(&objs).Error
+
+		if err != nil {
+			return fmt.Errorf("tx.Find: %w", err)
+		}
+
+		auctions = make([]models.Auction, 0, len(objs))
+		now := time.Now().UTC()
+
+		for _, a := range objs {
+			a.State = models.AuctionStateFinished
+			a.FinishedAt = &now
+			err = tx.Updates(Auction{ID: a.ID, State: a.State, FinishedAt: a.FinishedAt}).Error
+			if err != nil {
+				return fmt.Errorf("tx.Update(ID=%s): %w", a.ID, err)
+			}
+			auctions = append(auctions, a.into())
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("d.db.Transaction: %w", err)
+	}
+
+	return auctions, nil
+}
+
+func (d *auctionDB) GetTopOffer(auction models.Auction) (models.Offer, error) {
+	query := d.db.Model(&Offer{}).Where("offers.auction_id = ?", auction.ID)
+	query = d.DB().Offer().(*offerDB).offersNumberedQuery(query)
+
+	offer := Offer{}
+	if err := d.db.Model(&offer).
+		Joins("JOIN ( ? ) ofd ON offers.id = ofd.offer_id AND ofd.offer_n = 1", query).
+		Take(&offer).Error; err != nil {
+		return models.Offer{}, fmt.Errorf("take top offer: %w", convertError(err))
+	}
+
+	return offer.into(), nil
 }

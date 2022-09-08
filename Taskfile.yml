@@ -60,6 +60,15 @@ tasks:
     cmds:
       - docker-compose -f {{.DOCKERCOMPOSE}} build mock-bank-{{.ENV}}
 
+  build:mock_dealer:
+    desc: Builds image of mock_dealer service
+    sources:
+      - services/mock_dealer/*
+    vars:
+      DOCKERCOMPOSE: ./config/docker-compose.{{.ENV}}.yml
+    cmds:
+      - docker-compose -f {{.DOCKERCOMPOSE}} build mock-dealer-{{.ENV}}
+
   restart:migration:
     desc: Restarts migration container
     cmds:
@@ -98,6 +107,22 @@ tasks:
       - defer: docker-compose -f {{.DOCKERCOMPOSE}} stop
       - go run services/mock_bank/*.go
 
+  dev:mock_dealer:
+    desc: Starts dev mock_dealer
+    deps:
+      - task: create:dev-network
+      - task: restart:migration
+        vars:
+          ENV: dev
+          IGNORE_ERROR: true
+    dotenv: ./config/.mock-dealer.env
+    vars:
+      DOCKERCOMPOSE: config/docker-compose.dev.yml
+    cmds:
+      - docker-compose -f {{.DOCKERCOMPOSE}} up -d
+      - defer: docker-compose -f {{.DOCKERCOMPOSE}} stop
+      - go run services/mock_dealer/*.go
+
   dev:
     desc: Start dev server
     deps:
@@ -106,6 +131,9 @@ tasks:
         vars:
           ENV: dev
       - task: build:mock_bank
+        vars:
+          ENV: dev
+      - task: build:mock_dealer
         vars:
           ENV: dev
       - task: restart:migration

@@ -1,0 +1,35 @@
+--
+-- Initialize database with basic tables
+--
+CREATE TABLE IF NOT EXISTS migrations (
+    id VARCHAR PRIMARY KEY
+);
+
+SELECT EXISTS (
+    SELECT id FROM migrations WHERE id = :'MIGRATION_ID'
+) as migrated \gset
+
+\if :migrated
+    \echo 'migration' :MIGRATION_ID 'already exists, skipping'
+\else
+    \echo 'migration' :MIGRATION_ID 'does not exist'
+
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION IF NOT EXISTS "pg_cron";
+
+    -- shorkey used for prettier urls
+    CREATE DOMAIN SHORTKEY as varchar(11);
+
+    CREATE OR REPLACE FUNCTION shortkey_generate()
+    RETURNS TRIGGER AS $$
+    DECLARE
+        gkey TEXT;
+        key SHORTKEY;
+        qry TEXT;
+        found TEXT;
+        user_id BOOLEAN;
+    BEGIN
+        -- generate the first part of a query as a string with safely
+        -- escaped table name, using || to concat the parts
+        qry := 'SELECT id FROM ' || quote_ident(TG_TABLE_NAME) || ' WHERE id=';

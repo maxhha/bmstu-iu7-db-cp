@@ -14,7 +14,7 @@ type Product {
   """
   Declain reason
   """
-  declainReason: String
+  declainReason: String # @hasRole(roles: [OWNER, MANAGER])
   """
   Title of product
   """
@@ -32,17 +32,14 @@ type Product {
   """
   creator: User!
   """
-  The greatest offer
-  """
-  topOffer: Offer
-  """
   Product images
   """
   images: [ProductImage!]!
-  """
-  Offers for this product
-  """
-  offers(first: Int, after: String): OffersConnection!
+  auctions(
+    first: Int
+    after: Cursor
+    filter: AuctionsFilter
+  ): AuctionsConnection! # @hasRole(roles: USER)
 }
 
 """
@@ -65,6 +62,7 @@ type ProductsConnection {
 }
 
 input ProductsFilter {
+  state: [ProductState!] = []
   ownerIDs: [String!] = []
 }
 
@@ -77,7 +75,6 @@ extend type Query {
     after: String
     filter: ProductsFilter
   ): ProductsConnection! @hasRole(roles: [MANAGER])
-  marketProducts(first: Int, after: String): ProductsConnection!
 }
 
 input UpdateProductInput {
@@ -141,6 +138,6 @@ extend type Mutation {
     @hasRole(roles: [MANAGER])
 }
 
-type Subscription {
-  productOffered: Product
-}
+# type Subscription {
+#   productOffered: Product
+# }

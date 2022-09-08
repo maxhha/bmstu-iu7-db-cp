@@ -1,6 +1,9 @@
 package graph
 
-import "math/rand"
+import (
+	"auction-back/models"
+	"math/rand"
+)
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
@@ -10,6 +13,17 @@ func randString(n int) string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return string(b)
+}
+
+func moneyMapToArray(currencyMap map[models.CurrencyEnum]models.Money) []*models.Money {
+	result := make([]*models.Money, 0, len(currencyMap))
+
+	for _, m := range currencyMap {
+		tmp := m
+		result = append(result, &tmp)
+	}
+
+	return result
 }
 
 // func (r *balanceResolver) Blocked(ctx context.Context, obj *models.Balance) (float64, error) {

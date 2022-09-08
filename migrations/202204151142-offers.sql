@@ -12,6 +12,7 @@ SELECT EXISTS (
 
     \set SERVER_USER `echo $SERVER_USER`
     \set VIEWER_USER `echo $VIEWER_USER`
+    \set DEALER_USER `echo $DEALER_USER`
 
     \set exit_error false
 
@@ -24,6 +25,12 @@ SELECT EXISTS (
     SELECT (:'VIEWER_USER' = '') as is_not_empty \gset
     \if :is_not_empty
         \warn 'VIEWER_USER is empty'
+        \set exit_error true
+    \endif
+
+    SELECT (:'DEALER_USER' = '') as is_not_empty \gset
+    \if :is_not_empty
+        \warn 'DEALER_USER is empty'
         \set exit_error true
     \endif
 
@@ -56,7 +63,11 @@ SELECT EXISTS (
 
     GRANT SELECT, INSERT, UPDATE 
         ON offers
-        TO :SERVER_USER;
+        TO :SERVER_USER, :DEALER_USER;
+
+    GRANT SELECT, UPDATE 
+        ON offers
+        TO :DEALER_USER;
 
     GRANT SELECT
         ON offers

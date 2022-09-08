@@ -30,7 +30,7 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateO
 	}
 
 	if err := IsAccountOwner(viewer, account); err != nil {
-		return nil, fmt.Errorf("denied: %w", err)
+		return nil, fmt.Errorf("denied: account: %w", err)
 	}
 
 	if !auction.IsStarted() {
@@ -61,14 +61,20 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateO
 
 		previousOffer, err := tx.Offer().Take(ports.OfferTakeConfig{
 			Filter: &models.OffersFilter{
+				States:     []models.OfferState{models.OfferStateCreated},
 				AuctionIDs: []string{auction.ID},
 				UserIDs:    []string{viewer.ID},
 			},
 		})
 
-		fmt.Printf("previousOffer = %#v\n", previousOffer)
-
 		if err == nil {
+			previousOffer.State = models.OfferStateCancelled
+
+			err = tx.Offer().Update(&previousOffer)
+			if err != nil {
+				return fmt.Errorf("tx.Offer().Update(&previousOffer): %w", err)
+			}
+
 			previousOfferTransactions, err := tx.Transaction().Find(ports.TransactionFindConfig{
 				Filter: &models.TransactionsFilter{
 					OfferIDs: []string{previousOffer.ID},
@@ -77,7 +83,6 @@ func (r *mutationResolver) CreateOffer(ctx context.Context, input models.CreateO
 			if err != nil {
 				return fmt.Errorf("tx.Transaction().Find(previousOfferTransactions): %w", err)
 			}
-			fmt.Printf("previousOfferTransactions = %#v\n", previousOfferTransactions)
 
 			for i := 0; i < len(previousOfferTransactions); i++ {
 				previousOfferTransactions[i].State = models.TransactionStateCancelled
@@ -165,11 +170,52 @@ func (r *offerResolver) Auction(ctx context.Context, obj *models.Offer) (*models
 }
 
 func (r *offerResolver) Moneys(ctx context.Context, obj *models.Offer) ([]*models.Money, error) {
-	panic(fmt.Errorf("not implemented"))
+	money, err := r.DB.Offer().GetMoney(*obj)
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.Offer().GetMoney: %w", err)
+	}
+
+	return moneyMapToArray(money), nil
 }
 
 func (r *offerResolver) Transactions(ctx context.Context, obj *models.Offer) ([]*models.Transaction, error) {
-	panic(fmt.Errorf("not implemented"))
+	filter := models.TransactionsFilter{
+		OfferIDs: []string{obj.ID},
+	}
+
+	trs, err := r.DB.Transaction().Find(ports.TransactionFindConfig{
+		Filter: &filter,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.Transaction().Find: %w", err)
+	}
+
+	result := make([]*models.Transaction, 0, len(trs))
+
+	for _, tr := range trs {
+		result = append(result, &tr)
+	}
+
+	return result, nil
+}
+
+func (r *offerResolver) DealHistory(ctx context.Context, obj *models.Offer) ([]*models.DealState, error) {
+	deals, err := r.DB.DealState().Find(ports.DealStateFindConfig{
+		Filter: &models.DealStateFilter{
+			OfferIDs: []string{obj.ID},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("r.DB.DealState().Find: %w", err)
+	}
+
+	result := make([]*models.DealState, 0, len(deals))
+	for _, d := range deals {
+		tmp := d
+		result = append(result, &tmp)
+	}
+
+	return result, nil
 }
 
 func (r *queryResolver) Offers(ctx context.Context, first *int, after *string, filter *models.OffersFilter) (*models.OffersConnection, error) {

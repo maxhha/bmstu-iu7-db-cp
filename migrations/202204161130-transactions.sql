@@ -38,6 +38,7 @@ SELECT EXISTS (
     CREATE TYPE transaction_state AS ENUM (
         'CREATED',
         'CANCELLED',
+        'NEW',
         'PROCESSING',
         'ERROR',
         'SUCCEEDED',

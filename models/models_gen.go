@@ -53,11 +53,13 @@ type AuctionsConnectionEdge struct {
 }
 
 type AuctionsFilter struct {
-	IDs        []string       `json:"IDs"`
-	States     []AuctionState `json:"states"`
-	SellerIDs  []string       `json:"sellerIDs"`
-	BuyerIDs   []string       `json:"buyerIDs"`
-	ProductIDs []string       `json:"productIDs"`
+	IDs              []string       `json:"IDs"`
+	States           []AuctionState `json:"states"`
+	SellerIDs        []string       `json:"sellerIDs"`
+	BuyerIDs         []string       `json:"buyerIDs"`
+	ProductIDs       []string       `json:"productIDs"`
+	StartedAt        *DateTimeRange `json:"startedAt"`
+	ScheduledStartAt *DateTimeRange `json:"scheduledStartAt"`
 }
 
 type BankResult struct {
@@ -107,6 +109,11 @@ type CreateOfferInput struct {
 type DateTimeRange struct {
 	From *time.Time `json:"from"`
 	To   *time.Time `json:"to"`
+}
+
+type DealStateFilter struct {
+	CreatorIDs []string `json:"creatorIDs"`
+	OfferIDs   []string `json:"offerIDs"`
 }
 
 type DeclineProductInput struct {
@@ -201,7 +208,8 @@ type ProductsConnectionEdge struct {
 }
 
 type ProductsFilter struct {
-	OwnerIDs []string `json:"ownerIDs"`
+	State    []ProductState `json:"state"`
+	OwnerIDs []string       `json:"ownerIDs"`
 }
 
 type RequestSetUserEmailInput struct {
@@ -249,6 +257,9 @@ type TransactionsFilter struct {
 	AccountFormIDs []string           `json:"accountFormIDs"`
 	AccountToIDs   []string           `json:"accountToIDs"`
 	OfferIDs       []string           `json:"offerIDs"`
+	AuctionIDs     []string           `json:"auctionIDs"`
+	// Account in from or to field
+	AccountIDs []string `json:"accountIDs"`
 }
 
 type UpdateAuctionInput struct {
@@ -426,6 +437,59 @@ func (e CurrencyEnum) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+type DealStateEnum string
+
+const (
+	DealStateEnumTransferringMoney     DealStateEnum = "TRANSFERRING_MONEY"
+	DealStateEnumTransferMoneyFailed   DealStateEnum = "TRANSFER_MONEY_FAILED"
+	DealStateEnumTransferringProduct   DealStateEnum = "TRANSFERRING_PRODUCT"
+	DealStateEnumTransferProductFailed DealStateEnum = "TRANSFER_PRODUCT_FAILED"
+	DealStateEnumSucceeded             DealStateEnum = "SUCCEEDED"
+	DealStateEnumReturningMoney        DealStateEnum = "RETURNING_MONEY"
+	DealStateEnumReturnMoneyFailed     DealStateEnum = "RETURN_MONEY_FAILED"
+	DealStateEnumMoneyReturned         DealStateEnum = "MONEY_RETURNED"
+)
+
+var AllDealStateEnum = []DealStateEnum{
+	DealStateEnumTransferringMoney,
+	DealStateEnumTransferMoneyFailed,
+	DealStateEnumTransferringProduct,
+	DealStateEnumTransferProductFailed,
+	DealStateEnumSucceeded,
+	DealStateEnumReturningMoney,
+	DealStateEnumReturnMoneyFailed,
+	DealStateEnumMoneyReturned,
+}
+
+func (e DealStateEnum) IsValid() bool {
+	switch e {
+	case DealStateEnumTransferringMoney, DealStateEnumTransferMoneyFailed, DealStateEnumTransferringProduct, DealStateEnumTransferProductFailed, DealStateEnumSucceeded, DealStateEnumReturningMoney, DealStateEnumReturnMoneyFailed, DealStateEnumMoneyReturned:
+		return true
+	}
+	return false
+}
+
+func (e DealStateEnum) String() string {
+	return string(e)
+}
+
+func (e *DealStateEnum) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DealStateEnum(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DealStateEnum", str)
+	}
+	return nil
+}
+
+func (e DealStateEnum) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
 type OfferState string
 
 const (
@@ -569,6 +633,7 @@ const (
 	TransactionStateCreated    TransactionState = "CREATED"
 	TransactionStateCancelled  TransactionState = "CANCELLED"
 	TransactionStateProcessing TransactionState = "PROCESSING"
+	TransactionStateNew        TransactionState = "NEW"
 	TransactionStateError      TransactionState = "ERROR"
 	TransactionStateSucceeded  TransactionState = "SUCCEEDED"
 	TransactionStateFailed     TransactionState = "FAILED"
@@ -578,6 +643,7 @@ var AllTransactionState = []TransactionState{
 	TransactionStateCreated,
 	TransactionStateCancelled,
 	TransactionStateProcessing,
+	TransactionStateNew,
 	TransactionStateError,
 	TransactionStateSucceeded,
 	TransactionStateFailed,
@@ -585,7 +651,7 @@ var AllTransactionState = []TransactionState{
 
 func (e TransactionState) IsValid() bool {
 	switch e {
-	case TransactionStateCreated, TransactionStateCancelled, TransactionStateProcessing, TransactionStateError, TransactionStateSucceeded, TransactionStateFailed:
+	case TransactionStateCreated, TransactionStateCancelled, TransactionStateProcessing, TransactionStateNew, TransactionStateError, TransactionStateSucceeded, TransactionStateFailed:
 		return true
 	}
 	return false
