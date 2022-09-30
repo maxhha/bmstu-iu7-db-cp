@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Migrate script from https://github.com/docker-library/postgres/blob/a1ea032a8b5872e291f5f3f7b8395b8e958aaefb/14/alpine/docker-entrypoint.sh#L153
+# ❗ filename of this script must not be ended with .sh to prevent infinite recursive loop
+set -Eeo pipefail
+
+# usage: docker_process_init_files [file [file [...]]]
+#    ie: docker_process_init_files /always-initdb.d/*
+# process initializer files, based on file extensions and permissions
+docker_process_init_files() {
+	# psql here for backwards compatibility "${psql[@]}"
+	psql=( docker_process_sql )
+
+	echo
+	local f
+	for f; do
+		export MIGRATION_ID="$(basename $f)"
+		case "$f" in
+			*.sh)
+				# https://github.com/docker-library/postgres/issues/450#issuecomment-393167936
+				# https://github.com/docker-library/postgres/pull/452
+				if [ -x "$f" ]; then
+					echo "$0: running $f"
+					"$f"
+				else
+					echo "$0: sourcing $f"
+					. "$f"
+				fi
+				;;
+			*.sql)    echo "$0: running $f"; docker_process_sql -f "$f"; echo ;;
+			*.sql.gz) echo "$0: running $f"; gunzip -c "$f" | docker_process_sql; echo ;;
+			*.sql.xz) echo "$0: running $f"; xzcat "$f" | docker_process_sql; echo ;;
+			*)        echo "$0: ignoring $f" ;;
+		esac
+		echo
+	done
+}
+
+# Execute sql script, passed via stdin (or -f flag of pqsl)
+# usage: docker_process_sql [psql-cli-args]
+#    ie: docker_process_sql --dbname=mydb <<<'I.NSERT ...'
+#    ie: docker_process_sql -f my-file.sql
+#    ie: docker_process_sql <my-file.sql
+docker_process_sql() {
+	local query_runner=( \
+		psql \
+		-v ON_ERROR_STOP=1 \
+		-v AUTOCOMMIT=off \
+		-v MIGRATION_ID=$MIGRATION_ID \
+		--no-psqlrc \
+		"host=$DATABASE_HOST dbname=$POSTGRES_DB user=$POSTGRES_USER password=$POSTGRES_PASSWORD" \
+	)
+
+	PGHOST= PGHOSTADDR= "${query_runner[@]}" "$@"
+}
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+docker_process_init_files $SCRIPT_DIR/*

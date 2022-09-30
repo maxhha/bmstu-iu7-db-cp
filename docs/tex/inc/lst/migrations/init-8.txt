@@ -1,0 +1,44 @@
+        product_id UUID NOT NULL,
+        seller_id SHORTKEY NOT NULL,
+        buyer_id SHORTKEY,
+        min_amount DECIMAL(12, 2),
+        "currency" currency,
+        scheduled_start_at TIMESTAMP,
+        scheduled_finish_at TIMESTAMP,
+        started_at TIMESTAMP,
+        finished_at TIMESTAMP,
+        fail_reason TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id),
+        CONSTRAINT fk_seller FOREIGN KEY (seller_id) REFERENCES users(id),
+        CONSTRAINT fk_buyer FOREIGN KEY (buyer_id) REFERENCES users(id),
+        CONSTRAINT chk_currency CHECK (
+            state = 'CREATED' OR "currency" IS NOT NULL
+        ),
+        CONSTRAINT chk_min_amount CHECK (
+            min_amount IS NULL OR "currency" IS NOT NULL
+        ),
+        CONSTRAINT chk_started_at CHECK (
+            state = 'CREATED' OR started_at IS NOT NULL
+        ),
+        CONSTRAINT chk_finished_at CHECK (
+            state = 'CREATED' OR state = 'STARTED' OR finished_at IS NOT NULL
+        ),
+        CONSTRAINT chk_buyer CHECK (
+            NOT (state = 'SUCCEEDED' AND buyer_id IS NULL)
+        )
+    );
+
+    CREATE TABLE product_images (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        filename VARCHAR NOT NULL,
+        path VARCHAR NOT NULL,
+        product_id UUID NOT NULL,
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
+
+    INSERT INTO migrations(id) VALUES (:'MIGRATION_ID');
+\endif
+
+COMMIT;

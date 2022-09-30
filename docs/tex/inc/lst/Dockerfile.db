@@ -1,0 +1,15 @@
+FROM postgres:14.2-alpine AS build
+
+RUN apk add --no-cache git make gcc musl-dev clang llvm
+
+RUN git clone -b v1.4.1 https://github.com/citusdata/pg_cron.git
+RUN cd pg_cron && make && make install
+
+FROM postgres:14.2-alpine 
+
+# found this files using `find . * | grep "pg_cron"`
+COPY --from=build /usr/local/lib/postgresql/bitcode/pg_cron /usr/local/lib/postgresql/bitcode/pg_cron
+COPY --from=build /usr/local/lib/postgresql/bitcode/pg_cron.index.bc /usr/local/lib/postgresql/bitcode/pg_cron.index.bc
+COPY --from=build /usr/local/lib/postgresql/pg_cron.so /usr/local/lib/postgresql/pg_cron.so
+COPY --from=build /usr/local/share/postgresql/extension/pg_cron.control /usr/local/share/postgresql/extension/pg_cron.control
+COPY --from=build /usr/local/share/postgresql/extension/pg_cron-* /usr/local/share/postgresql/extension/

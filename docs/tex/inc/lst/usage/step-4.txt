@@ -1,0 +1,27 @@
+$ gq $URL -H 'Content-Type: application/json' \
+  -H "Authorization: $TOKEN1" -q '
+query {
+  viewer {
+    draftForm {
+      id
+      email
+      state
+      phone
+      name
+    }
+  }
+}'
+Executing query... done
+{
+  "data": {
+    "viewer": {
+      "draftForm": {
+        "id": "bc97be4a-bc50-48eb-a7e3-7057463c695f",
+        "email": "test@example.com",
+        "state": "CREATED",
+        "phone": "+79998887766",
+        "name": "test-client"
+      }
+    }
+  }
+}

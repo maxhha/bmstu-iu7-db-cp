@@ -1,0 +1,16 @@
+FROM golang:1.17.8 as build
+
+WORKDIR /usr/src/app
+
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
+COPY . .
+
+RUN go build -v -o /tmp/server ./server.go
+
+FROM alpine:3.15
+
+COPY --from=build /tmp/server /usr/local/bin/server
+
+CMD ["server"]

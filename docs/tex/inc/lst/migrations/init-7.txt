@@ -1,0 +1,45 @@
+    CREATE TABLE accounts (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        number VARCHAR NOT NULL,
+        user_id SHORTKEY NOT NULL,
+        nominal_account_id UUID NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
+        CONSTRAINT fk_nominal_account FOREIGN KEY (nominal_account_id) REFERENCES nominal_accounts(id)
+    );
+
+    CREATE INDEX idx_account_indices_deleted_at ON accounts(deleted_at);
+
+    CREATE TYPE product_state AS ENUM (
+      'CREATED',
+      'MODERATING',
+      'APPROVED',
+      'DECLAINED'
+    );
+
+    CREATE TABLE products (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        state product_state NOT NULL DEFAULT 'CREATED', 
+        title VARCHAR NOT NULL,
+        description VARCHAR NOT NULL,
+        creator_id SHORTKEY NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        deleted_at TIMESTAMP,
+        CONSTRAINT fk_creator FOREIGN KEY (creator_id) REFERENCES users(id)
+    );
+
+    CREATE INDEX idx_product_indices_deleted_at ON products(deleted_at);
+
+    CREATE TYPE auction_state AS ENUM (
+      'CREATED',
+      'STARTED',
+      'FINISHED',
+      'FAILED',
+      'SUCCEEDED'
+    );
+
+    CREATE TABLE auctions (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        state auction_state NOT NULL DEFAULT 'CREATED',
