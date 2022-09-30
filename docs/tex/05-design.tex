@@ -1,0 +1,440 @@
+\chapter{Конструкторский раздел}
+
+В данном разделе будет спроектирована база данных, приведена ER-диаграмма сущностей базы данных, описаны поля всех таблиц и объекты, необходимые для соблюдения целостности данных. Будет спроектировано приложение, предоставляющее программный интерфейс, который позволяет работать с базой данных, приведены верхнеуровневое разбиение на компоненты и описание этих компонентов. А так же будут приведены диаграммы последовательностей для основных действий в приложении.
+
+\section{Проектирование базы данных}
+
+На рисунке \ref{img:er-db} представлена ER-диаграмма сущностей базы данных. В базе данных будет 16 таблиц, каждая из которых представляет отдельную сущность. 
+
+\sidewaysimgw{er-db}{thp}{1\textwidth}{ER-диаграмма сущностей базы данных в нотации Мартина}
+
+Описание полей таблицы \texttt{users}, представляющую пользователей системы:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор пользователя;
+    \item \texttt{created\_at} -- временная метка регистрации пользователя;
+    \item \texttt{deleted\_at} -- временная метка, когда пользователь считается удаленным.
+\end{itemize}
+
+Пользователь -- общая сущность для менеджера, владельца и покупателя.
+
+В этой и остальных таблицах с полем \texttt{deleted\_at} должен быть реализован подход мягкого удаления, когда данные реально не удаляются из хранилища, а просто помечаются как удаленные. \cite{softdelete}
+
+Описание полей таблицы \texttt{migrations}, представляющую миграции базы данных:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор миграции.
+\end{itemize}
+
+По наличию миграций можно определить, какие изменения были применены к базе данных, и последовательно применить недостающие.
+
+Описание полей таблицы \texttt{user\_forms}, представляющую анкеты пользователей:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор анкеты;
+    \item \texttt{state} -- текущее состояние анкеты. Принимает одно из значений, описанных на рисунке диаграммы состояний \ref{img:state-user-form};
+    \item \texttt{name} -- ФИО пользователя;
+    \item \texttt{password} -- хэш пароля пользователя;
+    \item \texttt{phone} -- номер телефона пользователя;
+    \item \texttt{email} -- адрес электронной почты пользователя;
+    \item \texttt{currency} -- предпочитаемая валюта;
+    \item \texttt{declain\_reason} -- причина отклонения анкете. Заполняется менеджером при переходе в состояние "Отклонена\";
+    \item \texttt{created\_at}, \texttt{updated\_at}, \texttt{deleted\_at} -- временные метки создания, последнего обновления и удаления соответственно.
+\end{itemize}
+
+Когда пользователь изменяет анкету, то она так же должна пройти проверку менеджером. Пока эта проверка не будет выполнена, будет использоваться прошлая анкета.
+
+Описание полей таблицы \texttt{tokens}, представляющую токены:
+\begin{itemize}
+  \item \texttt{id} -- уникальный код;
+  \item \texttt{user\_id} -- идентификатор пользователя, которому принадлежит этот код;
+  \item \texttt{created\_at}, \texttt{activated\_at}, \texttt{expires\_at} -- временные метки создания, активации и истечения срока действия токена;
+  \item \texttt{action} -- назначение, действие токена;
+  \item \texttt{data} -- данные, необходимые для выполнения действия токена.
+\end{itemize}
+
+Описание полей таблицы \texttt{roles}, представляющую роли пользователей:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор роли;
+    \item \texttt{type} -- тип роли. Может принимать одно из значений: менеджер, администратор;
+    \item \texttt{created\_at}, \texttt{deleted\_at} -- временные метки создания и удаления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{accounts}, представляющую счета пользователей:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор счета;
+    \item \texttt{number} -- идентификатор счета, полученный из банка;
+    \item \texttt{created\_at}, \texttt{deleted\_at} -- временные метки создания и удаления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{nominal\_accounts}, представляющую счета пользователей:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор счета;
+    \item \texttt{name} -- название номинального аккаунта в рамках платформы;
+    \item \texttt{receiver}, \texttt{account\_number} -- банковские реквизиты счета: получатель и счет соответственно; 
+    \item \texttt{created\_at}, \texttt{updated\_at}, \texttt{deleted\_at} -- временные метки создания, последнего обновления и удаления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{banks}, представляющую банки:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор счета;
+    \item \texttt{name}, \texttt{bic}, \texttt{correspondent\_acc}, \texttt{inn}, \texttt{kpp} -- название банка, реквизиты банка: банковский идентификационный код, корреспондентский счет, идентификационный номер налогоплательщика и код причины постановки на учёт соответственно;
+    \item \texttt{created\_at}, \texttt{updated\_at}, \texttt{deleted\_at} -- временные метки создания, последнего обновления и удаления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{transfers}, представляющую порядок перевода средств между номинальными счетами:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор перевода;
+    \item \texttt{currency\_from}, \texttt{currency\_to} -- валюты из которой и в которую происходит перевод;
+    \item \texttt{created\_at}, \texttt{updated\_at}, \texttt{deleted\_at} -- временные метки создания, последнего обновления и удаления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{transfer\_algs}, представляющую алгоритмы перевода средств между номинальными счетами:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор алгоритма;
+    \item \texttt{name} -- название алгоритма;
+    \item \texttt{type}, \texttt{params} -- тип и параметры алгоритма перевода;
+    \item \texttt{created\_at}, \texttt{updated\_at}, \texttt{deleted\_at} -- временные метки создания, последнего обновления и удаления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{transfer\_algs}, представляющую алгоритмы перевода средств между номинальными счетами:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор алгоритма;
+    \item \texttt{name} -- название алгоритма;
+    \item \texttt{type}, \texttt{params} -- тип и параметры алгоритма перевода;
+    \item \texttt{created\_at}, \texttt{updated\_at}, \texttt{deleted\_at} -- временные метки создания, последнего обновления и удаления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{transactions}, представляющую движение денежных средств между счетами пользователей:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор транзакции;
+    \item \texttt{date} -- временная метка проведения транзакции;
+    \item \texttt{state} -- состояние транзакции. Принимает одно из значений, описанных на рисунке диаграммы состояний \ref{img:state-transaction};
+    \item \texttt{type} -- тип транзакции;
+    \item \texttt{currency} -- валюта транзакции;
+    \item \texttt{amount} -- сумма транзакции;
+    \item \texttt{error} -- ошибка, произошедшая при проведении транзакции в банке;
+    \item \texttt{created\_at}, \texttt{updated\_at}, \texttt{deleted\_at} -- временные метки создания, последнего обновления и удаления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{products}, представляющую товары:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор товара;
+    \item \texttt{state} -- состояние товара. Принимает одно из значений, описанных на на рисунке диаграммы состояний \ref{img:state-product};
+    \item \texttt{title}, \texttt{description} -- название и описание товара;
+    \item \texttt{declain\_reason} -- причина отклонения. Заполняется менеджером при переходе в состояние "Отклонен\";
+    \item \texttt{created\_at}, \texttt{updated\_at}, \texttt{deleted\_at} -- временные метки создания, последнего обновления и удаления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{product\_images}, представляющую изображения товаров:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор изображения;
+    \item \texttt{filename} -- название файла;
+    \item \texttt{path} -- путь к файлу в файловом хранилище.
+\end{itemize}
+
+Описание полей таблицы \texttt{auctions}, представляющую аукцион:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор аукциона;
+    \item \texttt{state} -- состояние аукциона. Принимает одно из значений, описанных на на рисунке диаграммы состояний \ref{img:state-auction};
+    \item \texttt{fail\_reason} -- причина неудачи проведения аукциона. Заполняется менеджером при переходе в состояние "Неудача\";
+    \item \texttt{min\_amount} -- минимальная ставка;
+    \item \texttt{currency} -- валюта проведения аукциона;
+    \item \texttt{scheduled\_start\_at}, \texttt{scheduled\_finish\_at} -- запланированные даты начала и конца аукциона;
+    \item \texttt{started\_at}, \texttt{finish\_at} -- реальные даты начала и завершения аукциона;
+    \item \texttt{created\_at}, \texttt{updated\_at} -- временные метки создания и последнего обновления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{offers}, представляющую предложение о покупке:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор аукциона;
+    \item \texttt{state} -- состояние предложения. Принимает одно из значений, описанных на на рисунке диаграммы состояний \ref{img:state-offer};
+    \item \texttt{created\_at}, \texttt{updated\_at} -- временные метки создания и последнего обновления соответственно.
+\end{itemize}
+
+Описание полей таблицы \texttt{deal\_states}, представляющую историю состояния сделок:
+\begin{itemize}
+    \item \texttt{id} -- уникальный идентификатор состояния;
+    \item \texttt{state} -- состояние сделки. Принимает одно из значений, описанных на на рисунке диаграммы состояний \ref{img:state-deal};
+    \item \texttt{comment} -- комментарий перехода в состояние;
+    \item \texttt{created\_at} -- временные метки создания состояния сделки.
+\end{itemize}
+
+\section{Соблюдение целостности данных}
+
+В таблицах \ref{tab:db-types}-\ref{tab:db-triggers} представлены объекты базы данных,  необходимые для соблюдения целостности.
+
+\begin{table}[!th]
+    \centering
+    \caption{Пользовательские типы данных}
+    \label{tab:db-types}
+    \begin{tabular}{|p{5cm}|p{11cm}|}
+         \hline
+         \textbf{Объект} & \textbf{Описание} \\
+         \hline
+         Короткий идентификатор & Строка, состоящая из 11 символов, поддерживаемых унифицированным указателем ресурса (URL) \\
+         \hline
+        %  Триггер добавления короткого идентификатора & Триггер создает уникальный в таблице короткий идентификатор. Схема триггера представлена на рисунке \ref{} \\
+        %  \hline
+         Роли пользователей & Одно из значений: <<Администратор>>, <<Менеджер>> \\
+         \hline
+        %  Внешний ключ идентификатор пользователя в таблице ролей & чтение и обновление аукционов и предложений; чтение, добавление и обновление истории сделок \\
+        %  \hline
+         Валюты & Перечисляемый тип, состоящий из текстовых кодов валют, поддерживаемых приложением \\
+         \hline
+         Тип транзакции & Одно из значений: <<Пополнение>>, <<Конвертация валюты>>, <<Возврат>>, <<Покупка>>, <<Вывод>> \\
+         \hline
+         Состояния анкеты & Перечисляемый тип, который включает в себя состояния, представленные на рисунке \ref{img:state-user-form} \\
+         \hline
+         Состояния товаров & Перечисляемый тип, который включает в себя состояния, представленные на рисунке \ref{img:state-product} \\
+         \hline
+         Состояния аукциона & Перечисляемый тип, который включает в себя состояния, представленные на рисунке \ref{img:state-auction} \\
+         \hline
+         Состояния предложения & Перечисляемый тип, который включает в себя состояния, представленные на рисунке \ref{img:state-offer} \\
+         \hline
+         Состояния транзакции & Перечисляемый тип, который включает в себя состояния, представленные на рисунке \ref{img:state-transaction} \\
+         \hline
+          Состояния сделки & Перечисляемый тип, который включает в себя состояния, представленные на рисунке \ref{img:state-deal} \\
+         \hline
+         Код токена & шестизначное десятичное число \\
+         \hline
+    \end{tabular}
+\end{table}
+
+% индексы
+
+\begin{table}[!th]
+    \centering
+    \caption{Значения по умолчанию}
+    \label{tab:db-defaults}
+    \begin{tabular}{|p{3cm}|p{3cm}|p{9.5cm}|}
+         \hline
+         \textbf{Таблица} & \textbf{Поле} & \textbf{Значение} \\
+         \hline
+         \multirow{3}{3cm}{любая c указанным полем} & \texttt{created\_at} & текущее время \\
+         \cline{2-3}
+          & \texttt{updated\_at} & текущее время \\
+        \cline{2-3}
+          & \texttt{state} & начальное состояние на соответствующей таблице диаграмме состояний \\
+         \hline
+    \end{tabular}
+\end{table}
+
+\clearpage
+
+\begin{table}[!th]
+    \centering
+    \caption{Правила}
+    \label{tab:db-checks-1}
+    \begin{tabular}{|p{3cm}|p{13cm}|}
+         \hline
+         \textbf{Таблица} & \textbf{Правило} \\
+         \hline
+         \multirow{7}{3cm}{\texttt{auctions}} & только при \mbox{\texttt{state}~=~<<Создан>>} может отсутствовать \texttt{currency}  \\
+         \cline{2-2}
+         & \texttt{min\_amount} может быть задано, только если определено \texttt{currency} \\
+         \cline{2-2}
+         & при \mbox{\texttt{state}~$\neq$~<<Создан>>} должно быть заполнено \texttt{started\_at} \\
+         \cline{2-2}
+         & при \mbox{\texttt{state}~$\neq$~<<Создан>>}~$\land$ \mbox{\texttt{state}~$\neq$~<<Начался>>} должно быть заполнено \texttt{finished\_at} \\
+         \hline
+         \multirow{2}{3cm}{\texttt{auctions}} & при \mbox{\texttt{state}~=~<<Успех>>} должно быть заполнено \texttt{buyer\_id} \\
+         \cline{2-2}
+         & только при \mbox{\texttt{state}~=~<<Создан>>} может отсутствовать \texttt{seller\_account\_id} \\
+         \hline
+         \multirow{10}{3cm}{\texttt{transactions}} & \texttt{amount} $> 0$ \\
+         \cline{2-2}
+         & \texttt{account\_from\_id} должно быть заполнено всегда кроме случая, когда \texttt{type}~=~<<Пополнение>> это поле должно отсутствовать \\
+         \cline{2-2}
+         & \texttt{account\_to\_id} должно быть заполнено всегда кроме случая, когда \texttt{type}~=~<<Вывод>> это поле должно отсутствовать \\
+         \cline{2-2}
+         & при \texttt{type}~=~<<Пополнение>>~$\lor$ \texttt{type}~=~<<Конвертация валюты>> должно отсутствовать \texttt{offer\_id}, при остальных \texttt{type} поле необходимо \\
+         \cline{2-2}
+         & при \texttt{state}~=~<<Успех>> должно быть заполнено \texttt{date} \\
+         \hline
+    \end{tabular}
+\end{table}
+
+% \begin{table}[!th]
+%     \centering
+%     \caption{Правила}
+%     \label{tab:db-checks-2}
+%     \begin{tabular}{|p{3cm}|p{13cm}|}
+%          \hline
+%          \textbf{Таблица} & \textbf{Правило} \\
+%          \hline
+%          \multirow{2}{3cm}{\texttt{auctions}} & при \mbox{\texttt{state}~=~<<Успех>>} должно быть заполнено \texttt{buyer\_id} \\
+%          \cline{2-2}
+%          & только при \mbox{\texttt{state}~=~<<Создан>>} может отсутствовать \texttt{seller\_account\_id} \\
+%          \hline
+%          \multirow{10}{3cm}{\texttt{transactions}} & \texttt{amount} $> 0$ \\
+%          \cline{2-2}
+%          & \texttt{account\_from\_id} должно быть заполнено всегда кроме случая, когда \texttt{type}~=~<<Пополнение>> это поле должно отсутствовать \\
+%          \cline{2-2}
+%          & \texttt{account\_to\_id} должно быть заполнено всегда кроме случая, когда \texttt{type}~=~<<Вывод>> это поле должно отсутствовать \\
+%          \cline{2-2}
+%          & при \texttt{type}~=~<<Пополнение>>~$\lor$ \texttt{type}~=~<<Конвертация валюты>> должно отсутствовать \texttt{offer\_id}, при остальных \texttt{type} поле необходимо \\
+%          \cline{2-2}
+%          & при \texttt{state}~=~<<Успех>> должно быть заполнено \texttt{date} \\
+%          \hline
+%     \end{tabular}
+% \end{table}
+
+\clearpage
+
+В таблице \ref{tab:db-foreign-keys-1} представлены внешние ключи с много-однозначной связью.
+
+\begin{table}[!th]
+    \centering
+    \caption{Внешние ключи}
+    \label{tab:db-foreign-keys-1}
+    \begin{tabular}{|p{5cm}|p{5.5cm}|p{5cm}|}
+         \hline
+         \textbf{Таблица} & \textbf{Поле} & \textbf{Таблица, на которую указывает} \\
+         \hline
+         \multirow{2}{3cm}{\texttt{roles}} & \texttt{issuer\_id} & \multirow{4}{3cm}{\texttt{users(id)}} \\
+         \cline{2-2}
+         & \multirow{3}{3cm}{\texttt{user\_id}} & \\
+         \cline{1-1}
+         \texttt{user\_forms} & & \\
+         \cline{1-1}
+         \texttt{tokens} & & \\
+         \cline{1-3}
+         \texttt{nominal\_accounts} & \texttt{bank\_id} & \texttt{banks(id)} \\
+         \hline
+         \multirow{2}{3cm}{\texttt{accounts}} & \texttt{user\_id} & \texttt{users(id)} \\
+         \cline{2-3}
+         & \texttt{nominal\_account\_id} & \texttt{nominal\_accounts(id)} \\
+         \hline
+         \texttt{products} & \texttt{creator\_id} & \texttt{users(id)} \\
+         \hline
+         \multirow{3}{3cm}{\texttt{auctions}} & \texttt{product\_id} & \texttt{products(id)} \\
+         \cline{2-3}
+         & \texttt{seller\_id} & \multirow{2}{3cm}{\texttt{users(id)}} \\       
+         \cline{2-2}
+         & \texttt{buyer\_id} & \\
+         \hline
+         \texttt{product\_images} & \texttt{product\_id} & \texttt{products(id)} \\
+         \hline
+         \multirow{2}{3cm}{\texttt{offers}} & \texttt{auction\_id} & \texttt{auctions(id)} \\
+         \cline{2-3}
+         & \texttt{user\_id} & \texttt{users(id)} \\
+         \hline
+         \multirow{3}{3cm}{\texttt{transactions}} & \texttt{account\_from\_id} & \multirow{2}{3cm}{\texttt{accounts(id)}}  \\
+         \cline{2-2}
+         & \texttt{account\_to\_id} & \\
+         \cline{2-3}
+         & \texttt{offer\_id} & \texttt{offers(id)} \\
+         \hline
+         \multirow{3}{3cm}{\texttt{transfers}} & \texttt{account\_from\_id} & \multirow{2}{3cm}{\texttt{nominal\_accounts(id)}} \\
+         \cline{2-2}
+         & \texttt{account\_to\_id} & \\
+         \cline{2-3}
+         & \texttt{alg\_id} & \texttt{transfer\_algs(id)} \\
+         \hline
+         \multirow{2}{3cm}{\texttt{deals}} & \texttt{creator\_id} & \texttt{users(id)} \\
+         \cline{2-3}
+         & \texttt{offer\_id} & \texttt{offers(id)} \\
+         \hline
+    \end{tabular}
+\end{table}
+
+% \clearpage
+
+% \begin{table}[!th]
+%     \centering
+%     \caption{Внешние ключи}
+%     \label{tab:db-foreign-keys-2}
+%     \begin{tabular}{|p{5cm}|p{5.5cm}|p{5cm}|}
+%          \hline
+%          \textbf{Таблица} & \textbf{Поле} & \textbf{Таблица, на которую указывает} \\
+%          \hline
+%          \multirow{3}{3cm}{\texttt{transfers}} & \texttt{account\_from\_id} & \multirow{2}{3cm}{\texttt{nominal\_accounts(id)}} \\
+%          \cline{2-2}
+%          & \texttt{account\_to\_id} & \\
+%          \cline{2-3}
+%          & \texttt{alg\_id} & \texttt{transfer\_algs(id)} \\
+%          \hline
+%          \multirow{2}{3cm}{\texttt{deals}} & \texttt{creator\_id} & \texttt{users(id)} \\
+%          \cline{2-3}
+%          & \texttt{offer\_id} & \texttt{offers(id)} \\
+%          \hline
+%     \end{tabular}
+% \end{table}
+
+\begin{table}[!th]
+    \centering
+    \caption{Триггеры}
+    \label{tab:db-triggers}
+    \begin{tabular}{|p{5cm}|p{11cm}|}
+         \hline
+         \textbf{Название} & \textbf{Описание} \\
+         \hline
+         Триггер добавления короткого идентификатора & Триггер создает уникальный в таблице короткий идентификатор. Схема триггера представлена на рисунке~\ref{img:triggers-1} \\
+         \hline
+         Триггер добавления кода токена & Триггер создает уникальный для пользователя код токена. Схема триггера представлена на рисунке~\ref{img:triggers-2} \\
+         \hline
+    \end{tabular}
+\end{table}
+
+\clearpage
+
+\imgs{triggers-1}{!th}{1}{Схема алгоритма триггера добавления короткого идентификатора}
+
+\newpage
+
+\imgs{triggers-2}{!th}{1}{Схема алгоритма триггера добавления кода токена}
+
+\newpage
+
+\section{Проектирование приложения}
+\label{lbl:server-arch}
+
+По условию постановки задачи необходимо разработать программный интерфейс, который позволит работать с базой данных. На рисунке \ref{img:components} представлено верхнеуровневое разбиение приложения на компоненты.
+
+\imgw{components}{th}{\textwidth}{Верхнеуровневое разбиение на компоненты}
+
+Описание компонентов приложения:
+\begin{itemize}
+    \item \textbf{сервер} создает все остальные компоненты, производит инъекцию зависимостей, запускает основной цикл приложения;
+    \item \textbf{обработчики запросов} преобразовывают входные данные интеракторов, вызывают их и преобразованный результат отдают наружу;
+    \item \textbf{интеракторы с системами отправки уведомлений} производят взаимодействие с внешними системами отправки уведомлений, например, SMS или Email оповещений;
+    \item \textbf{интеракторы с банками} абстрагируют взаимодействие с банками;
+    \item \textbf{интеракторы с базой данных} производят взаимодействие с базой данных;
+    \item \textbf{интеракторы} производят взаимодействие между сущностями системы;
+    \item \textbf{сущности} -- сущности системы.
+\end{itemize}
+
+\section{Сценарии использования}
+
+На рисунках \ref{img:flow-registration-1}-\ref{img:flow-offer} представлены сценарии использования.
+
+\imgw{flow-registration-1}{th}{0.9\textwidth}{Диаграмма последовательности регистрации пользователя}
+
+\newpage
+
+\imgw{flow-registration-2}{th}{0.9\textwidth}{Продолжение диаграммы последовательности регистрации пользователя}
+
+\newpage
+
+\imgw{flow-product-1}{th}{\textwidth}{Диаграмма последовательности создания товара}
+
+\newpage
+
+\imgw{flow-product-2}{th}{\textwidth}{Продолжение диаграммы последовательности создания товара}
+
+\newpage
+
+\imgw{flow-auction}{th}{\textwidth}{Диаграмма последовательности создания аукциона}
+
+\newpage
+
+\imgw{flow-deposit}{th}{\textwidth}{Диаграмма последовательности пополнения счета}
+
+\newpage
+
+\imgw{flow-offer}{th}{\textwidth}{Диаграмма последовательности проведения торга}
+
+\newpage
+
+\section*{Вывод}
+\addcontentsline{toc}{section}{Вывод}
+
+В данном разделе была спроектирована база данных, приведена ER-диаграмма сущностей базы данных, описаны поля всех таблиц и объекты, необходимые для соблюдения целостности данных. Было спроектировано приложение, предоставляющее программный интерфейс, который позволяет работать с базой данных, приведены верхнеуровневое разбиение на компоненты и описание этих компонентов. А так же были приведены диаграммы последовательностей для основных действий в приложении.

@@ -1,0 +1,38 @@
+$ # Запрос установления почты
+$ gq $URL -H 'Content-Type: application/json' \
+  -H "Authorization: $TOKEN1" -q '
+mutation {
+  requestSetUserEmail(input: {
+    email: "test@example.com"
+  })
+}'
+Executing query... done
+{
+  "data": {
+    "requestSetUserEmail": true
+  }
+}
+$ # Подтверждение установления новой почты
+$ gq $URL -H 'Content-Type: application/json' \
+  -H "Authorization: $TOKEN1" -q '
+mutation {
+  approveSetUserEmail(input: { token: "364956" }) {
+    user {
+      draftForm {
+        email
+      }
+    }
+  }
+}'
+Executing query... done
+{
+  "data": {
+    "approveSetUserEmail": {
+      "user": {
+        "draftForm": {
+          "email": "test@example.com"
+        }
+      }
+    }
+  }
+}

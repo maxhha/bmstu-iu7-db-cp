@@ -1,0 +1,16 @@
+$ URL='http://[::1]:8080/graphql'
+$ gq $URL -H 'Content-Type: application/json' -q '
+mutation { 
+  register { 
+    token 
+  } 
+}'
+Executing query... done
+{
+  "data": {
+    "register": {
+      "token": "eyJhbG...Yw2rFg"
+    }
+  }
+}
+$ TOKEN1="eyJhbG...Yw2rFg"
